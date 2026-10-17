@@ -67,7 +67,7 @@ jobs:
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_REPO: ${{ secrets.WEBK_FRAMEWORK_REPO }}
+          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Verify deliverable boundaries
         run: bash tools/verify-deliverable-boundaries.sh
@@ -129,7 +129,7 @@ jobs:
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_REPO: ${{ secrets.WEBK_FRAMEWORK_REPO }}
+          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Cleanup & Prepare Simulators
         id: prep
@@ -307,7 +307,7 @@ jobs:
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_REPO: ${{ secrets.WEBK_FRAMEWORK_REPO }}
+          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Cleanup & Prepare Simulators
         id: prep
@@ -537,7 +537,7 @@ jobs:
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_REPO: ${{ secrets.WEBK_FRAMEWORK_REPO }}
+          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Verify Release binary has no DEBUG-only code
         run: bash tools/verify-release-no-debug.sh
