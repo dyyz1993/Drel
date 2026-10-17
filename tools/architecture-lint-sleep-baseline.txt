@@ -1,0 +1,25 @@
+# file: allowed_sleep_count (ratchet — do not grow)
+DrelUITests/CacheDashboardTests.swift 18
+DrelUITests/DebugPanelTests.swift 12
+DrelUITests/DeepLinkDiagnosticsTests.swift 2
+DrelUITests/DeepVerificationTests.swift 20
+DrelUITests/FavoriteAppReopenCrashTests.swift 8
+DrelUITests/FavoriteCrashReproTests.swift 2
+DrelUITests/FavoriteDirectoryFavoriteTests.swift 8
+DrelUITests/FavoriteFlowTests.swift 1
+DrelUITests/FavoriteOfflinePackageCrashTests.swift 5
+DrelUITests/FavoritePinSwipeTests.swift 2
+DrelUITests/FavoriteSwipeDeleteTests.swift 4
+DrelUITests/FunctionalTests.swift 14
+DrelUITests/GatewayImportUITests.swift 1
+DrelUITests/GroupedHangTest.swift 3
+DrelUITests/InboxGroupAnimationTests.swift 22
+DrelUITests/PushAddressProbeTests.swift 12
+DrelUITests/RealDevicePushSmokeTests.swift 3
+DrelUITests/ScreenshotCaptureTests.swift 3
+DrelUITests/ScreenshotTourTests.swift 165
+DrelUITests/StabilityTests.swift 4
+DrelUITests/DrelSmokeTests.swift 2
+DrelUITests/TabScreenshotTests.swift 1
+DrelUITests/UIAuditTest.swift 2
+DrelUITests/VerifyFixesTests.swift 17

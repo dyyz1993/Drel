@@ -1,0 +1,245 @@
+name: Drel
+options:
+  bundleIdPrefix: com.webbridgekit
+  deploymentTarget:
+    iOS: "15.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+  defaultConfig: Debug
+  usePods: true
+  generateEmptyDirectories: true
+  objectVersion: 56
+
+configs:
+  Debug: debug
+  Release: release
+  Drel14Release: release
+
+targets:
+  Drel:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    bundleId: com.webbridgekit.superapp
+    sources:
+      - path: SuperApp/Sources
+        excludes:
+          - "Info.plist"
+      - SuperApp/Resources
+    resources:
+      - path: SuperApp/Resources
+        excludes:
+          - "**/*.strings"
+          - "**/*.lproj/**"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        PRODUCT_NAME: Drel
+        INFOPLIST_KEY_CFBundleDisplayName: Drel
+        INFOPLIST_KEY_CFBundleName: Drel
+        INFOPLIST_KEY_NSCameraUsageDescription: 用于扫描你部署的 Drel 自托管推送配置码。
+        CURRENT_PROJECT_VERSION: "65"
+        MARKETING_VERSION: "1.0.1"
+        FRAMEWORK_SEARCH_PATHS:
+          - $(inherited)
+          - $(SDKROOT)/System/Library/Frameworks
+        LIBRARY_SEARCH_PATHS:
+          - $(inherited)
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "B45VZCNYU3"
+        CODE_SIGN_ENTITLEMENTS: SuperApp/SuperApp.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: SuperApp/Sources/Info.plist
+        INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen
+        INFOPLIST_KEY_NSAppTransportSecurity: YES
+        INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: 允许你主动将推送中的图片保存到系统相册
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
+      configs:
+        Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store
+        Drel14Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY
+          MARKETING_VERSION: "1.4.1"
+          CURRENT_PROJECT_VERSION: "89"
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store
+    postBuildScripts:
+      - name: Retain Required SDK Privacy Prompts for Store Build
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(DERIVED_FILE_DIR)/strip-bridge-privacy-prompts.stamp
+        script: |
+          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ]; then
+            PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+            if [ -f "${PLIST}" ]; then
+              for KEY in \
+                NSBluetoothAlwaysUsageDescription \
+                NSFaceIDUsageDescription \
+                NSLocationWhenInUseUsageDescription \
+                NSMotionUsageDescription \
+                NSPhotoLibraryUsageDescription; do
+                /usr/libexec/PlistBuddy -c "Delete :${KEY}" "${PLIST}" 2>/dev/null || true
+              done
+              /usr/libexec/PlistBuddy -c "Delete :NSAppTransportSecurity:NSAllowsArbitraryLoads" "${PLIST}" 2>/dev/null || true
+            fi
+          fi
+          touch "${SCRIPT_OUTPUT_FILE_0}"
+      - name: Strip Test Resources from Release
+        outputFiles:
+          - $(DERIVED_FILE_DIR)/strip-test-resources.stamp
+        script: |
+          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ]; then
+            echo "Stripping test/debug HTML resources from Release bundle..."
+            cd "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app" || exit 0
+            rm -f *test*.html bridge-*.html slow_resource*.html trigger_*.html \
+                  manifest_*test*.html manifest_cache_demo.html manifest_demo.html \
+                  permission-test.html execute_network_test.html ua_test.html static_test.html \
+                  2>/dev/null || true
+            find . -name "*test*.js" -not -name "WebBridge.js" -delete 2>/dev/null || true
+            find . -name "*debug*.js" -delete 2>/dev/null || true
+            find . -name "*test*.css" -delete 2>/dev/null || true
+            find Frameworks -name "*debug*.js" -delete 2>/dev/null || true
+            echo "Done. Test/debug resources stripped."
+          else
+            echo "Skipping test resource strip (Debug build)"
+          fi
+          mkdir -p "${DERIVED_FILE_DIR}"
+          touch "${DERIVED_FILE_DIR}/strip-test-resources.stamp"
+
+      - name: Embed Notification Service Extension
+        outputFiles:
+          - $(DERIVED_FILE_DIR)/embed-nse.stamp
+        script: |
+          NSE_NAME="NotificationServiceExtension.appex"
+          NSE_PATH="$(find "${BUILT_PRODUCTS_DIR}" -name "${NSE_NAME}" -maxdepth 2 | head -1)"
+          if [ -n "${NSE_PATH}" ] && [ -d "${NSE_PATH}" ]; then
+            mkdir -p "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/PlugIns"
+            cp -R "${NSE_PATH}" "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/PlugIns/"
+            echo "Embedded ${NSE_NAME} into PlugIns"
+          else
+            echo "WARNING: ${NSE_NAME} not found in ${BUILT_PRODUCTS_DIR}"
+          fi
+          mkdir -p "${DERIVED_FILE_DIR}"
+          touch "${DERIVED_FILE_DIR}/embed-nse.stamp"
+    dependencies:
+      - target: NotificationServiceExtension
+        embed: true
+
+  NotificationServiceExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "15.0"
+    bundleId: com.webbridgekit.superapp.nse
+    sources:
+      - path: NotificationServiceExtension
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.nse
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        CURRENT_PROJECT_VERSION: "65"
+        MARKETING_VERSION: "1.0.1"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "B45VZCNYU3"
+        CODE_SIGN_ENTITLEMENTS: NotificationServiceExtension/NotificationServiceExtension.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: NotificationServiceExtension/Info.plist
+      configs:
+        Release:
+          DEVELOPMENT_TEAM: B45VZCNYU3
+          PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.nse
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store
+        Drel14Release:
+          MARKETING_VERSION: "1.4.1"
+          CURRENT_PROJECT_VERSION: "89"
+          DEVELOPMENT_TEAM: B45VZCNYU3
+          PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.nse
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store
+
+  DrelTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - DrelTests
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.tests
+      TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Drel.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Drel"
+      TEST_HOST_NAME: Drel
+      SWIFT_VERSION: "5.0"
+      GENERATE_INFOPLIST_FILE: YES
+      CODE_SIGN_STYLE: Automatic
+      DEVELOPMENT_TEAM: "B45VZCNYU3"
+    dependencies:
+      - target: Drel
+
+  DrelUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - SuperAppUITests
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.ui.tests
+      TEST_TARGET_NAME: Drel
+      SWIFT_VERSION: "5.0"
+      GENERATE_INFOPLIST_FILE: YES
+      TARGETED_DEVICE_FAMILY: "1,2"
+      ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: NO
+      ENABLE_PREVIEWS: NO
+      ENABLE_SWIFT_TESTING: NO
+      CODE_SIGN_STYLE: Automatic
+      DEVELOPMENT_TEAM: "B45VZCNYU3"
+    dependencies:
+      - target: Drel
+
+schemes:
+  Drel:
+    build:
+      targets:
+        Drel: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - DrelTests
+        - DrelUITests
+      coverageTargets:
+        - Drel
+    archive:
+      config: Release
+
+  Drel14Store:
+    build:
+      targets:
+        Drel: all
+    run:
+      config: Drel14Release
+    archive:
+      config: Drel14Release
+
+  DrelUITests:
+    build:
+      targets:
+        DrelUITests: all
+    test:
+      config: Debug
+      targets:
+        - DrelUITests
+      coverageTargets:
+        - Drel

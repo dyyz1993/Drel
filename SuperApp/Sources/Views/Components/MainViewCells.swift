@@ -1,0 +1,397 @@
+import UIKit
+import SnapKit
+import WebBridgeKit
+
+class PushTokenCardCell: UICollectionViewCell {
+    static let identifier = "PushTokenCardCell"
+
+    private let containerView: UIView = {
+        let view = UIView()
+        view.backgroundColor = ThemeTokens.Color.cardBackground
+        view.layer.cornerRadius = ThemeTokens.CornerRadius.xl
+        let shadow = ThemeTokens.Shadows.Card
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: shadow.offsetX, height: shadow.offsetY)
+        view.layer.shadowRadius = shadow.radius
+        view.layer.shadowOpacity = Float(shadow.opacity)
+        return view
+    }()
+
+    private let serverIcon: UIImageView = {
+        let iv = UIImageView()
+        iv.image = LucideIcon.server.templateImage(pointSize: 14, weight: .medium)
+        iv.tintColor = ThemeTokens.Color.textSecondary
+        iv.contentMode = .scaleAspectFit
+        return iv
+    }()
+
+    private let urlLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.caption1
+        label.textColor = ThemeTokens.Color.textSecondary
+        label.numberOfLines = 1
+        label.lineBreakMode = .byTruncatingMiddle
+        return label
+    }()
+
+    private let tokenPill: UIView = {
+        let v = UIView()
+        v.backgroundColor = ThemeTokens.Color.primary.withAlphaComponent(0.08)
+        v.layer.cornerRadius = ThemeTokens.CornerRadius.sm
+        v.clipsToBounds = true
+        return v
+    }()
+
+    private let keyIcon: UIImageView = {
+        let iv = UIImageView()
+        iv.image = LucideIcon.key.templateImage(pointSize: 12, weight: .medium)
+        iv.tintColor = ThemeTokens.Color.primary
+        iv.contentMode = .scaleAspectFit
+        return iv
+    }()
+
+    private let tokenLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.monospaceBodyMedium
+        label.textColor = ThemeTokens.Color.primary
+        label.numberOfLines = 1
+        label.lineBreakMode = .byTruncatingMiddle
+        return label
+    }()
+
+    private let copyButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(L10n.tr("home.token_card.copy_token"), for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.caption1
+        button.setTitleColor(ThemeTokens.Color.primary, for: .normal)
+        button.backgroundColor = ThemeTokens.Color.primary.withAlphaComponent(0.1)
+        button.layer.cornerRadius = ThemeTokens.CornerRadius.card
+        button.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        return button
+    }()
+
+    private let registerButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(L10n.tr("home.token_card.register"), for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.footnote
+        button.setTitleColor(ThemeTokens.Color.background, for: .normal)
+        button.backgroundColor = ThemeTokens.Color.primary
+        button.layer.cornerRadius = ThemeTokens.CornerRadius.sm
+        button.contentEdgeInsets = UIEdgeInsets(top: 6, left: 16, bottom: 6, right: 16)
+        button.isHidden = true
+        return button
+    }()
+
+    var onCopyTapped: (() -> Void)?
+    var onRegisterTapped: (() -> Void)?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        onCopyTapped = nil
+        onRegisterTapped = nil
+    }
+
+    private func setupUI() {
+        contentView.addSubview(containerView)
+        containerView.addSubview(serverIcon)
+        containerView.addSubview(urlLabel)
+        containerView.addSubview(tokenPill)
+        tokenPill.addSubview(keyIcon)
+        tokenPill.addSubview(tokenLabel)
+        containerView.addSubview(copyButton)
+        containerView.addSubview(registerButton)
+
+        containerView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+
+        serverIcon.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(14)
+            make.left.equalToSuperview().offset(16)
+            make.width.height.equalTo(14)
+        }
+
+        urlLabel.snp.makeConstraints { make in
+            make.centerY.equalTo(serverIcon)
+            make.left.equalTo(serverIcon.snp.right).offset(8)
+            make.right.equalToSuperview().offset(-16)
+        }
+
+        tokenPill.snp.makeConstraints { make in
+            make.top.equalTo(serverIcon.snp.bottom).offset(10)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalTo(copyButton.snp.left).offset(-12)
+            make.height.equalTo(28)
+        }
+
+        keyIcon.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.left.equalToSuperview().offset(8)
+            make.width.height.equalTo(12)
+        }
+
+        tokenLabel.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.left.equalTo(keyIcon.snp.right).offset(4)
+            make.right.equalToSuperview().offset(-8)
+        }
+
+        copyButton.snp.makeConstraints { make in
+            make.right.equalToSuperview().offset(-16)
+            make.centerY.equalTo(tokenPill)
+            make.height.equalTo(28)
+        }
+
+        registerButton.snp.makeConstraints { make in
+            make.right.equalToSuperview().offset(-16)
+            make.centerY.equalTo(tokenPill)
+        }
+
+        copyButton.addTarget(self, action: #selector(copyTapped), for: .touchUpInside)
+        registerButton.addTarget(self, action: #selector(registerTapped), for: .touchUpInside)
+    }
+
+    func configure(serverURL: String, deviceToken: String, isRegistered: Bool) {
+        if isRegistered {
+            urlLabel.text = serverURL
+            if deviceToken.count > 8 {
+                let prefix = deviceToken.prefix(4)
+                let suffix = deviceToken.suffix(4)
+                tokenLabel.text = "\(prefix)****\(suffix)"
+            } else {
+                tokenLabel.text = deviceToken
+            }
+            tokenLabel.textColor = ThemeTokens.Color.primary
+            copyButton.isHidden = false
+            registerButton.isHidden = true
+        } else {
+            urlLabel.text = serverURL
+            tokenLabel.text = L10n.tr("home.token_card.not_registered")
+            tokenLabel.textColor = ThemeTokens.Color.textSecondary
+            copyButton.isHidden = true
+            registerButton.isHidden = false
+        }
+    }
+
+    @objc private func copyTapped() {
+        onCopyTapped?()
+    }
+
+    @objc private func registerTapped() {
+        onRegisterTapped?()
+    }
+}
+
+class QuickActionCell: UICollectionViewCell {
+    static let identifier = "QuickActionCell"
+
+    private let stackView: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .horizontal
+        sv.distribution = .fillEqually
+        return sv
+    }()
+
+    var onActionTapped: ((Int) -> Void)?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        contentView.clipsToBounds = false
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        onActionTapped = nil
+    }
+
+    private func setupUI() {
+        contentView.addSubview(stackView)
+        stackView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+    }
+
+    func configure(actions: [(icon: LucideIcon, title: String, tintColor: UIColor, bgColor: UIColor)]) {
+        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for (index, action) in actions.enumerated() {
+            let card = createActionCard(icon: action.icon, title: action.title, tintColor: action.tintColor, bgColor: action.bgColor)
+            card.tag = index
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(cardTapped(_:)))
+            card.addGestureRecognizer(tapGesture)
+            stackView.addArrangedSubview(card)
+        }
+    }
+
+    private func createActionCard(icon: LucideIcon, title: String, tintColor: UIColor, bgColor: UIColor) -> UIView {
+        let card = UIView()
+        card.backgroundColor = .clear
+
+        let iconContainer = UIView()
+        iconContainer.backgroundColor = bgColor
+        iconContainer.layer.cornerRadius = ThemeTokens.CornerRadius.avatar
+        iconContainer.clipsToBounds = true
+
+        let iconView = UIImageView()
+        iconView.image = icon.templateImage(pointSize: 20, weight: .medium)
+        iconView.tintColor = tintColor
+        iconView.contentMode = .scaleAspectFit
+
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = ThemeTokens.Typography.caption2
+        titleLabel.textColor = ThemeTokens.Color.textSecondary
+        titleLabel.textAlignment = .center
+        titleLabel.adjustsFontSizeToFitWidth = true
+        titleLabel.minimumScaleFactor = 0.8
+        titleLabel.numberOfLines = 1
+
+        card.addSubview(iconContainer)
+        iconContainer.addSubview(iconView)
+        card.addSubview(titleLabel)
+
+        iconContainer.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(4)
+            make.centerX.equalToSuperview()
+            make.width.height.equalTo(48)
+        }
+        iconView.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.width.height.equalTo(20)
+        }
+
+        titleLabel.snp.makeConstraints { make in
+            make.top.equalTo(iconContainer.snp.bottom).offset(4)
+            make.leading.trailing.equalToSuperview().inset(4)
+        }
+
+        return card
+    }
+
+    @objc private func cardTapped(_ gesture: UITapGestureRecognizer) {
+        guard let card = gesture.view else { return }
+        onActionTapped?(card.tag)
+    }
+}
+
+class SectionHeaderView: UICollectionReusableView {
+    static let identifier = "SectionHeader"
+
+    let titleLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.metadata
+        label.textColor = ThemeTokens.Color.textTertiary
+        return label
+    }()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        addSubview(titleLabel)
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.lessThanOrEqualToSuperview().offset(-16)
+            make.centerY.equalToSuperview()
+        }
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+class CommandBannerView: UIView {
+
+    var onTap: (() -> Void)?
+    var onDismiss: (() -> Void)?
+
+    private let iconView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.tintColor = ThemeTokens.Color.primary
+        iv.image = LucideIcon.shield.templateImage(pointSize: 16, weight: .semibold)
+        return iv
+    }()
+
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.footnote
+        label.textColor = ThemeTokens.Color.primary
+        label.numberOfLines = 1
+        label.lineBreakMode = .byTruncatingTail
+        return label
+    }()
+
+    private let dismissButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage(LucideIcon.xmark.templateImage(pointSize: 14, weight: .bold), for: .normal)
+        button.tintColor = ThemeTokens.Color.textSecondary
+        return button
+    }()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupUI() {
+        backgroundColor = ThemeTokens.Color.primary.withAlphaComponent(0.08)
+        layer.cornerRadius = ThemeTokens.CornerRadius.avatar
+        clipsToBounds = true
+
+        addSubview(iconView)
+        addSubview(titleLabel)
+        addSubview(dismissButton)
+
+        iconView.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(18)
+        }
+
+        dismissButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().offset(-12)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(32)
+        }
+
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalTo(iconView.snp.trailing).offset(8)
+            make.trailing.equalTo(dismissButton.snp.leading).offset(-4)
+            make.centerY.equalToSuperview()
+        }
+
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(bannerTapped))
+        addGestureRecognizer(tapGesture)
+
+        dismissButton.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
+    }
+
+    func configure(title: String) {
+        titleLabel.text = L10n.tr("home.command.banner_format", title)
+    }
+
+    @objc private func bannerTapped() {
+        onTap?()
+    }
+
+    @objc private func dismissTapped() {
+        onDismiss?()
+    }
+}
