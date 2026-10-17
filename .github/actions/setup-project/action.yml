@@ -42,7 +42,7 @@ runs:
       shell: bash
       run: |
         xcodegen generate --spec project.yml --project .
-          if [ -z "${WBK_FRAMEWORK_PATH:-}" ] && [ ! -d ../WebBridgeKit-Framework ]; then
-            git clone --depth 1 "$WEBK_FRAMEWORK_REPO" ../WebBridgeKit-Framework
+        if [ -z "${WBK_FRAMEWORK_PATH:-}" ] && [ ! -d ../WebBridgeKit-Framework ]; then
+          git clone --depth 1 "$WEBK_FRAMEWORK_REPO" ../WebBridgeKit-Framework
           fi
         pod install
