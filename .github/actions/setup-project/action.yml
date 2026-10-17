@@ -48,7 +48,9 @@ runs:
       run: |
         set -euo pipefail
         rm -rf ../WebBridgeKit-Framework
-        git clone --depth 1 "$WEBK_FRAMEWORK_REPO" ../WebBridgeKit-Framework
+        git clone --depth 1 \
+          "https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git" \
+          ../WebBridgeKit-Framework
     - name: Install Pods
       shell: bash
       run: pod install
