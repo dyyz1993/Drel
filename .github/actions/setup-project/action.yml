@@ -39,9 +39,12 @@ runs:
 
     - name: Generate & Install
       shell: bash
+      env:
+        # The framework repository is private and cannot be fetched anonymously.
+        WEBK_FRAMEWORK_REPO: ${{ secrets.WEBK_FRAMEWORK_REPO }}
       run: |
         xcodegen generate --spec project.yml --project .
           if [ -z "${WBK_FRAMEWORK_PATH:-}" ] && [ ! -d ../WebBridgeKit-Framework ]; then
-            git clone --depth 1 https://github.com/dyyz1993/WebBridgeKit.git ../WebBridgeKit-Framework
+            git clone --depth 1 "$WEBK_FRAMEWORK_REPO" ../WebBridgeKit-Framework
           fi
         pod install
