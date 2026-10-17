@@ -47,10 +47,8 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        if [ -z "${WBK_FRAMEWORK_PATH:-}" ] && [ ! -d ../WebBridgeKit-Framework/.git ]; then
-          rm -rf ../WebBridgeKit-Framework
-          git clone --depth 1 "$WEBK_FRAMEWORK_REPO" ../WebBridgeKit-Framework
-        fi
+        rm -rf ../WebBridgeKit-Framework
+        git clone --depth 1 "$WEBK_FRAMEWORK_REPO" ../WebBridgeKit-Framework
     - name: Install Pods
       shell: bash
       run: pod install
