@@ -65,8 +65,12 @@ jobs:
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
+        with:
+          framework-repo: ${{ secrets.WEBK_FRAMEWORK_REPO }}
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
+        with:
+          framework-repo: ${{ secrets.WEBK_FRAMEWORK_REPO }}
 
       - name: Verify deliverable boundaries
         run: bash tools/verify-deliverable-boundaries.sh
@@ -126,6 +130,8 @@ jobs:
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
+        with:
+          framework-repo: ${{ secrets.WEBK_FRAMEWORK_REPO }}
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
 
@@ -303,6 +309,8 @@ jobs:
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
+        with:
+          framework-repo: ${{ secrets.WEBK_FRAMEWORK_REPO }}
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
 
@@ -532,6 +540,8 @@ jobs:
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
+        with:
+          framework-repo: ${{ secrets.WEBK_FRAMEWORK_REPO }}
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
 
