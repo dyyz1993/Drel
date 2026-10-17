@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Drel Container-Only Surface Probe</title>
+</head>
+<body>
+  <pre id="report">Running container-only surface check...</pre>
+  <script>
+    (function () {
+      const handlers = (window.webkit && window.webkit.messageHandlers) || {};
+      const checks = [
+        ['window.BarkBridge', typeof window.BarkBridge === 'undefined'],
+        ['window.WebBridgeKit', typeof window.WebBridgeKit === 'undefined'],
+        ['messageHandlers.BarkBridge', typeof handlers.BarkBridge === 'undefined'],
+        ['messageHandlers.barkBridge', typeof handlers.barkBridge === 'undefined']
+      ];
+      const passed = checks.every(([, absent]) => absent);
+      const lines = [
+        passed
+          ? 'PASS — container-only: no native Bridge surface detected'
+          : 'FAIL — native Bridge surface detected in container-only mode',
+        ...checks.map(([name, absent]) => `${name}: ${absent ? 'absent' : 'present'}`)
+      ];
+      document.getElementById('report').textContent = lines.join('\n');
+    })();
+  </script>
+</body>
+</html>

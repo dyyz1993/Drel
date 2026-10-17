@@ -1,0 +1,77 @@
+name: Build IPA
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: 'Build configuration'
+        required: true
+        default: 'Release'
+        type: choice
+        options:
+          - Release
+          - Debug
+
+permissions:
+  contents: write
+
+jobs:
+  build-ipa:
+    name: Build IPA
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Setup Project
+        uses: ./.github/actions/setup-project
+        env:
+          WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
+
+      - name: Build Archive (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -workspace Drel.xcworkspace \
+            -scheme Drel \
+            -configuration ${{ github.event.inputs.configuration || 'Release' }} \
+            -archivePath build/Drel.xcarchive \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            -resultBundlePath build/ArchiveResults.xcresult \
+            | xcpretty --color
+
+      - name: Export IPA (unsigned)
+        run: |
+          mkdir -p build/Payload
+          cp -r build/Drel.xcarchive/Products/Applications/Drel.app build/Payload/
+          cd build
+          zip -r Drel.ipa Payload/
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Drel-${{ github.event.inputs.configuration || 'Release' }}
+          path: |
+            build/Drel.ipa
+            build/ArchiveResults.xcresult
+          retention-days: 30
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Drel.ipa
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

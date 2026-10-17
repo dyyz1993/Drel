@@ -1,0 +1,564 @@
+//
+//  APIKeyManageViewController.swift
+//  SuperApp
+//
+//  Created on 2025-01-29.
+//  Copyright © 2025年 WebBridgeKit. All rights reserved.
+//
+
+import UIKit
+import SnapKit
+import RxSwift
+import RxCocoa
+import WebBridgeKit
+
+/// 密钥管理视图控制器
+class APIKeyManageViewController: BaseViewController<APIKeyManageViewModel> {
+
+    // MARK: - UI Components
+
+    private let scrollView: UIScrollView = {
+        let scroll = UIScrollView()
+        scroll.backgroundColor = .clear
+        return scroll
+    }()
+
+    private let contentView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .clear
+        return view
+    }()
+
+    // 永久密钥卡片
+    private let permanentKeyCard: UIView = {
+        let view = UIView()
+        view.backgroundColor = ThemeTokens.Color.surface
+        view.layer.cornerRadius = ThemeTokens.CornerRadius.xl
+        view.layer.masksToBounds = true
+        return view
+    }()
+
+    private let permanentKeyIcon: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = LucideIcon.key.templateImage(pointSize: 24, weight: .semibold)
+        imageView.contentMode = .scaleAspectFit
+        imageView.tintColor = ThemeTokens.Color.success
+        imageView.backgroundColor = ThemeTokens.Color.success.withAlphaComponent(0.15)
+        imageView.layer.cornerRadius = ThemeTokens.CornerRadius.lg
+        imageView.layer.masksToBounds = true
+        imageView.accessibilityLabel = "密钥图标"
+        return imageView
+    }()
+
+    private let permanentKeyTitle: UILabel = {
+        let label = UILabel()
+        label.text = L10n.tr("apikey.manage.permanent_key")
+        label.font = ThemeTokens.Typography.headline
+        label.textColor = ThemeTokens.Color.text
+        return label
+    }()
+
+    private let permanentKeyValue: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.monospaceLargeMedium
+        label.textColor = ThemeTokens.Color.textSecondary
+        label.numberOfLines = 1
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.8
+        return label
+    }()
+
+    private let copyPermanentKeyButton: UIButton = {
+        let button = UIButton(type: .system)
+        let image = LucideIcon.copy.templateImage(pointSize: 18, weight: .medium)
+        button.setImage(image, for: .normal)
+        button.setTitle(" \(L10n.tr("common.copy"))", for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.subheadline
+        button.tintColor = ThemeTokens.Color.primary
+        button.accessibilityLabel = "复制密钥"
+        return button
+    }()
+
+    private let refreshKeyButton: UIButton = {
+        let button = UIButton(type: .system)
+        let image = LucideIcon.refresh.templateImage(pointSize: 18, weight: .medium)
+        button.setImage(image, for: .normal)
+        button.setTitle(" \(L10n.tr("apikey.manage.refresh"))", for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.subheadline
+        button.tintColor = ThemeTokens.Color.warning
+        button.accessibilityLabel = "刷新密钥"
+        return button
+    }()
+
+    private let testPermanentKeyButton: UIButton = {
+        let button = UIButton(type: .system)
+        let image = LucideIcon.paperplane.templateImage(pointSize: 18, weight: .medium)
+        button.setImage(image, for: .normal)
+        button.setTitle(" \(L10n.tr("apikey.manage.test"))", for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.subheadline
+        button.tintColor = ThemeTokens.Color.success
+        button.accessibilityLabel = "测试推送"
+        return button
+    }()
+
+    private let permanentKeySeparator: UIView = {
+        let view = UIView()
+        view.backgroundColor = ThemeTokens.Color.divider
+        return view
+    }()
+
+    private let examplesButton: UIButton = {
+        let button = UIButton(type: .system)
+        let image = LucideIcon.docText.templateImage(pointSize: 16, weight: .medium)
+        button.setImage(image, for: .normal)
+        button.setTitle(" \(L10n.tr("apikey.manage.view_examples"))", for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.footnote
+        button.tintColor = ThemeTokens.Color.primary
+        button.contentHorizontalAlignment = .left
+        button.accessibilityLabel = "查看示例"
+        return button
+    }()
+
+    // 临时密钥标题
+    private let temporaryKeysHeader: UILabel = {
+        let label = UILabel()
+        label.text = L10n.tr("apikey.manage.temporary_keys")
+        label.font = ThemeTokens.Typography.title3
+        label.textColor = ThemeTokens.Color.text
+        return label
+    }()
+
+    private let temporaryKeysDescription: UILabel = {
+        let label = UILabel()
+        label.text = L10n.tr("apikey.manage.temporary_keys_desc")
+        label.font = ThemeTokens.Typography.footnote
+        label.textColor = ThemeTokens.Color.textSecondary
+        label.numberOfLines = 0
+        return label
+    }()
+
+    // 临时密钥表格
+    private lazy var tableView: UITableView = {
+        let table = UITableView(frame: .zero, style: .plain)
+        table.backgroundColor = .clear
+        table.separatorStyle = .none
+        table.register(APIKeyCell.self, forCellReuseIdentifier: APIKeyCell.identifier)
+        table.tableFooterView = UIView()
+        table.isScrollEnabled = false
+        return table
+    }()
+
+    // Bark 配置卡片
+    private let barkConfigCard: UIView = {
+        let view = UIView()
+        view.backgroundColor = ThemeTokens.Color.surface
+        view.layer.cornerRadius = ThemeTokens.CornerRadius.xl
+        view.layer.masksToBounds = true
+        return view
+    }()
+
+    private let barkConfigTitle: UILabel = {
+        let label = UILabel()
+        label.text = L10n.tr("apikey.manage.bark_config_title")
+        label.font = ThemeTokens.Typography.callout
+        label.textColor = ThemeTokens.Color.text
+        label.numberOfLines = 0
+        return label
+    }()
+
+    private let barkKeyTextField: UITextField = {
+        let tf = UITextField()
+        tf.placeholder = L10n.tr("apikey.manage.bark_key_placeholder")
+        tf.font = ThemeTokens.Typography.monospaceLarge
+        tf.borderStyle = .none
+        tf.backgroundColor = ThemeTokens.Color.background
+        tf.layer.cornerRadius = ThemeTokens.CornerRadius.md
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
+        tf.leftView = paddingView
+        tf.leftViewMode = .always
+        return tf
+    }()
+
+    private let barkServerTextField: UITextField = {
+        let tf = UITextField()
+        tf.placeholder = L10n.tr("apikey.manage.bark_server_placeholder")
+        tf.font = ThemeTokens.Typography.monospaceLarge
+        tf.borderStyle = .none
+        tf.backgroundColor = ThemeTokens.Color.background
+        tf.layer.cornerRadius = ThemeTokens.CornerRadius.md
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
+        tf.leftView = paddingView
+        tf.leftViewMode = .always
+        return tf
+    }()
+
+    private let saveBarkConfigButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(L10n.tr("apikey.manage.save_config"), for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.subheadline
+        button.backgroundColor = ThemeTokens.Color.primary
+        button.setTitleColor(ThemeTokens.Color.surface, for: .normal)
+        button.layer.cornerRadius = ThemeTokens.CornerRadius.md
+        button.accessibilityLabel = "保存配置"
+        return button
+    }()
+
+    // 空状态视图
+    private let emptyStateView = EmptyStateView()
+
+    // MARK: - Properties
+
+    var currentTemporaryKeys: [APIKey] = []
+    let deleteKeySubject = PublishSubject<String>()
+    let refreshKeySubject = PublishSubject<Void>()
+
+    // MARK: - Lifecycle
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = L10n.tr("apikey.manage.title")
+        setupUI()
+        setupRightBarButton()
+    }
+
+    // MARK: - Setup UI
+
+    private func setupUI() {
+        view.backgroundColor = ThemeTokens.Color.background
+
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+
+        scrollView.snp.makeConstraints { make in
+            make.edges.equalTo(view.safeAreaLayoutGuide)
+        }
+
+        contentView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+            make.width.equalToSuperview()
+        }
+
+        // 添加永久密钥卡片
+        contentView.addSubview(permanentKeyCard)
+        permanentKeyCard.addSubview(permanentKeyIcon)
+        permanentKeyCard.addSubview(permanentKeyTitle)
+        permanentKeyCard.addSubview(permanentKeyValue)
+        permanentKeyCard.addSubview(copyPermanentKeyButton)
+        permanentKeyCard.addSubview(refreshKeyButton)
+        permanentKeyCard.addSubview(testPermanentKeyButton)
+        permanentKeyCard.addSubview(permanentKeySeparator)
+        permanentKeyCard.addSubview(examplesButton)
+
+        permanentKeyCard.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(16)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+        }
+
+        permanentKeyIcon.snp.makeConstraints { make in
+            make.left.equalToSuperview().offset(16)
+            make.top.equalToSuperview().offset(16)
+            make.width.height.equalTo(48)
+        }
+
+        permanentKeyTitle.snp.makeConstraints { make in
+            make.left.equalTo(permanentKeyIcon.snp.right).offset(12)
+            make.top.equalToSuperview().offset(18)
+            make.right.equalToSuperview().offset(-16)
+        }
+
+        permanentKeyValue.snp.makeConstraints { make in
+            make.left.equalTo(permanentKeyIcon.snp.right).offset(12)
+            make.top.equalTo(permanentKeyTitle.snp.bottom).offset(8)
+            make.right.equalToSuperview().offset(-16)
+        }
+
+        copyPermanentKeyButton.snp.makeConstraints { make in
+            make.left.equalTo(permanentKeyIcon.snp.right).offset(12)
+            make.top.equalTo(permanentKeyValue.snp.bottom).offset(12)
+            make.height.equalTo(ThemeTokens.ComponentContract.TapTarget.minimumHeight)
+        }
+
+        refreshKeyButton.snp.makeConstraints { make in
+            make.left.equalTo(copyPermanentKeyButton.snp.right).offset(12)
+            make.centerY.equalTo(copyPermanentKeyButton)
+            make.height.equalTo(ThemeTokens.ComponentContract.TapTarget.minimumHeight)
+        }
+
+        testPermanentKeyButton.snp.makeConstraints { make in
+            make.left.equalTo(refreshKeyButton.snp.right).offset(12)
+            make.centerY.equalTo(copyPermanentKeyButton)
+            make.height.equalTo(ThemeTokens.ComponentContract.TapTarget.minimumHeight)
+        }
+
+        permanentKeySeparator.snp.makeConstraints { make in
+            make.top.equalTo(copyPermanentKeyButton.snp.bottom).offset(12)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+            make.height.equalTo(0.5)
+        }
+
+        examplesButton.snp.makeConstraints { make in
+            make.top.equalTo(permanentKeySeparator.snp.bottom).offset(12)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+            make.height.equalTo(44)
+            make.bottom.equalToSuperview().offset(-16)
+        }
+
+        // 添加临时密钥标题
+        contentView.addSubview(temporaryKeysHeader)
+        temporaryKeysHeader.snp.makeConstraints { make in
+            make.top.equalTo(permanentKeyCard.snp.bottom).offset(24)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+        }
+
+        contentView.addSubview(temporaryKeysDescription)
+        temporaryKeysDescription.snp.makeConstraints { make in
+            make.top.equalTo(temporaryKeysHeader.snp.bottom).offset(4)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+        }
+
+        // 添加表格
+        contentView.addSubview(tableView)
+        contentView.addSubview(emptyStateView)
+
+        // 添加 Bark 配置
+        contentView.addSubview(barkConfigCard)
+        barkConfigCard.addSubview(barkConfigTitle)
+        barkConfigCard.addSubview(barkKeyTextField)
+        barkConfigCard.addSubview(barkServerTextField)
+        barkConfigCard.addSubview(saveBarkConfigButton)
+
+        tableView.snp.makeConstraints { make in
+            make.top.equalTo(temporaryKeysDescription.snp.bottom).offset(12)
+            make.left.equalToSuperview()
+            make.right.equalToSuperview()
+            make.height.equalTo(200) // 初始高度
+        }
+
+        barkConfigCard.snp.makeConstraints { make in
+            make.top.equalTo(tableView.snp.bottom).offset(24)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+            make.bottom.equalToSuperview().offset(-32)
+        }
+
+        barkConfigTitle.snp.makeConstraints { make in
+            make.top.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+        }
+
+        barkKeyTextField.snp.makeConstraints { make in
+            make.top.equalTo(barkConfigTitle.snp.bottom).offset(12)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+            make.height.equalTo(44)
+        }
+
+        barkServerTextField.snp.makeConstraints { make in
+            make.top.equalTo(barkKeyTextField.snp.bottom).offset(12)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+            make.height.equalTo(44)
+        }
+
+        saveBarkConfigButton.snp.makeConstraints { make in
+            make.top.equalTo(barkServerTextField.snp.bottom).offset(16)
+            make.left.equalToSuperview().offset(16)
+            make.right.equalToSuperview().offset(-16)
+            make.height.equalTo(44)
+            make.bottom.equalToSuperview().offset(-16)
+        }
+
+        emptyStateView.snp.makeConstraints { make in
+            make.top.equalTo(temporaryKeysDescription.snp.bottom).offset(12)
+            make.left.equalToSuperview()
+            make.right.equalToSuperview()
+            make.height.equalTo(200)
+        }
+
+        // 空状态视图配置
+        emptyStateView.configure(
+            icon: "clock.badge.xmark",
+            title: L10n.tr("apikey.manage.empty_title"),
+            description: L10n.tr("apikey.manage.empty_description"),
+            actionTitle: nil
+        )
+
+        // 按钮事件
+        copyPermanentKeyButton.addTarget(self, action: #selector(copyPermanentKeyTapped), for: .touchUpInside)
+        refreshKeyButton.addTarget(self, action: #selector(refreshKeyTapped), for: .touchUpInside)
+        testPermanentKeyButton.addTarget(self, action: #selector(testPermanentKeyTapped), for: .touchUpInside)
+        examplesButton.addTarget(self, action: #selector(showExamplesTapped), for: .touchUpInside)
+        saveBarkConfigButton.addTarget(self, action: #selector(saveBarkConfigTapped), for: .touchUpInside)
+
+        // 初始化加载配置
+        barkKeyTextField.text = viewModel.getBarkKey()
+        barkServerTextField.text = viewModel.getBarkServer()
+    }
+
+    private func setupRightBarButton() {
+        let addButton = UIBarButtonItem(
+            image: LucideIcon.plus.image(),
+            style: .plain,
+            target: self,
+            action: #selector(addTemporaryKeyTapped)
+        )
+        addButton.tintColor = ThemeTokens.Color.primary
+        addButton.accessibilityLabel = "添加临时密钥"
+        navigationItem.rightBarButtonItem = addButton
+    }
+
+    // MARK: - Bind ViewModel
+
+    override func bindViewModel() {
+        let copyKey = copyPermanentKeyButton.rx.tap.asDriver()
+        let refreshKey = refreshKeySubject.asDriver(onErrorJustReturn: ())
+        let addTemporaryKey = Driver<Void>.never() // 通过按钮直接处理
+        let deleteKey = deleteKeySubject.asDriver(onErrorJustReturn: "")
+        let showExamples = examplesButton.rx.tap.asDriver()
+
+        let input = APIKeyManageViewModel.Input(
+            copyKey: copyKey,
+            refreshKey: refreshKey,
+            addTemporaryKey: addTemporaryKey,
+            deleteKey: deleteKey,
+            showExamples: showExamples
+        )
+
+        let output = viewModel.transform(input: input)
+
+        // 绑定永久密钥
+        output.permanentKey
+            .drive(onNext: { [weak self] key in
+                self?.permanentKeyValue.text = self?.viewModel.maskKey(key)
+            })
+            .disposed(by: rx)
+
+        // 绑定临时密钥列表
+        output.temporaryKeys
+            .drive(onNext: { [weak self] keys in
+                self?.updateTableView(with: keys)
+            })
+            .disposed(by: rx)
+
+        // 刷新成功
+        output.refreshSuccess
+            .drive(onNext: { [weak self] success in
+                if success {
+                    self?.showRefreshSuccess()
+                }
+            })
+            .disposed(by: rx)
+
+        // 复制成功
+        output.copySuccess
+            .drive(onNext: { [weak self] in
+                self?.showCopySuccess()
+            })
+            .disposed(by: rx)
+
+        // 添加临时密钥成功
+        output.addedTemporaryKey
+            .drive(onNext: { [weak self] key in
+                if key != nil {
+                    self?.showAddSuccess()
+                }
+            })
+            .disposed(by: rx)
+
+        // 显示使用示例
+        output.showExamples
+            .drive(onNext: { [weak self] in
+                self?.showExamples()
+            })
+            .disposed(by: rx)
+
+        // 设置 TableView 数据源和代理
+        tableView.dataSource = self
+        tableView.delegate = self
+
+        // 绑定测试推送结果
+        output.testPushResult
+            .drive(onNext: { [weak self] result in
+                self?.showTestPushResult(success: result.success, message: result.message)
+            })
+            .disposed(by: rx)
+    }
+
+    // MARK: - Actions
+
+    @objc private func copyPermanentKeyTapped() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
+    @objc private func refreshKeyTapped() {
+        let alert = UIAlertController(
+            title: L10n.tr("apikey.manage.refresh_confirm_title"),
+            message: L10n.tr("apikey.manage.refresh_confirm_message"),
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: L10n.tr("common.cancel"), style: .cancel))
+        alert.addAction(UIAlertAction(title: L10n.tr("apikey.manage.refresh_confirm"), style: .destructive) { [weak self] _ in
+            self?.refreshKeySubject.onNext(())
+        })
+
+        present(alert, animated: true)
+    }
+
+    @objc private func testPermanentKeyTapped() {
+        viewModel.sendPermanentKeyTestPush()
+    }
+
+    @objc private func addTemporaryKeyTapped() {
+        showKeyCreationDialog()
+    }
+
+    @objc private func saveBarkConfigTapped() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        let key = barkKeyTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let server = barkServerTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        viewModel.saveBarkConfig(key: key, server: server)
+
+        let alert = UIAlertController(title: L10n.tr("apikey.manage.save_success"), message: L10n.tr("apikey.manage.bark_save_message"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: L10n.tr("common.ok"), style: .default))
+        present(alert, animated: true)
+
+        view.endEditing(true)
+    }
+
+    @objc private func showExamplesTapped() {
+        // 已经通过 RxSwift 绑定处理
+    }
+
+    // MARK: - Private Methods
+
+    func updateTableView(with keys: [APIKey]) {
+        currentTemporaryKeys = keys
+
+        if keys.isEmpty {
+            tableView.isHidden = true
+            emptyStateView.isHidden = false
+            contentView.layoutIfNeeded()
+        } else {
+            tableView.isHidden = false
+            emptyStateView.isHidden = true
+
+            let rowCount = keys.count
+            let rowHeight: CGFloat = 80
+            let headerHeight: CGFloat = 0
+            let newHeight = CGFloat(rowCount) * rowHeight + headerHeight
+
+            tableView.snp.updateConstraints { make in
+                make.height.equalTo(newHeight)
+            }
+
+            tableView.reloadData()
+        }
+    }
+}
