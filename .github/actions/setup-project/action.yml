@@ -42,10 +42,7 @@ runs:
       shell: bash
       run: |
         xcodegen generate --spec project.yml --project .
-        pod install
-      # shellcheck disable=SC2015 # clone may be legitimately skipped on cache hits
-      # A separate step avoids YAML block-indentation silently merging the
-      # conditional into the first xcodegen command.
+      # Generate first; framework and pods are handled by later steps.
     - name: Fetch WebBridgeKit Framework
       shell: bash
       run: |
