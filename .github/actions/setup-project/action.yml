@@ -2,6 +2,11 @@ name: 'Setup Xcode Project'
 description: 'Install deps, generate project, pod install, and ensure formatter tooling exists'
 runs:
   using: 'composite'
+  inputs:
+    framework-repo:
+      description: 'Private WebBridgeKit-Framework clone URL'
+      required: false
+      default: ''
   steps:
     - name: Cache Homebrew
       id: cache-brew
@@ -39,12 +44,11 @@ runs:
 
     - name: Generate & Install
       shell: bash
-      env:
-        # The framework repository is private and cannot be fetched anonymously.
-        WEBK_FRAMEWORK_REPO: ${{ secrets.WEBK_FRAMEWORK_REPO }}
+      # Workflows pass secrets into this input; composite actions cannot
+      # access the repository secrets context directly.
       run: |
         xcodegen generate --spec project.yml --project .
           if [ -z "${WBK_FRAMEWORK_PATH:-}" ] && [ ! -d ../WebBridgeKit-Framework ]; then
-            git clone --depth 1 "$WEBK_FRAMEWORK_REPO" ../WebBridgeKit-Framework
+            git clone --depth 1 "${{ inputs.framework-repo }}" ../WebBridgeKit-Framework
           fi
         pod install
