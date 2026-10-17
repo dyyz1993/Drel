@@ -31,10 +31,9 @@ jobs:
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
-        with:
-          framework-repo: ${{ secrets.WEBK_FRAMEWORK_REPO }}
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
+          WEBK_FRAMEWORK_REPO: ${{ secrets.WEBK_FRAMEWORK_REPO }}
 
       - name: Build Archive (unsigned)
         run: |
