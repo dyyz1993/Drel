@@ -1,0 +1,876 @@
+//
+//  InboxViewController+Cells.swift
+//  SuperApp
+//
+//  Inbox cell components extracted from InboxViewController.
+//
+
+import UIKit
+import SnapKit
+import Kingfisher
+import WebBridgeKit
+
+// MARK: - InboxMessageCellWrapper
+
+class InboxMessageCellWrapper: UITableViewCell {
+
+    static let identifier = "InboxMessageCellWrapper"
+
+    private let cardView = UIView()
+    private let iconContainer = UIView()
+    private let iconImageView = UIImageView()
+    private let unreadAccent = UIView()
+    private let unreadDot = UIView()
+    private let pinIconView: UIImageView = {
+        let iv = UIImageView()
+        iv.image = LucideIcon.pin.templateImage(pointSize: ThemeTokens.Icons.Sizes.xs)
+        iv.tintColor = ThemeTokens.Color.primary
+        iv.contentMode = .scaleAspectFit
+        iv.isHidden = true
+        return iv
+    }()
+    private let sourceLabel = UILabel()
+    private let timestampLabel = UILabel()
+    private let titleLabel = UILabel()
+    private let previewLabel = UILabel()
+    private let stateBadge = UILabel()
+    private let copyButton = UIButton(type: .system)
+    private var representedMessageID: String?
+    var onCopy: (() -> Void)?
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    /// Cancels any in-flight group-entrance animation so a cell reused while
+    /// animating never renders with a stale alpha/transform. A collapsed
+    /// row's cached identity must not leak into the next configuration.
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        representedMessageID = nil
+        contentView.layer.removeAllAnimations()
+        contentView.alpha = 1
+        contentView.transform = .identity
+        collapsedIdentity = nil
+        onCopy = nil
+    }
+
+    /// Pressed feedback recolors the card itself: the highlight therefore
+    /// follows the rounded corners by construction and never draws outside
+    /// them, unlike the system row highlight this replaces.
+    override func setHighlighted(_ highlighted: Bool, animated: Bool) {
+        super.setHighlighted(highlighted, animated: animated)
+        let apply = {
+            self.cardView.backgroundColor = highlighted
+                ? ThemeTokens.Color.backgroundSecondary
+                : ThemeTokens.Color.surface
+        }
+        if animated {
+            UIView.animate(withDuration: ThemeTokens.Animation.fast.duration, animations: apply)
+        } else {
+            apply()
+        }
+    }
+
+    // CALayer borderColor holds the CGColor resolved at assignment and never
+    // re-resolves a dynamic token color: without this, cells created under the
+    // previous theme keep dark-mode separator borders after an in-session
+    // switch to light, so the list renders with a mix of bordered and
+    // borderless cards.
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle else { return }
+        cardView.layer.borderColor = ThemeTokens.Color.separator
+            .resolvedColor(with: traitCollection)
+            .cgColor
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        iconContainer.layer.cornerRadius = iconContainer.bounds.height / 2
+        iconImageView.layer.cornerRadius = iconImageView.bounds.height / 2
+        iconImageView.clipsToBounds = true
+    }
+
+    private func setupUI() {
+        backgroundView = UIView()
+        backgroundView?.backgroundColor = ThemeTokens.Color.background
+        contentView.backgroundColor = .clear
+        // The accordion collapses rows by animating their height to zero; the
+        // card content must be clipped so the compression reads as folding.
+        contentView.clipsToBounds = true
+        accessibilityIdentifier = "InboxMessageCell"
+        // The system selection highlight is a full-width square that bleeds
+        // past the card's rounded corners and 4pt insets; selection stays
+        // enabled for tap-to-open but the pressed feedback is drawn on the
+        // card itself (setHighlighted below).
+        selectionStyle = .none
+
+        cardView.layer.cornerRadius = ThemeTokens.CornerRadius.row
+        cardView.layer.borderWidth = 1
+        cardView.layer.borderColor = ThemeTokens.Color.separator.cgColor
+        cardView.clipsToBounds = true
+        contentView.addSubview(cardView)
+        cardView.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview()
+            // Top pinned + bottom at priority 999: at the resting 80pt row
+            // this yields the intended 72pt card with 4pt insets (fully
+            // determined, no ambiguity), while the accordion's height
+            // animation to zero can break the bottom edge without conflict —
+            // the card then compresses from its top edge, clipped by bounds.
+            // A centerY+inequalities variant (tried earlier) left the height
+            // underconstrained and cells resolved to random sizes.
+            make.top.equalToSuperview().offset(ThemeTokens.Spacing.xs)
+            make.bottom.equalToSuperview().offset(-ThemeTokens.Spacing.xs).priority(999)
+        }
+
+        unreadAccent.isHidden = true
+
+        // A remote push icon is a message avatar, not an app tile. Its shape
+        // is finalized from the actual square bounds in layoutSubviews.
+        iconContainer.layer.cornerRadius = 20
+        iconContainer.clipsToBounds = true
+        cardView.addSubview(iconContainer)
+        iconContainer.addSubview(iconImageView)
+        iconContainer.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(ThemeTokens.Spacing.md)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(40)
+        }
+        iconImageView.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.width.height.equalTo(ThemeTokens.Icons.Sizes.md)
+        }
+
+        unreadDot.layer.cornerRadius = 3
+        unreadDot.backgroundColor = ThemeTokens.Color.primary
+        cardView.addSubview(unreadDot)
+        unreadDot.snp.makeConstraints { make in
+            make.top.equalTo(iconContainer.snp.top).offset(-1)
+            make.trailing.equalTo(iconContainer.snp.trailing).offset(1)
+            make.width.height.equalTo(6)
+        }
+
+        sourceLabel.font = ThemeTokens.Typography.metadata
+        sourceLabel.textColor = ThemeTokens.Color.textSecondary
+        sourceLabel.lineBreakMode = .byTruncatingTail
+        timestampLabel.font = ThemeTokens.Typography.metadata
+        timestampLabel.textColor = ThemeTokens.Color.textTertiary
+        timestampLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        stateBadge.font = ThemeTokens.Typography.caption
+        stateBadge.textAlignment = .center
+        stateBadge.layer.cornerRadius = ThemeTokens.CornerRadius.xs
+        stateBadge.clipsToBounds = true
+        stateBadge.snp.makeConstraints { make in
+            make.height.equalTo(18)
+        }
+
+        let sourceRow = UIStackView(arrangedSubviews: [pinIconView, sourceLabel, stateBadge, UIView(), timestampLabel])
+        sourceRow.axis = .horizontal
+        sourceRow.alignment = .center
+        sourceRow.spacing = ThemeTokens.Spacing.sm
+
+        pinIconView.snp.makeConstraints { make in
+            make.width.height.equalTo(ThemeTokens.Icons.Sizes.xs)
+        }
+
+        titleLabel.font = ThemeTokens.Typography.rowTitle
+        titleLabel.textColor = ThemeTokens.Color.text
+        titleLabel.numberOfLines = 1
+        titleLabel.lineBreakMode = .byTruncatingTail
+
+        previewLabel.font = ThemeTokens.Typography.subheadline
+        previewLabel.textColor = ThemeTokens.Color.textSecondary
+        previewLabel.numberOfLines = 1
+        previewLabel.lineBreakMode = .byTruncatingTail
+
+        copyButton.setImage(LucideIcon.copy.templateImage(pointSize: ThemeTokens.Icons.Sizes.sm), for: .normal)
+        copyButton.tintColor = ThemeTokens.Color.primary
+        copyButton.backgroundColor = ThemeTokens.Color.primarySoft
+        copyButton.layer.cornerRadius = ThemeTokens.CornerRadius.sm
+        copyButton.addTarget(self, action: #selector(copyTapped), for: .touchUpInside)
+        copyButton.accessibilityLabel = "复制消息内容"
+        cardView.addSubview(copyButton)
+        // The copy button is the single right-side accessory: an extra edge
+        // chevron duplicated the whole-row-tap affordance and crowded the
+        // date/button zone.
+        copyButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(ThemeTokens.Spacing.md)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(36)
+        }
+
+        let textStack = UIStackView(arrangedSubviews: [sourceRow, titleLabel, previewLabel])
+        textStack.axis = .vertical
+        textStack.spacing = 2
+        cardView.addSubview(textStack)
+        textStack.snp.makeConstraints { make in
+            make.leading.equalTo(iconContainer.snp.trailing).offset(ThemeTokens.Spacing.md)
+            // Vertical insets of 8pt (not md/12): the 72pt card must clear
+            // its three text rows while keeping the list dense enough for
+            // seven-plus cards per screen.
+            make.top.bottom.equalToSuperview().inset(ThemeTokens.Spacing.sm)
+            make.trailing.equalTo(copyButton.snp.leading).offset(-ThemeTokens.Spacing.sm)
+        }
+
+    }
+
+    /// Collapsed rows persist at zero height (content clipped away, impossible
+    /// to hit-test); their accessibility subtree is additionally hidden and
+    /// identifiers stripped so hidden cards are not exposed to VoiceOver or UI
+    /// tests. Both matter: zero-frame descendant elements can break assistive
+    /// snapshots when enough of them accumulate. Visual hiding is NOT needed —
+    /// zero height plus clipping already renders nothing.
+    func setCollapsedAccessibility(_ collapsed: Bool) {
+        accessibilityElementsHidden = collapsed
+        if collapsed {
+            if accessibilityIdentifier != nil {
+                collapsedIdentity = accessibilityIdentifier
+            }
+            accessibilityIdentifier = nil
+            cardView.accessibilityIdentifier = nil
+        } else if let identity = collapsedIdentity {
+            accessibilityIdentifier = identity
+            cardView.accessibilityIdentifier = "\(identity).content"
+        }
+        collapsedIdentity = collapsed ? collapsedIdentity : nil
+    }
+
+    private var collapsedIdentity: String?
+
+    func configure(with message: StoredMessage, isPinned: Bool = false) {
+        representedMessageID = message.id
+        collapsedIdentity = nil
+        let presentation = NotificationPresentation(message: message)
+        accessibilityIdentifier = "notification.card.\(message.id)"
+        cardView.accessibilityIdentifier = "notification.card.\(message.id).content"
+        cardView.backgroundColor = ThemeTokens.Color.surface
+        // Queued cells sit outside the window and miss the trait-change
+        // callback, so dequeued instances must re-resolve the border too.
+        cardView.layer.borderColor = ThemeTokens.Color.separator
+            .resolvedColor(with: traitCollection)
+            .cgColor
+        unreadAccent.isHidden = true
+        pinIconView.isHidden = !isPinned
+
+        iconContainer.backgroundColor = presentation.tintColor.withAlphaComponent(0.12)
+        iconImageView.image = presentation.icon.templateImage(pointSize: ThemeTokens.Icons.Sizes.md)
+        iconImageView.tintColor = presentation.tintColor
+        iconImageView.contentMode = .scaleAspectFit
+        iconImageView.accessibilityIdentifier = "notification.icon.\(message.id)"
+        iconImageView.snp.updateConstraints { make in
+            make.width.height.equalTo(ThemeTokens.Icons.Sizes.md)
+        }
+        loadCustomIconIfNeeded(message)
+        unreadDot.isHidden = message.isRead
+        sourceLabel.text = presentation.source
+        timestampLabel.text = Self.timeText(for: message.receivedAt)
+        titleLabel.text = message.payload.title
+        titleLabel.font = message.isRead ? ThemeTokens.Typography.rowTitle : ThemeTokens.Typography.sectionTitle
+        previewLabel.text = presentation.preview
+        previewLabel.accessibilityIdentifier = "notification.preview.\(message.id)"
+        copyButton.accessibilityIdentifier = "notification.copy.\(message.id)"
+
+        configureBadge(stateBadge, title: presentation.stateLabel, color: presentation.tintColor)
+        stateBadge.accessibilityIdentifier = presentation.stateLabel == nil
+            ? nil
+            : "notification.state.\(message.id)"
+    }
+
+    /// APNs cannot replace an app's system notification icon. `icon` is a
+    /// Drel message-avatar URL, rendered in the inbox (and in message detail)
+    /// after the push has been received by the app.
+    private func loadCustomIconIfNeeded(_ message: StoredMessage) {
+        guard let source = message.payload.iconURL,
+              let url = URL(string: source),
+              url.scheme?.lowercased() == "https",
+              url.host?.isEmpty == false
+        else { return }
+
+        iconImageView.accessibilityIdentifier = "notification.customIcon.\(message.id)"
+        // Kingfisher disk cache (30-day expiry, configured in AppDelegate):
+        // the avatar must not re-download on every inbox visit and must
+        // render offline. setImage cancels the cell's previous KF task.
+        iconImageView.kf.setImage(with: url) { [weak self] result in
+            guard let self,
+                  self.representedMessageID == message.id,
+                  case .success = result
+            else { return }
+            self.iconImageView.tintColor = nil
+            self.iconImageView.contentMode = .scaleAspectFill
+            self.iconImageView.snp.updateConstraints { make in
+                make.width.height.equalTo(40)
+            }
+        }
+    }
+
+    @objc private func copyTapped() {
+        onCopy?()
+    }
+
+    private func configureBadge(_ badge: UILabel, title: String?, color: UIColor) {
+        badge.text = title.map { "  \($0)  " }
+        badge.isHidden = title == nil
+        badge.textColor = color
+        badge.backgroundColor = color.withAlphaComponent(0.10)
+    }
+
+    private static func timeText(for date: Date) -> String {
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.dateFormat = calendar.isDateInToday(date) ? "HH:mm" : "M/d"
+        return formatter.string(from: date)
+    }
+}
+
+private struct NotificationPresentation {
+    let source: String
+    let preview: String
+    let stateLabel: String?
+    let icon: LucideIcon
+    let tintColor: UIColor
+
+    init(message: StoredMessage) {
+        let payload = message.payload
+        source = Self.source(for: payload)
+        preview = Self.preview(for: message)
+        stateLabel = Self.stateLabel(payload: payload)
+        (icon, tintColor) = Self.style(for: payload)
+    }
+
+    private static func source(for payload: MessagePayload) -> String {
+        if let subtitle = payload.subtitle?.trimmingCharacters(in: .whitespacesAndNewlines), !subtitle.isEmpty {
+            return subtitle
+        }
+        if let appID = payload.targetAppId, !appID.isEmpty {
+            return "PWA · \(appID)"
+        }
+        switch payload.channel.lowercased() {
+        case "apns", "apn": return "应用推送"
+        case "bark": return "服务推送"
+        case "bridge": return "PWA"
+        case "system": return "Drel"
+        default: return payload.channel.uppercased()
+        }
+    }
+
+    private static func preview(for message: StoredMessage) -> String {
+        let raw = message.bodyType == "markdown" ? (message.payload.markdown ?? message.payload.body) : message.payload.body
+        return raw
+            .replacingOccurrences(of: "[#*_>`]", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func categoryLabel(_ category: String?) -> String? {
+        switch category?.lowercased() {
+        case "verification", "otp": return "验证码"
+        case "approval", "permission": return "审批"
+        case "task", "deployment": return "任务"
+        case "security": return "安全"
+        case "alert": return "告警"
+        case "order": return "订单"
+        case "chat": return "聊天"
+        case "promotion": return "活动"
+        case "weather": return "天气"
+        default: return nil
+        }
+    }
+
+    private static func stateLabel(payload: MessagePayload) -> String? {
+        if let actionState = payload.actionState {
+            switch actionState {
+            case .pending: return "待确认"
+            case .approved, .rejected, .cancelled, .expired: return nil
+            @unknown default: return nil
+            }
+        }
+        return payload.priority == .critical ? "紧急" : nil
+    }
+
+    private static func style(for payload: MessagePayload) -> (LucideIcon, UIColor) {
+        if let actionState = payload.actionState {
+            switch actionState {
+            case .pending: return (.clock, ThemeTokens.Color.warning)
+            case .approved: return (.success, ThemeTokens.Color.success)
+            case .rejected, .cancelled, .expired: return (.clipboard, ThemeTokens.Color.textSecondary)
+            @unknown default: return (.clipboard, ThemeTokens.Color.textSecondary)
+            }
+        }
+        switch payload.contentType {
+        case .markdown: return (.docText, ThemeTokens.Color.accent)
+        case .image: return (.image, ThemeTokens.Color.primary)
+        case .qr: return (.qrCode, ThemeTokens.Color.info)
+        case .otp: return (.key, ThemeTokens.Color.primary)
+        case .chat: return (.paperplane, ThemeTokens.Color.info)
+        case .approval: return (.clipboard, ThemeTokens.Color.warning)
+        case .plain, nil: break
+        case .some: return (.inbox, ThemeTokens.Color.primary)
+        }
+        if payload.contentType == .qr || payload.qrPayload != nil {
+            return (.qrCode, ThemeTokens.Color.info)
+        }
+        switch payload.category?.lowercased() {
+        case "verification", "otp": return (.key, ThemeTokens.Color.primary)
+        case "security": return (.shield, ThemeTokens.Color.error)
+        case "alert": return (.warning, ThemeTokens.Color.warning)
+        case "approval", "permission": return (.clipboard, ThemeTokens.Color.info)
+        case "task", "deployment": return (.success, ThemeTokens.Color.success)
+        case "chat": return (.paperplane, ThemeTokens.Color.info)
+        case "promotion": return (.tag, ThemeTokens.Color.warning)
+        default:
+            switch payload.channel.lowercased() {
+            case "apns", "apn": return (.bell, ThemeTokens.Color.primary)
+            case "bark": return (.volume, ThemeTokens.Color.warning)
+            case "bridge": return (.globe, ThemeTokens.Color.info)
+            case "system": return (.info, ThemeTokens.Color.textSecondary)
+            default: return (.inbox, ThemeTokens.Color.primary)
+            }
+        }
+    }
+}
+
+// MARK: - GroupChevronIndicator
+
+/// Self-drawn chevron for the group header. A UIImageView loaded from the
+/// Lucide catalog fails to rasterize inside a cell dequeued as a section
+/// header (it renders fine in normal cells), so the indicator draws its own
+/// vector path and stays animatable via `transform`.
+final class GroupChevronIndicator: UIView {
+
+    private let shapeLayer: CAShapeLayer = {
+        let layer = CAShapeLayer()
+        layer.fillColor = nil
+        layer.lineWidth = 2.5
+        layer.lineCap = .round
+        layer.lineJoin = .round
+        return layer
+    }()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        isAccessibilityElement = true
+        accessibilityLabel = "展开收起"
+        layer.addSublayer(shapeLayer)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let width = bounds.width
+        let height = bounds.height
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: width * 0.2, y: height * 0.32))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.68))
+        path.addLine(to: CGPoint(x: width * 0.8, y: height * 0.32))
+        shapeLayer.frame = bounds
+        shapeLayer.path = path.cgPath
+        updateStrokeColor()
+    }
+
+    override func tintColorDidChange() {
+        super.tintColorDidChange()
+        updateStrokeColor()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        updateStrokeColor()
+    }
+
+    private func updateStrokeColor() {
+        shapeLayer.strokeColor = ThemeTokens.Color.textSecondary
+            .resolvedColor(with: traitCollection)
+            .cgColor
+    }
+}
+
+// MARK: - TouchFeedbackView
+
+/// Container that reports raw touch-down/up/cancel so owners can render
+/// touch-down highlight without a gesture recognizer. Gestures observing the
+/// same touch (tap, pan, table scroll) cancel delivery on recognition, which
+/// surfaces here as touchesCancelled — the highlight clears itself the
+/// moment any drag or scroll wins.
+final class TouchFeedbackView: UIView {
+
+    var onTouchDown: (() -> Void)?
+    var onTouchEnd: (() -> Void)?
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        onTouchDown?()
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        onTouchEnd?()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        onTouchEnd?()
+    }
+}
+
+// MARK: - InboxGroupHeaderCell
+
+class InboxGroupHeaderCell: UITableViewHeaderFooterView, UIGestureRecognizerDelegate {
+
+    static let identifier = "InboxGroupHeaderCell"
+
+    /// Tracks the last applied expand state so the chevron only animates on a
+    /// real state change; reconfigured cells during scroll must not spin.
+    private var appliedExpandedState: Bool?
+
+    private let containerView: TouchFeedbackView = {
+        // Opaque: the swipe action buttons sit directly behind this view;
+        // a transparent container lets them show through on every header.
+        let view = TouchFeedbackView()
+        view.backgroundColor = ThemeTokens.Color.background
+        return view
+    }()
+
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.sectionTitle
+        label.textColor = ThemeTokens.Color.text
+        label.numberOfLines = 1
+        label.lineBreakMode = .byTruncatingTail
+        return label
+    }()
+
+    private let countLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.tabLabel
+        label.textColor = ThemeTokens.Color.text
+        label.textAlignment = .center
+        return label
+    }()
+
+    private let countContainer: UIView = {
+        let view = UIView()
+        view.backgroundColor = ThemeTokens.Color.primary.withAlphaComponent(ThemeTokens.Opacity.badgeFill)
+        view.layer.cornerRadius = ThemeTokens.CornerRadius.xs
+        return view
+    }()
+
+    private let chevronIndicator = GroupChevronIndicator()
+
+    private let pinIconView: UIImageView = {
+        let iv = UIImageView()
+        iv.image = LucideIcon.pin.templateImage(pointSize: ThemeTokens.Icons.Sizes.xs)
+        iv.tintColor = ThemeTokens.Color.primary
+        iv.contentMode = .scaleAspectFit
+        iv.isHidden = true
+        return iv
+    }()
+
+    // MARK: Swipe actions (trailing reveal: swipe left on the header)
+
+    private enum SwipeConstants {
+        static let actionWidth: CGFloat = 68
+        static var revealWidth: CGFloat { actionWidth * 2 }
+    }
+
+    private static func makeActionButton(title: String, color: UIColor) -> UIButton {
+        let button = UIButton(type: .custom)
+        button.setTitle(title, for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = ThemeTokens.Typography.caption
+        button.backgroundColor = color
+        return button
+    }
+
+    private lazy var pinActionButton = Self.makeActionButton(
+        title: L10n.tr("inbox.group.pin"), color: ThemeTokens.Color.info
+    )
+    private lazy var deleteActionButton = Self.makeActionButton(
+        title: L10n.tr("inbox.group.delete"), color: ThemeTokens.Color.error
+    )
+    private lazy var swipeActionsStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [deleteActionButton, pinActionButton])
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.spacing = 1
+        return stack
+    }()
+
+    var onTap: (() -> Void)?
+    var onPinToggle: (() -> Void)?
+    var onDelete: (() -> Void)?
+    /// Informs the controller this header revealed its actions so any other
+    /// open header can be closed first.
+    var onSwipeReveal: (() -> Void)?
+
+    private var swipePanGesture: UIPanGestureRecognizer?
+
+    override init(reuseIdentifier: String?) {
+        super.init(reuseIdentifier: reuseIdentifier)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupUI() {
+        backgroundView = UIView()
+        backgroundView?.backgroundColor = ThemeTokens.Color.background
+        contentView.backgroundColor = .clear
+        accessibilityIdentifier = "InboxGroupHeaderCell"
+        contentView.accessibilityIdentifier = "InboxGroupHeaderCell.content"
+        containerView.accessibilityIdentifier = "InboxGroupHeaderCell.container"
+
+        // Touch-down highlight comes from raw touch tracking on the sliding
+        // content. A zero-delay long-press was tried here before, but it was
+        // gated with require(toFail: pan) so a drag release would not fire
+        // the toggle — and the pan never fails while the finger is
+        // stationary, so the press only began at release: the highlight
+        // never actually showed while the finger was down. Raw touches need
+        // no such gate; when a drag wins, the pan cancels the touches and
+        // the highlight clears through touchesCancelled.
+        containerView.onTouchDown = { [weak self] in self?.setPressed(true) }
+        containerView.onTouchEnd = { [weak self] in self?.setPressed(false) }
+        // Attached to the sliding content, not contentView: a gesture on
+        // contentView intercepts touches for every subview, which starved
+        // the revealed action buttons of their taps entirely.
+        containerView.addGestureRecognizer(UITapGestureRecognizer(
+            target: self,
+            action: #selector(handleHeaderTap(_:))
+        ))
+
+        // Horizontal-only pan reveals the trailing pin/delete actions; the
+        // delegate gate keeps vertical table scrolling and taps unaffected.
+        // The tap fails on movement and the pan begins on it, so tap toggles
+        // and drag reveals with no explicit require(toFail:) wiring.
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handleSwipePan(_:)))
+        pan.delegate = self
+        contentView.addGestureRecognizer(pan)
+        swipePanGesture = pan
+
+        // Action buttons sit behind the content on the trailing edge.
+        contentView.addSubview(swipeActionsStack)
+        swipeActionsStack.snp.makeConstraints { make in
+            make.trailing.equalToSuperview()
+            make.top.bottom.equalToSuperview()
+            make.width.equalTo(SwipeConstants.revealWidth)
+        }
+        pinActionButton.addTarget(self, action: #selector(pinTapped), for: .touchUpInside)
+        deleteActionButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
+        swipeActionsStack.isHidden = true
+
+        contentView.addSubview(containerView)
+        containerView.addSubview(titleLabel)
+        containerView.addSubview(pinIconView)
+        containerView.addSubview(countContainer)
+        countContainer.addSubview(countLabel)
+        containerView.addSubview(chevronIndicator)
+
+        containerView.snp.makeConstraints { make in
+            // Flush to the header's bottom edge so the title-to-card distance
+            // is just the card's own top inset — the tightest attachment
+            // short of redesigning the row. No top anchor: bottom + height
+            // must determine the frame alone; adding a top constraint
+            // over-constrains, the height breaks, and the title silently
+            // falls back to vertically centered.
+            make.bottom.equalToSuperview()
+            make.height.equalTo(28)
+            make.leading.trailing.equalToSuperview()
+        }
+
+        pinIconView.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(ThemeTokens.Spacing.xs)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(ThemeTokens.Icons.Sizes.xs)
+        }
+
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalTo(pinIconView.snp.trailing).offset(ThemeTokens.Spacing.xs)
+            make.centerY.equalToSuperview()
+            make.trailing.lessThanOrEqualTo(countContainer.snp.leading).offset(-ThemeTokens.Spacing.sm)
+        }
+
+        countContainer.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            // Anchored right next to the chevron; a lessThanOrEqualTo here
+            // left the badge underconstrained and drifting beside the title.
+            make.trailing.equalTo(chevronIndicator.snp.leading).offset(-ThemeTokens.Spacing.sm)
+            make.height.equalTo(20)
+        }
+
+        countLabel.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 2, left: 6, bottom: 2, right: 6))
+        }
+
+        chevronIndicator.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().offset(-ThemeTokens.Spacing.xs)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(ThemeTokens.Icons.Sizes.xs)
+        }
+    }
+
+    func configure(
+        title: String,
+        count: Int,
+        isExpanded: Bool,
+        hasUnread: Bool = false,
+        isPinned: Bool = false,
+        accessibilityIdentifier: String
+    ) {
+        self.accessibilityIdentifier = accessibilityIdentifier
+        self.accessibilityLabel = title
+        self.accessibilityValue = isExpanded ? "expanded" : "collapsed"
+        self.accessibilityTraits = .button
+        titleLabel.text = title
+        countLabel.text = "\(count)"
+        countContainer.isHidden = count == 0
+        pinIconView.isHidden = !isPinned
+        pinIconView.snp.updateConstraints { make in
+            make.leading.equalToSuperview().offset(isPinned ? ThemeTokens.Spacing.xs : -ThemeTokens.Icons.Sizes.xs)
+        }
+        pinActionButton.setTitle(
+            L10n.tr(isPinned ? "inbox.group.unpin" : "inbox.group.pin"),
+            for: .normal
+        )
+        pinActionButton.accessibilityIdentifier = "inbox.group.pin.\(accessibilityIdentifier)"
+        deleteActionButton.accessibilityIdentifier = "inbox.group.delete.\(accessibilityIdentifier)"
+        titleLabel.font = hasUnread
+            ? ThemeTokens.Typography.sectionTitle
+            : ThemeTokens.Typography.rowTitle
+        titleLabel.textColor = hasUnread
+            ? ThemeTokens.Color.text
+            : ThemeTokens.Color.textSecondary
+
+        let shouldAnimate = appliedExpandedState != nil && appliedExpandedState != isExpanded
+        appliedExpandedState = isExpanded
+        let chevronTransform: CGAffineTransform = isExpanded
+            ? .identity
+            : CGAffineTransform(rotationAngle: -.pi / 2)
+        if shouldAnimate {
+            UIView.animate(
+                withDuration: ThemeTokens.Animation.modal.duration,
+                delay: 0,
+                usingSpringWithDamping: 0.78,
+                initialSpringVelocity: 0.6,
+                options: [.allowUserInteraction, .beginFromCurrentState]
+            ) {
+                self.chevronIndicator.transform = chevronTransform
+            }
+        } else {
+            chevronIndicator.transform = chevronTransform
+        }
+    }
+
+    @objc private func handleHeaderTap(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        if containerView.transform.tx == 0 {
+            onTap?()
+        } else {
+            // A tap while actions are revealed closes them instead of
+            // toggling the group — the standard swipe-action behavior.
+            closeActions(animated: true)
+        }
+    }
+
+    // MARK: - Swipe actions
+
+    private func syncActionVisibility() {
+        swipeActionsStack.isHidden = containerView.transform.tx == 0
+    }
+
+    @objc private func handleSwipePan(_ gesture: UIPanGestureRecognizer) {
+        let translation = gesture.translation(in: contentView)
+        switch gesture.state {
+        case .began:
+            onSwipeReveal?()
+            swipeActionsStack.isHidden = false
+        case .changed:
+            let base = containerView.transform.tx == 0 ? 0 : -SwipeConstants.revealWidth
+            let proposed = min(0, max(-SwipeConstants.revealWidth, base + translation.x))
+            containerView.transform = CGAffineTransform(translationX: proposed, y: 0)
+        case .ended, .cancelled, .failed:
+            let velocity = gesture.velocity(in: contentView).x
+            let current = containerView.transform.tx
+            let shouldOpen = current < -SwipeConstants.revealWidth / 3 || velocity < -300
+            let target: CGFloat = shouldOpen ? -SwipeConstants.revealWidth : 0
+            UIView.animate(
+                withDuration: ThemeTokens.Animation.fast.duration + 0.05,
+                delay: 0,
+                options: [.curveEaseOut]
+            ) {
+                self.containerView.transform = CGAffineTransform(translationX: target, y: 0)
+            } completion: { _ in
+                self.syncActionVisibility()
+            }
+        default:
+            break
+        }
+    }
+
+    @objc private func pinTapped() {
+        closeActions(animated: true)
+        onPinToggle?()
+    }
+
+    @objc private func deleteTapped() {
+        closeActions(animated: true)
+        onDelete?()
+    }
+
+    func closeActions(animated: Bool) {
+        guard containerView.transform.tx != 0 else { return }
+        let apply = {
+            self.containerView.transform = .identity
+        }
+        if animated {
+            UIView.animate(
+                withDuration: ThemeTokens.Animation.fast.duration + 0.05,
+                delay: 0,
+                options: [.curveEaseOut],
+                animations: apply
+            )
+        } else {
+            apply()
+        }
+    }
+
+    private func setPressed(_ pressed: Bool) {
+        let highlight = ThemeTokens.Color.backgroundSecondary
+        UIView.animate(withDuration: ThemeTokens.Animation.fast.duration) {
+            self.containerView.backgroundColor = pressed
+                ? highlight
+                : ThemeTokens.Color.background
+        }
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        containerView.transform = .identity
+        swipeActionsStack.isHidden = true
+        appliedExpandedState = nil
+    }
+
+    /// Serves both as the pan gesture's delegate gate and UIView's hook:
+    /// only horizontal drags reveal actions; vertical pans belong to the
+    /// table's scrolling.
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer === swipePanGesture,
+              let pan = gestureRecognizer as? UIPanGestureRecognizer else {
+            return super.gestureRecognizerShouldBegin(gestureRecognizer)
+        }
+        let velocity = pan.velocity(in: contentView)
+        return abs(velocity.x) > abs(velocity.y)
+    }
+}
