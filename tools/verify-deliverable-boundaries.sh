@@ -51,10 +51,23 @@ else
     fail "NotificationServiceExtension remains self-contained without importing WebBridgeKit" "$NSE_WBK_IMPORTS"
 fi
 
-if rg -q 'PushCipher\.configure' SuperApp/Sources/AppDelegate.swift && rg -q 'HTMLAppGatewayDefaults\.configureOfficial' SuperApp/Sources/AppDelegate.swift; then
+if rg -q 'PushCipher\.configure' SuperApp/Sources/AppDelegate.swift && test -f SuperApp/Sources/Configuration/DrelGatewayConfiguration.swift; then
     pass "SuperApp explicitly injects App Group, Keychain, and Official Gateway configuration at launch"
 else
     fail "SuperApp explicitly injects App Group, Keychain, and Official Gateway configuration at launch"
+fi
+
+if rg -q 'officialGateway: DrelGatewayConfiguration\.official' SuperApp/Sources \
+    && rg -q 'WebBridgeHostCapabilityPolicy\.containerOnlyOverride' SuperApp/Sources/AppDelegate.swift; then
+    pass "SuperApp owns Drel gateway migration and container-only host policy"
+else
+    fail "SuperApp owns Drel gateway migration and container-only host policy"
+fi
+
+if bash tools/verify-push-wire-contract.sh >/dev/null; then
+    pass "NotificationServiceExtension and server consume the shared push wire contract"
+else
+    fail "NotificationServiceExtension and server consume the shared push wire contract"
 fi
 
 echo ""

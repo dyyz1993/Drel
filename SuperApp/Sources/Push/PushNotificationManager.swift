@@ -554,13 +554,13 @@ class PushNotificationManager: NSObject {
       // Store Drel has one immutable official origin. A custom relay is
       // registered through SelfHostedPushConfiguration and must never be
       // smuggled into this legacy official-registration fallback.
-      let server = HTMLAppGatewayDefaults.official.baseURL
+      let server = DrelGatewayConfiguration.official.baseURL
     #else
       let server =
         serverURL
         ?? UserDefaults.standard.string(forKey: "com.webbridgekit.bark.server")
         ?? barkServerURL
-        ?? HTMLAppGatewayDefaults.official.baseURL
+        ?? DrelGatewayConfiguration.official.baseURL
     #endif
     let key =
       explicitKey

@@ -180,7 +180,7 @@ struct SettingsView: View {
                     }
                     // 完整推送地址（含服务器）比裸标识更有用：拿到即可直接
                     // 向该设备推送，与推送通道页「复制当前完整地址」一致。
-                    UIPasteboard.general.string = "\(HTMLAppGatewayDefaults.official.baseURL)/\(token)"
+                    UIPasteboard.general.string = "\(DrelGatewayConfiguration.official.baseURL)/\(token)"
                     heroAlert = .copied
                 },
                 label: {

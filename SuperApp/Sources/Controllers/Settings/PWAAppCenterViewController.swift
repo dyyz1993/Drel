@@ -20,7 +20,7 @@ final class PWAAppCenterViewController: UIViewController {
     private let presentationMetadataStore = HTMLAppPresentationMetadataStore()
     private let receivedAppStore = HTMLAppPushActivationStore()
     private var preservedPermissionFixture: HTMLAppManifest?
-    private let gatewayRegistry = HTMLAppGatewayRegistry()
+    private let gatewayRegistry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
     private lazy var onboardingService = HTMLAppGatewayOnboardingService(
         gatewayRegistry: gatewayRegistry,
         trustRegistry: trustRegistry,
@@ -120,7 +120,7 @@ final class PWAAppCenterViewController: UIViewController {
         // Custom delivery is represented by its own persisted self-hosted
         // configuration. The official Drel address must never inherit a
         // legacy Bark/server preference.
-        HTMLAppGatewayDefaults.official.baseURL
+        DrelGatewayConfiguration.official.baseURL
     }
 
     private var pushURL: String {
@@ -321,7 +321,7 @@ final class PWAAppCenterViewController: UIViewController {
         // Keep the verified catalog current for push-route validation, but do
         // not render it directly. An app becomes visible only after a trusted
         // push has targeted it and recorded a user-local activation.
-        let gateway = gatewayRegistry.activeGateway() ?? HTMLAppGatewayDefaults.official
+        let gateway = gatewayRegistry.activeGateway() ?? DrelGatewayConfiguration.official
         // 一次瞬时失败不应永久钉死在「不可用」：冷却期后允许在首页再现时重试。
         if officialGatewayUnavailable,
            let last = lastGatewayFailureAt,
