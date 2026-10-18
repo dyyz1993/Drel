@@ -10,6 +10,7 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
     let startURL: String
     let allowedOrigins: [String]
     let capabilities: [Capability]
+    let capabilitiesV2: [CapabilityDeclaration]
     let routes: [String]
     let cache: CachePolicy
     let webManifest: WebManifestBinding?
@@ -23,6 +24,7 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
         startURL: String,
         allowedOrigins: [String],
         capabilities: [Capability],
+        capabilitiesV2: [CapabilityDeclaration] = [],
         routes: [String],
         cache: CachePolicy,
         webManifest: WebManifestBinding? = nil,
@@ -35,6 +37,7 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
         self.startURL = startURL
         self.allowedOrigins = allowedOrigins
         self.capabilities = capabilities
+        self.capabilitiesV2 = capabilitiesV2
         self.routes = routes
         self.cache = cache
         self.webManifest = webManifest
@@ -54,6 +57,29 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
         case photoLibrary
         case scan
         case share
+    }
+
+    enum ControlledAction: String, Codable, Sendable {
+        case haptic
+        case vibrate
+        case share
+    }
+
+    enum PermissionScope: String, Codable, Sendable {
+        case once
+        case appSession
+    }
+
+    struct CapabilityDeclaration: Codable, Equatable, Sendable {
+        let action: ControlledAction
+        let origins: [String]
+        let purposeId: String
+        let purpose: String
+        let scope: PermissionScope
+
+        private enum CodingKeys: String, CodingKey {
+            case action, origins, purposeId = "purposeId", purpose, scope
+        }
     }
 
     struct CachePolicy: Codable, Equatable, Sendable {
@@ -131,6 +157,7 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
             startURL: startURL,
             allowedOrigins: allowedOrigins,
             capabilities: capabilities,
+            capabilitiesV2: capabilitiesV2,
             routes: routes,
             cache: cache,
             webManifest: webManifest,
@@ -211,6 +238,25 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
                 return "cache and drel_offline declarations must match"
             }
         }
+        let declarationIDs = capabilitiesV2.map(\.purposeId)
+        guard Set(declarationIDs).count == declarationIDs.count else {
+            return "capabilities_v2 purposeId values must be unique"
+        }
+        for declaration in capabilitiesV2 {
+            let purpose = declaration.purpose.trimmingCharacters(in: .whitespacesAndNewlines)
+            let purposeID = declaration.purposeId.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !purposeID.isEmpty, purposeID.utf8.count <= 128 else {
+                return "capabilities_v2 purposeId is required and must be at most 128 bytes"
+            }
+            guard !purpose.isEmpty, purpose.utf8.count <= 160 else {
+                return "capabilities_v2 purpose is required and must be at most 160 bytes"
+            }
+            guard !declaration.origins.isEmpty,
+                  declaration.origins.count == Set(declaration.origins).count,
+                  declaration.origins.allSatisfy({ canonicalOrigins.contains($0) }) else {
+                return "capabilities_v2 origins must be a nonempty unique subset of allowedOrigins"
+            }
+        }
         return nil
     }
 
@@ -252,9 +298,30 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, appId, name, startURL, allowedOrigins, capabilities, routes, cache, webManifest
+        case schemaVersion, appId, name, startURL, allowedOrigins, capabilities
+        case capabilitiesV2 = "capabilities_v2"
+        case routes, cache, webManifest
         case drelOffline = "drel_offline"
         case signature
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try values.decode(String.self, forKey: .schemaVersion)
+        appId = try values.decode(String.self, forKey: .appId)
+        name = try values.decode(String.self, forKey: .name)
+        startURL = try values.decode(String.self, forKey: .startURL)
+        allowedOrigins = try values.decode([String].self, forKey: .allowedOrigins)
+        capabilities = try values.decode([Capability].self, forKey: .capabilities)
+        capabilitiesV2 = try values.decodeIfPresent(
+            [CapabilityDeclaration].self,
+            forKey: .capabilitiesV2
+        ) ?? []
+        routes = try values.decode([String].self, forKey: .routes)
+        cache = try values.decode(CachePolicy.self, forKey: .cache)
+        webManifest = try values.decodeIfPresent(WebManifestBinding.self, forKey: .webManifest)
+        drelOffline = try values.decodeIfPresent(DrelOfflineDeclaration.self, forKey: .drelOffline)
+        signature = try values.decodeIfPresent(Signature.self, forKey: .signature)
     }
 
     private static func canonicalOrigin(_ components: URLComponents) -> String? {
