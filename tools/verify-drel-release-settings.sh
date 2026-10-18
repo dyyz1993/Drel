@@ -38,8 +38,13 @@ check "Release settings permit the Drel push-channel chooser but omit generic ga
     "rg -q 'title: \"推送通道\"' SuperApp/Sources/ViewModels/SettingsViewModel.swift && rg -q 'DrelPushChannelConfigurationViewController()' SuperApp/Sources/Controllers/Tab/TabBarController.swift && rg -q 'SelfHostedPushConfigurationViewController()' SuperApp/Sources/Controllers/Settings/DrelPushChannelConfigurationViewController.swift && ! rg -q 'GatewayConfigurationViewController()' SuperApp/Sources/Controllers/Tab/TabBarController.swift && rg -q '#if !DREL_RELEASE_MINIMAL_SETTINGS' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift"
 check "Drel 1.4 keeps offline preferences but hides legacy encryption and diagnostics" \
     "rg -q 'Drel14Release:' project.yml && rg -q '#if !DREL_RELEASE_MINIMAL_SETTINGS && !DREL_CONTAINER_ONLY' SuperApp/Sources/ViewModels/SettingsViewModel.swift && rg -q '#if !DREL_RELEASE_MINIMAL_SETTINGS && !DREL_CONTAINER_ONLY' SuperApp/Sources/Controllers/Cache/ManagementViewController.swift && rg -q '#if !DREL_RELEASE_MINIMAL_SETTINGS && !DREL_CONTAINER_ONLY' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift"
-check "Drel 1.4 has no generic gateway action in Store-facing app controls" \
-    "rg -U -q '#if !DREL_CONTAINER_ONLY\\n[[:space:]]*alert.addAction\\(UIAlertAction\\(title: \"管理应用服务\"' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift && rg -U -q '#if !DREL_CONTAINER_ONLY\\n[[:space:]]*alert.addAction\\(UIAlertAction\\(title: \"管理自有服务\"' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift"
+if [[ "${DREL_RELEASE_SETTINGS_SCHEME:-Drel14Store}" == "Drel15Store" ]]; then
+    check "Drel 1.5 exposes the signed-manifest gateway controls" \
+        "rg -q 'DREL_V2_MANAGED_ACTIONS_ONLY' project.yml && rg -U -q '#if !DREL_CONTAINER_ONLY \\|\\| DREL_V2_MANAGED_ACTIONS_ONLY\\n[[:space:]]*alert.addAction\\(UIAlertAction\\(title: \"管理应用服务\"' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift"
+else
+    check "Drel 1.4 has no generic gateway action in Store-facing app controls" \
+        "rg -U -q '#if !DREL_CONTAINER_ONLY \\|\\| DREL_V2_MANAGED_ACTIONS_ONLY\\n[[:space:]]*alert.addAction\\(UIAlertAction\\(title: \"管理应用服务\"' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift && rg -U -q '#if !DREL_CONTAINER_ONLY\\n[[:space:]]*alert.addAction\\(UIAlertAction\\(title: \"管理自有服务\"' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift"
+fi
 check "Release About screen lists only shipped V1 capabilities" \
     "rg -q '#if DREL_CONTAINER_ONLY' SuperApp/Sources/Views/AboutView.swift && rg -q 'about.feature.push' SuperApp/Sources/Views/AboutView.swift && rg -q 'about.feature.secure_route' SuperApp/Sources/Views/AboutView.swift"
 check "Restoration manual is present" \

@@ -2,124 +2,119 @@
 
 Date: 2026-10-18
 
-Status: SDK runtime authorization now requires signed Manifest v2 action
-declarations for the selected 1.5.0 actions. This report covers the current
-SDK increment; product-facing demo screens and App Review copy remain later
-tasks.
+Status: Runtime changes, simulator automation, cloud-signed Store export, and
+TestFlight upload are complete. Build 1.5.0 (90) is processing-state `VALID`
+and App Store eligible. No 1.4.1 state or App Review submission was changed.
 
-## Scope inventory
+## Product policy
 
-### Enabled in this SDK increment
+- `haptic`, `vibrate`, `share`, and `fullscreen` require an exact signed Manifest v2 action
+  declaration and a real foreground WebView gesture.
+- These low-impact actions do not create or reuse a persistent per-app privacy
+  grant. Manifest declarations are an action allowlist, not blanket user
+  consent.
+- `share` is user-triggered and presented by the native iOS share sheet on
+  every invocation. The user reviews the payload and chooses its destination.
+- `fullscreen` is limited to hiding the host navigation/status bars; the host
+  exit control stays reachable, and no orientation or scrolling is changed.
+- All other Bridge actions are rejected by the Drel 1.5 host allowlist. Camera
+  scan, photo library, Bluetooth, microphone, sensors, and other data-bearing
+  capabilities remain deferred.
 
-| Action | Capability family | Authorization path | Allowed scope |
-| --- | --- | --- | --- |
-| `haptic` | `displayStatus` | Signed `capabilities_v2` declaration | `once` / `appSession` |
-| `vibrate` | `displayStatus` | Signed `capabilities_v2` declaration | `once` / `appSession` |
-| `share` | `share` | Signed `capabilities_v2` declaration | `once` / `appSession` |
+## Implementation
 
-### Explicitly not enabled
+1. Kept action-level grant identity and declaration-removal cleanup in the
+   reusable runtime for future grant-based capabilities; these four low-impact
+   actions do not write reusable grants.
+2. The SDK checks the Drel host action allowlist before dispatching any native
+   handler. The 1.5.0 host allowlist is exactly `haptic`, `vibrate`, `share`,
+   and `fullscreen`.
+3. V2 actions require a registered managed app, a declaration matching the
+   exact action and origin, and a one-use native touch no older than 1.5s.
+4. Added a separate `Drel15Store` / `Drel15Release` configuration for version
+   1.5.0 build 90. `Drel14Release` remains version 1.4.1 build 89. The 1.5
+   configuration excludes seeded development fixtures.
+5. Updated the protocol and owner-decision documents to distinguish an action
+   declaration from a user privacy permission.
 
-- `scan` and camera
-- photo library
-- Bluetooth
-- microphone and speech
-- motion sensors
-- clipboard
-- file import/export
-- notifications
-- generic device control
-- remote or dynamically supplied actions
+## Automated evidence
 
-## Runtime behavior
+| Gate | Result | Evidence |
+|---|---:|---|
+| SDK JSBridge regression | 6/6 gates passed; Core JSBridge tests passed | `../../../WebBridgeKit-Framework/build/reports/jsbridge-regression.md` |
+| Drel WebView regression | 4/4 gates passed; 3 functional UI tests, V2 share UI test, and V2 fullscreen UI test passed | `../../build/reports/drel-app-webview-regression.md` |
+| Manifest v2 signature tests | 7/7 passed | `../../build/reports/manifest-v2-server-tests.log` |
+| Deliverable boundaries | 7/7 passed | `../../build/reports/deliverable-boundaries.log` |
+| AppTemplate independent gate | 5/5 passed | `../../../WebBridgeKit-Framework/build/reports/template-gate.md` |
+| SwiftLint / design lint | Passed | `../../build/reports/swiftlint.log`, `../../build/reports/design-lint.log` |
+| Drel 1.5 host policy check | Passed | `../../tools/verify-drel-v2-action-policy.sh` |
+| Drel release gate | 11 passed; App Store archive failed at profile entitlement validation | `../../build/reports/release-gate.md` |
+| Crash scan | 0 current simulator crashes; clean iPhone 17 Pro ZoomTest simulator | `../../build/reports/crash-scan.log` |
+| Store package validation | Apple validation succeeded with no errors | `/tmp/drel-1-5-0-90-export/Packaging.log` |
+| TestFlight upload | Upload succeeded; delivery `d149fd76-6870-46f2-96b3-37c46ae281d5` | `../../build/reports/drel-1-5-0-build-90-status.log` |
+| ASC build/group lookup | Build 90 is `VALID` and linked to 内部测试 | `../../build/reports/drel-1-5-0-build-90-asc.json` |
 
-1. A controlled action first resolves the active managed app ID and document origin.
-2. The SDK looks up the exact `capabilities_v2` declaration by:
-   - action;
-   - canonical origin.
-3. If no exact declaration exists, authorization is denied before any prompt.
-4. A legacy broad `capabilities` entry cannot satisfy a controlled action.
-5. The authorization request carries:
-   - signed `purpose`;
-   - signed `purposeId`;
-   - signed scope.
-6. The user-facing prompt displays the signed purpose, not a runtime-supplied reason.
-7. Consent completion revalidates the declaration before a grant is written.
-8. A grant is capped by declaration scope:
-   - declaration `once` plus user `appSession` records `once`;
-   - declaration `appSession` records `appSession`;
-   - `always` is not representable in V2.
-9. Existing grant scope is rechecked on each request. A grant broader or
-   narrower than the current signed declaration is revoked and the request is
-   denied instead of silently reusing stale authorization.
+The UI regression verifies that a real tap opens the system share sheet without
+showing Drel's separate permission prompt, and that fullscreen is gesture-bound,
+shows the host exit affordance, and does not close the HTML app when exited.
 
-## Automated test evidence
+## Screenshot
 
-Targeted test class:
+![iOS system share sheet from the V2 demo](../../build/reports/v2-runtime/screenshots/v2-share-system-sheet/A6F0E216-5E01-407A-B46A-5EE37AD1026B.png)
 
-```text
-CoreTests/WebJavaScriptBridgeTests
-```
+File: `../../build/reports/v2-runtime/screenshots/v2-share-system-sheet/A6F0E216-5E01-407A-B46A-5EE37AD1026B.png`
 
-Result:
+![Fullscreen demo with the native host exit control](../../build/reports/v2-runtime/screenshots/v2-fullscreen-host-exit-visible/v2-fullscreen-host-exit-visible.png)
 
-```json
-{
-  "result": "Passed",
-  "totalTestCount": 21,
-  "passedTests": 21,
-  "failedTests": 0,
-  "environmentDescription": "CoreTests · Built with macOS 26.2"
-}
-```
+File: `../../build/reports/v2-runtime/screenshots/v2-fullscreen-host-exit-visible/v2-fullscreen-host-exit-visible.png`
 
-Evidence file:
+The screenshot is from an iOS 26.4.1 simulator running the local test fixture.
+It shows the content preview and native per-share choices. It is not a
+production gateway or physical-device approval.
 
-- `WebBridgeKit-Framework/build/reports/v2-runtime/webjavascriptbridge-summary.json`
-- `WebBridgeKit-Framework/build/reports/v2-runtime/simulator-final.png`
+## Distribution evidence
 
-New cases:
+The checked-in manual profile is stale and lacks
+`com.apple.developer.usernotifications.communication`, so the source archive's
+first signing pass used the team development identity. The final export then
+used Xcode automatic App Store signing to rebuild the main and NSE Store
+profiles. This preserved the notification avatar entitlement without weakening
+the app boundary.
 
-1. A manifest with only legacy `capabilities: [.share]` does not authorize the
-   controlled `share` action.
-2. A valid V2 declaration authorizes `share`.
-3. The signed purpose is used for the permission request.
-4. A user selecting `always` when the declaration says `appSession` receives an
-   `appSession` grant.
+Final exported package facts:
 
-Existing regression cases still pass for the legacy V1 authorization path.
+- Version/build: `1.5.0 (90)` for both the app and NSE.
+- Signing: Apple Distribution, team `B45VZCNYU3`.
+- Profiles: App Store production, `get-task-allow=false`.
+- Entitlements: production APNs, Communication Notifications, and the shared
+  app group.
+- NSE dSYM contains `IconAvatarProcessor` symbols.
+- IPA SHA-256:
+  `d5ed64e1173d3ccc8c404433722b06a9446d60477d5be3fd461f5d86176e0f77`.
+- Apple returned `USES-NON-EXEMPT-ENCRYPTION: false`.
 
-## Verification screenshot
+Apple accepted the package and returned build state `VALID`. It emitted two
+non-fatal warnings because linked SDK code references Bluetooth and location
+APIs while the 1.5 Store build strips those purpose strings and the host
+allowlist blocks those actions. This matches the intended first-submission
+scope, but the warning should be reviewed before any broader distribution.
 
-`simulator-final.png` records the simulator state after the passing targeted
-test run. It is evidence that the simulator completed the test session; it is
-not yet a product consent-screen demo.
+Archive and exported IPA are retained under `/tmp/drel-1-5-0-90-cloud/` and
+`/tmp/drel-1-5-0-90-export/` for symbolication and exact-artifact review.
 
-## Commits
+## Protected release state
 
-- `a38e12d feat(manifest): decode signed action declarations`
-- `b84d454 feat(bridge): authorize signed v2 actions`
+- `Drel14Release` remains configured as `1.4.1 (89)`; no changes were made to
+  its version, build, or signing policy.
+- No App Store Connect version, metadata, build association, or review
+  submission was created or changed for 1.4.1 or 1.5.0.
+- `Drel15Store` is a separate 1.5.0 release configuration and uses the
+  four-action host allowlist. The uploaded package is Apple Distribution
+  signed; the development-signed intermediate archive was not uploaded.
 
-## Boundaries preserved
+## Current change inventory
 
-- Drel `Drel14Release` remains `1.4.1 (89)`.
-- No App Store Connect access or mutation occurred.
-- No 1.5.0 release configuration was created.
-- No physical-device permissions were exercised.
-
-## Remaining work
-
-1. Add product-side fixture/demo HTML showing:
-   - declaration missing;
-   - signed purpose prompt;
-   - deny;
-   - revoke;
-   - signed `appSession` reuse.
-2. Capture user-facing screenshots of those demo states.
-3. Extend Drel WebView regression to register the V2 fixture and run each
-   action.
-4. Add manifest-update removal tests that clear dependent grants.
-5. Add local/page trust denial tests at the bridge level for all three actions.
-6. Run full JSBridge, Drel WebView, and Drel release gates after the product
-   demo layer is wired.
-7. Prepare reviewer-facing copy explaining the three-action catalog and the
-   absence of a generic Bridge.
+- Framework source and tests are in the sibling `WebBridgeKit-Framework`
+  repository; Drel source, test, release configuration, and this report are in
+  the Drel repository.
+- Working changes are uncommitted in both repositories.

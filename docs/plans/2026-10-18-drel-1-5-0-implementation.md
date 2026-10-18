@@ -3,8 +3,8 @@
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Ship a narrowly bounded Drel 1.5.0 release that enables only signed,
-per-purpose, revocable `haptic`, `vibrate`, and `share` actions for
-network-managed apps.
+foreground-gesture-bound `haptic`, `vibrate`, `share`, and `fullscreen` actions
+for network-managed apps.
 
 **Architecture:** Split ownership cleanly between the reusable SDK and the
 Drel product. The SDK provides generic manifest, signature, authorization, and
@@ -26,12 +26,15 @@ implementation without a new owner decision:
 
 1. Drel ships a local, bounded, redacted, user-visible permission audit
    history.
-2. `haptic` and `vibrate` require the same signed action declarations,
-   authorization, audit, and revocation path as `share` and `scan`.
+2. `haptic`, `vibrate`, `share`, and `fullscreen` require exact signed action declarations
+   and foreground user gestures, but not reusable per-app privacy grants.
+   Sharing always proceeds through the system share sheet; data-bearing
+   capabilities remain subject to just-in-time explanation and least-privilege
+   system authorization.
 3. The Drel product owner owns security review and final security sign-off.
 4. The Drel product owner owns App Review narrative, privacy disclosure, and
    final privacy sign-off.
-5. The first 1.5.0 review train includes only `haptic`, `vibrate`, and `share`;
+5. The first 1.5.0 review train includes only `haptic`, `vibrate`, `share`, and `fullscreen`;
    scan, photos, Bluetooth, and microphone are deferred.
 
 ## Non-negotiable boundaries
@@ -40,9 +43,14 @@ implementation without a new owner decision:
   build number, configuration, or ASC metadata while implementing this plan.
 - 1.5.0 does not open Bridge for offline packages.
 - Ordinary web pages and all 1.4 manifests remain `Bridge=0`.
-- The only allowed actions are `haptic`, `vibrate`, and `share`.
-- All enabled actions support only `once` or `appSession`; `always` is
-  forbidden.
+- The only allowed actions are `haptic`, `vibrate`, `share`, and `fullscreen`.
+- Low-impact `haptic`, `vibrate`, `share`, and `fullscreen` actions do not store reusable
+  user grants; Manifest declarations are an action allowlist, not blanket
+  consent.
+- `fullscreen` hides only host navigation/status chrome, preserves the host exit
+  control, and does not change orientation or scrolling.
+- The TestFlight build enables only these four Bridge actions through a
+  product host allowlist. All other native Bridge commands remain rejected.
 - Protected actions require a foreground user gesture.
 - Push and deep links may navigate, but never authorize or execute a protected
   action.

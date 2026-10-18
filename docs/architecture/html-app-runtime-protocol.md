@@ -234,7 +234,16 @@ requested or repaired in Settings.
    decide whether a managed HTML application may ask the host to use a
    capability that the host already has.
 
-The normal request flow is:
+Declarations are an action allowlist, not blanket user consent. The current
+low-impact `haptic`, `vibrate`, `share`, and `fullscreen` actions require a
+valid signed declaration and a foreground user gesture, but do not create a
+reusable per-application privacy grant. Sharing must present the native iOS
+share sheet on every invocation so the user can review the payload and select
+its destination. Haptics are bounded and disclose no user data. Fullscreen
+only hides the host navigation/status chrome, keeps the host-owned exit control
+visible, and never changes orientation or disables scrolling.
+
+For data-bearing or sensitive capabilities, the normal request flow is:
 
 1. HTML calls the bridge with a structured capability request.
 2. The runtime validates the manifest, origin, requested capability, and
@@ -256,9 +265,12 @@ only its session grants. Persistent `always` grants and grants for another app
 or origin remain. Every pending Bridge call receives one terminal callback;
 late permission-sheet callbacks are ignored after cancellation.
 
-High-risk operations such as camera capture, microphone recording, file export,
-and external data transfer should default to a one-time grant. Low-risk status
-queries can use a persistent grant only after explicit user choice.
+Camera capture, microphone recording, photos, contacts, location, Bluetooth,
+file export, and similar data-bearing operations require a just-in-time
+explanation, the minimum system authorization, and an explicit user action.
+Prefer user-selected system pickers over broad library access. Do not treat a
+share-sheet invocation as a persistent grant or permit silent background
+sharing.
 
 ## Cache and Offline Model
 

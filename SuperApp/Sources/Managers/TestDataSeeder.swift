@@ -2,7 +2,7 @@ import Foundation
 import RealmSwift
 import WebBridgeKit
 
-#if !DREL_CONTAINER_ONLY
+#if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY
 struct TestDataSeeder {
 
     private static let seededKey = "TestDataSeeder_Sealed"
