@@ -49,7 +49,7 @@ bash tools/verify-node-admin-local.sh
 - `PushCipher.configure(appGroup: "group.com.webbridgekit.superapp", keychainService: "com.webbridgekit.superapp.push-crypto")`
 - `SelfHostedPushCrypto.configure(appGroup: "group.com.webbridgekit.superapp")`
 - `HTMLAppGatewayDefaults.configureOfficial(...)`
-- `DrelContainerBuildPolicy.containerOnlyOverride`（跟随应用层 `#if DREL_CONTAINER_ONLY` 编译宏）
+- `WebBridgeHostCapabilityPolicy.containerOnlyOverride`（跟随应用层 `#if DREL_CONTAINER_ONLY` 编译宏）
 
 ## 4. 开发规范与底层问题协作排障指南
 

@@ -59,7 +59,7 @@ final class PWAPermissionCenterViewController: UIViewController {
     private let contentStack = UIStackView()
     private let appID: String
     private let runtime = HTMLAppRuntimeCenter.shared
-    private let gatewayRegistry = HTMLAppGatewayRegistry()
+    private let gatewayRegistry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
     private var rows: [RowModel] = []
     private var manifest: HTMLAppManifest?
 

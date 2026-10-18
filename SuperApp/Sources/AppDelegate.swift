@@ -39,20 +39,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             keychainService: "com.webbridgekit.superapp.push-crypto"
         )
         SelfHostedPushCrypto.configure(appGroup: "group.com.webbridgekit.superapp")
-        HTMLAppGatewayDefaults.configureOfficial(HTMLAppGatewayConfiguration(
-            id: "drel-gateway",
-            name: "Drel 官方服务",
-            baseURL: "https://api.drel.app",
-            healthPath: "/health",
-            manifestPath: "/api/v1/html-apps",
-            publicKeyID: "gw-2026-09-15",
-            publicKey: "M3FVnjzVa8bjFQ-VtDov_mvYrik6c-DGSaRm-wdcLzY"
-        ))
         #if DREL_CONTAINER_ONLY
-        DrelContainerBuildPolicy.containerOnlyOverride = true
+        WebBridgeHostCapabilityPolicy.containerOnlyOverride = true
         WebBrowserManager.shared.webGrantsPresenter = nil
         #else
-        DrelContainerBuildPolicy.containerOnlyOverride = false
+        WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
         WebBrowserManager.shared.webGrantsPresenter = { hostVC in
             // 沉浸式浏览器隐藏了导航栏，推入的授权页需要显式恢复，
             // 否则网页授权管理页没有返回入口。
@@ -321,7 +312,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // "test-gateway" made the grant vanish the moment the center opened
         // on a device with a configured gateway. Fall back to the test
         // identity only when no gateway is active.
-        let activeGateway = HTMLAppGatewayRegistry().activeGateway()
+        let activeGateway = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official).activeGateway()
         let fixtureIdentity = activeGateway
             .map { "\($0.id)#\($0.publicKeyID ?? "unsigned")" }
             ?? "test-gateway"

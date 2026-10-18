@@ -14,7 +14,7 @@ final class DrelPushAppCatalogCoordinator {
     static let shared = DrelPushAppCatalogCoordinator()
 
     private let runtime = HTMLAppRuntimeCenter.shared
-    private let gatewayRegistry = HTMLAppGatewayRegistry()
+    private let gatewayRegistry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
     private let receivedAppStore = HTMLAppPushActivationStore()
     private let lock = NSLock()
     private var isRefreshing = false
@@ -96,9 +96,9 @@ final class DrelPushAppCatalogCoordinator {
 
     private func gateway(for appID: String) -> HTMLAppGatewayConfiguration {
         if appID.hasPrefix("dev.drel.") {
-            return HTMLAppGatewayDefaults.official
+            return DrelGatewayConfiguration.official
         }
-        return gatewayRegistry.activeGateway() ?? HTMLAppGatewayDefaults.official
+        return gatewayRegistry.activeGateway() ?? DrelGatewayConfiguration.official
     }
 
     private func finish(_ completion: @escaping (Bool) -> Void, accepted: Bool) {

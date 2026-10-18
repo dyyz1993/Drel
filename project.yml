@@ -142,6 +142,7 @@ targets:
         excludes:
           - "Info.plist"
           - "*.entitlements"
+      - path: ../WebBridgeKit-Framework/Sources/WBKPushWireContract.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.nse

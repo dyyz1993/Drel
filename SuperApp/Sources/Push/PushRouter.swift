@@ -127,7 +127,7 @@ class PushRouter {
         do {
             let target = try launchResolver.resolve(envelope: envelope)
 
-            if !DrelContainerBuildPolicy.nativeBridgeEnabled {
+            if !WebBridgeHostCapabilityPolicy.nativeBridgeEnabled {
                 // Store builds deliberately provide no native JS bridge. The
                 // validated route and parameters travel in namespaced URL
                 // query items instead, so the PWA can render its destination
