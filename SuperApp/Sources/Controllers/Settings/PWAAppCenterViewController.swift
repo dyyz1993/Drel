@@ -46,13 +46,13 @@ final class PWAAppCenterViewController: UIViewController {
         super.viewDidLoad()
         title = "首页"
         view.backgroundColor = ThemeTokens.Color.background
-        #if !DREL_RELEASE_MINIMAL_SETTINGS
+        #if !DREL_RELEASE_MINIMAL_SETTINGS || DREL_V2_MANAGED_ACTIONS_ONLY
         syncRuntimeGatewayIdentity()
         installAppSettingsHandoff()
         #endif
         installHomeView()
         prepareOfficialPushIdentity()
-        #if !DREL_RELEASE_MINIMAL_SETTINGS
+        #if !DREL_RELEASE_MINIMAL_SETTINGS || DREL_V2_MANAGED_ACTIONS_ONLY
         reloadApps()
         NotificationCenter.default.addObserver(
             self,
@@ -95,11 +95,11 @@ final class PWAAppCenterViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
-        #if !DREL_RELEASE_MINIMAL_SETTINGS
+        #if !DREL_RELEASE_MINIMAL_SETTINGS || DREL_V2_MANAGED_ACTIONS_ONLY
         syncRuntimeGatewayIdentity()
         #endif
         refreshPushState()
-        #if !DREL_RELEASE_MINIMAL_SETTINGS
+        #if !DREL_RELEASE_MINIMAL_SETTINGS || DREL_V2_MANAGED_ACTIONS_ONLY
         reloadApps()
         #endif
         observeDidBecomeActive()
@@ -437,7 +437,15 @@ final class PWAAppCenterViewController: UIViewController {
     private func showAppDetails(appID: String) {
         guard let manifest = manifests.first(where: { $0.appID == appID }) else { return }
         let offline = offlinePackageSummary(for: manifest)
-        #if DREL_CONTAINER_ONLY
+        #if DREL_V2_MANAGED_ACTIONS_ONLY
+        let message = """
+        App ID：\(manifest.appID)
+        离线策略：\(offline)
+        已声明操作：\(manifest.capabilitiesV2.map { $0.action.rawValue }.joined(separator: "、").ifEmpty("无"))
+
+        触感反馈和分享仅响应前台用户手势；分享去向由 iOS 系统面板决定。
+        """
+        #elseif DREL_CONTAINER_ONLY
         let message = """
         App ID：\(manifest.appID)
         离线策略：\(offline)
@@ -452,7 +460,7 @@ final class PWAAppCenterViewController: UIViewController {
         已声明能力：\(manifest.capabilities.map(\.rawValue).joined(separator: "、").ifEmpty("无"))
         已授予能力：\(grants.map { $0.capability.rawValue }.joined(separator: "、").ifEmpty("无"))
 
-        推送只能定位到页面；权限和敏感操作仍需用户在应用内确认。
+        低风险原生操作仅在前台用户触发时运行；分享始终由 iOS 系统面板交给用户选择去向。
         """
         #endif
         let alert = UIAlertController(title: manifest.name, message: message, preferredStyle: .actionSheet)
@@ -490,7 +498,7 @@ final class PWAAppCenterViewController: UIViewController {
             )
         })
         #endif
-        #if !DREL_CONTAINER_ONLY
+        #if !DREL_CONTAINER_ONLY || DREL_V2_MANAGED_ACTIONS_ONLY
         alert.addAction(UIAlertAction(title: "管理应用服务", style: .default) { [weak self] _ in
             self?.showGatewayManagement()
         })

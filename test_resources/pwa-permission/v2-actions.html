@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manifest v2 原生操作演示</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; margin: 24px; color: #1d1d1f; }
+        h1 { font-size: 26px; }
+        p { color: #68686d; line-height: 1.5; }
+        button { width: 100%; min-height: 52px; margin-top: 20px; border: 0; border-radius: 14px; background: #4f6af6; color: white; font-size: 17px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <h1>Manifest v2 原生操作演示</h1>
+    <p>分享由用户主动触发，随后由 iOS 系统分享面板展示内容并让用户选择去向。Manifest 声明限定应用可调用的操作，不会创建长期分享授权。</p>
+    <button id="share-v2" onclick="shareV2Demo()">分享演示内容</button>
+    <button id="fullscreen-v2" onclick="fullscreenV2Demo()">切换沉浸全屏</button>
+    <script>
+        let fullscreenEnabled = false;
+        async function shareV2Demo() {
+            await window.BarkBridge.callNative('share', {
+                text: 'WebBridgeKit action declaration demo',
+                url: 'https://example.com/pwa-v2-demo',
+                reason: '页面传入的动态文案不得覆盖签名用途'
+            });
+        }
+        async function fullscreenV2Demo() {
+            fullscreenEnabled = !fullscreenEnabled;
+            await window.BarkBridge.callNative('fullscreen', { enabled: fullscreenEnabled });
+        }
+    </script>
+</body>
+</html>

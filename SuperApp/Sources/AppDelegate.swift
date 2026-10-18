@@ -39,11 +39,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             keychainService: "com.webbridgekit.superapp.push-crypto"
         )
         SelfHostedPushCrypto.configure(appGroup: "group.com.webbridgekit.superapp")
-        #if DREL_CONTAINER_ONLY
+        #if DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY
         WebBridgeHostCapabilityPolicy.containerOnlyOverride = true
+        WebBridgeHostCapabilityPolicy.nativeActionAllowlist = nil
+        WebBrowserManager.shared.webGrantsPresenter = nil
+        #elseif DREL_V2_MANAGED_ACTIONS_ONLY
+        WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
+        WebBridgeHostCapabilityPolicy.nativeActionAllowlist = ["haptic", "vibrate", "share", "fullscreen"]
         WebBrowserManager.shared.webGrantsPresenter = nil
         #else
         WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
+        WebBridgeHostCapabilityPolicy.nativeActionAllowlist = nil
         WebBrowserManager.shared.webGrantsPresenter = { hostVC in
             // 沉浸式浏览器隐藏了导航栏，推入的授权页需要显式恢复，
             // 否则网页授权管理页没有返回入口。
@@ -77,7 +83,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         #if DEBUG
         DrelSelfHostedUITestFixture.startIfRequested()
         #endif
-        #if !DREL_CONTAINER_ONLY
+        #if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY
         if isUITesting {
             TestDataSeeder.populateIfNeeded()
             Self.cleanupInvalidHistoryURLs()
@@ -305,6 +311,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             return
         }
         let runtime = HTMLAppRuntimeCenter.shared
+        let includesV2Actions = ProcessInfo.processInfo.arguments.contains("--pwa-v2-actions")
         // Register the fixture under the ACTIVE gateway identity when one is
         // configured: the permission center syncs runtime.gatewayIdentity to
         // the active gateway on open, and that sync wipes grants recorded
@@ -319,13 +326,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         runtime.gatewayIdentity = fixtureIdentity
         runtime.permissionLedger.revokeAll(appID: "com.webbridgekit.fixture.permissions")
         let origin = ProcessInfo.processInfo.environment["WBK_PWA_PERMISSION_ORIGIN"] ?? "http://localhost:8081"
-        let route = "/test_resources/pwa-permission/index.html"
+        let route = includesV2Actions
+            ? "/test_resources/pwa-permission/v2-actions.html"
+            : "/test_resources/pwa-permission/index.html"
+        let startURL = includesV2Actions
+            ? "\(origin)\(route)?revision=20261018-fullscreen-v2"
+            : "\(origin)\(route)"
         let manifest = HTMLAppManifest(
             appID: "com.webbridgekit.fixture.permissions",
             name: "原生能力演示",
-            startURL: "\(origin)\(route)",
+            startURL: startURL,
             allowedOrigins: [origin],
             capabilities: [.bluetooth, .clipboard, .camera, .location, .fileImport, .share],
+            capabilitiesV2: includesV2Actions ? [
+                HTMLAppActionDeclaration(
+                    action: .share,
+                    origins: [origin],
+                    purposeId: "fixture-share-demo",
+                    purpose: "分享此演示内容",
+                    scope: .appSession
+                ),
+                HTMLAppActionDeclaration(
+                    action: .fullscreen,
+                    origins: [origin],
+                    purposeId: "fixture-fullscreen-demo",
+                    purpose: "沉浸显示此演示内容",
+                    scope: .appSession
+                )
+            ] : [],
             routes: [route],
             cache: HTMLAppCachePolicy(
                 strategy: .networkOnly,
