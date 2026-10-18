@@ -14,6 +14,7 @@ configs:
   Debug: debug
   Release: release
   Drel14Release: release
+  Drel15Release: release
 
 targets:
   Drel:
@@ -70,13 +71,20 @@ targets:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
           PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store
+        Drel15Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY
+          MARKETING_VERSION: "1.5.0"
+          CURRENT_PROJECT_VERSION: "90"
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store
     postBuildScripts:
       - name: Retain Required SDK Privacy Prompts for Store Build
         basedOnDependencyAnalysis: false
         outputFiles:
           - $(DERIVED_FILE_DIR)/strip-bridge-privacy-prompts.stamp
         script: |
-          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ]; then
+          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ] || [ "${CONFIGURATION}" = "Drel15Release" ]; then
             PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
             if [ -f "${PLIST}" ]; then
               for KEY in \
@@ -95,7 +103,7 @@ targets:
         outputFiles:
           - $(DERIVED_FILE_DIR)/strip-test-resources.stamp
         script: |
-          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ]; then
+          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ] || [ "${CONFIGURATION}" = "Drel15Release" ]; then
             echo "Stripping test/debug HTML resources from Release bundle..."
             cd "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app" || exit 0
             rm -f *test*.html bridge-*.html slow_resource*.html trigger_*.html \
@@ -170,6 +178,14 @@ targets:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
           PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store
+        Drel15Release:
+          MARKETING_VERSION: "1.5.0"
+          CURRENT_PROJECT_VERSION: "90"
+          DEVELOPMENT_TEAM: B45VZCNYU3
+          PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.nse
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store
 
   DrelTests:
     type: bundle.unit-test
@@ -231,8 +247,15 @@ schemes:
         Drel: all
     run:
       config: Drel14Release
+
+  Drel15Store:
+    build:
+      targets:
+        Drel: all
+    run:
+      config: Drel15Release
     archive:
-      config: Drel14Release
+      config: Drel15Release
 
   DrelUITests:
     build:

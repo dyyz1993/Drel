@@ -78,6 +78,63 @@ final class PWAPermissionTests: XCTestCase {
         XCTAssertTrue(bridgeButton.exists)
     }
 
+    func testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt() {
+        app.launchArguments.append("--pwa-v2-actions")
+        app.launch()
+
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 12))
+        appButton.tap()
+        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
+        app.buttons["打开应用"].tap()
+
+        let shareButton = app.webViews.buttons["分享演示内容"]
+        XCTAssertTrue(shareButton.waitForExistence(timeout: 12))
+        shareButton.tap()
+
+        let consentPrompt = element("pwa.permission.prompt")
+        XCTAssertFalse(consentPrompt.waitForExistence(timeout: 2))
+        let systemShareSheet = app.otherElements["ActivityListView"]
+        XCTAssertTrue(systemShareSheet.waitForExistence(timeout: 8), app.debugDescription)
+
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "v2-share-ios-system-sheet-local-fixture"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        let closeButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "关闭")).firstMatch
+        if closeButton.exists { closeButton.tap() }
+    }
+
+    func testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit() {
+        app.launchArguments.append("--pwa-v2-actions")
+        app.launch()
+
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 12))
+        appButton.tap()
+        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
+        app.buttons["打开应用"].tap()
+
+        let fullscreenButton = app.webViews.buttons["切换沉浸全屏"]
+        XCTAssertTrue(fullscreenButton.waitForExistence(timeout: 12))
+        fullscreenButton.tap()
+
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
+        XCTAssertFalse(app.navigationBars.firstMatch.waitForExistence(timeout: 2))
+        let nativeExit = element("browserManager.immersiveReturnButton")
+        XCTAssertTrue(nativeExit.waitForExistence(timeout: 3))
+        nativeExit.tap()
+
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "v2-fullscreen-host-exit-visible"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        nativeExit.tap()
+        XCTAssertTrue(fullscreenButton.waitForExistence(timeout: 4), "The host exit control must return to the app without closing the HTML app")
+    }
+
     func testBluetoothRequestUsesManagedPWAConsentBeforeSystemAccess() {
         app.launch()
 
