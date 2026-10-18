@@ -52,6 +52,33 @@ The Drel product (SuperApp app target, UI tests, notification service
 extension, server, product website, developer skill, and release tooling) will
 move to a separate repository. The split is executed in two phases.
 
+### Current status update — 2026-10-18
+
+The physical repository split is complete:
+
+- `Drel` owns the product app, UI tests, notification service extension,
+  server, product website, developer skill, and App Store release tooling.
+- `WebBridgeKit-Framework` owns the reusable SDK sources, framework resources,
+  AppTemplate, and SDK unit tests.
+
+The original Phase 1 wording described work inside the former monorepo. After
+the physical split, the remaining Phase 1 obligation is therefore tracked as
+**ADR-0006 Residual Phase 1** below. It must be finished before Drel 1.5.0
+implementation opens the product Bridge surface.
+
+### ADR-0006 Residual Phase 1
+
+| Residual item | Owning repository | Required result | Acceptance evidence |
+| --- | --- | --- | --- |
+| Official gateway default and migration | WebBridgeKit-Framework | Remove the Drel official gateway, trust anchor, and legacy migration from SDK defaults. Hosts inject their own gateway configuration. | Framework tests prove no Drel-specific default or migration remains. AppTemplate builds without Drel configuration. Drel injects its gateway explicitly. |
+| Store container policy | WebBridgeKit-Framework and Drel | Remove `DREL_CONTAINER_ONLY` and Drel-named policy from SDK source. Express container-only behavior only through a host-injected policy or app-target configuration. | Framework Release remains bridge-capable by default. Drel Store build still reports `Bridge=0` and passes its container-only verifier. |
+| Push identity namespaces | WebBridgeKit-Framework | Remove Drel App Group and Keychain defaults from `PushCipher` and `SelfHostedPushCrypto`. SDK defaults use a WebBridgeKit namespace; Drel injects product identifiers. | Contract tests cover default namespace isolation and host override. Drel push regression remains green. |
+| Notification extension contract | Drel, with a shared definition from WebBridgeKit-Framework | Stop hand-copying push crypto and envelope constants in the NSE. Consume one lightweight shared wire-contract source without pulling the full SDK dependency graph into the extension. | NSE target has no duplicated protocol constants. Cross-repo contract drift test compares the shared definition with the server and SDK tests. |
+| Verification ownership | Both | Separate framework SDK gates from Drel product gates. Remove stale cross-repo scheme references. | Framework JSBridge regression runs only SDK targets. Drel owns App WebView/UI integration and release gates. Both repositories’ boundary scripts pass. |
+
+Residual Phase 1 is a hard pre-implementation gate for Drel 1.5.0 Bridge work
+and a hard pre-submission gate for the 1.5.0 release.
+
 ### Phase 1 — De-coupling inside the current repository (prerequisite)
 
 - `HTMLAppGatewayDefaults.official` (base URL, trust anchor, migration logic)

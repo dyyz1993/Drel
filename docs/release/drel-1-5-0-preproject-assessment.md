@@ -5,6 +5,11 @@ Date: 2026-10-16
 Status: analysis only. No Drel 1.5.0 implementation, ASC version, or feature
 branch is authorized by this document.
 
+Update on 2026-10-18: the four open questions in section 12 are now settled by
+`docs/release/drel-1-5-0-owner-decisions.md`. This assessment remains the
+technical rationale and source audit; it does not by itself authorize code
+changes.
+
 ## 0. Owner decisions
 
 The product owner selected this pre-project direction on 2026-10-16:
@@ -408,7 +413,8 @@ Resolved:
 - Offline eligibility: excluded from 1.5.0.
 - ADR-0006 Phase 1: hard submission gate.
 
-Still open:
+Resolved on 2026-10-18 by
+`docs/release/drel-1-5-0-owner-decisions.md`:
 
 1. Does Drel need a local audit history visible to users, or is the current
    permission list sufficient for the first release?
@@ -416,6 +422,10 @@ Still open:
    though they do not expose user data?
 3. Who owns security review and sign-off?
 4. Who owns App Review narrative and privacy disclosure sign-off?
+
+The accepted answers are, respectively: require a local audit history; require
+signed declarations for haptic and vibrate; the product owner owns security
+sign-off; and the product owner owns App Review and privacy sign-off.
 
 ## 13. Recommended decision
 
