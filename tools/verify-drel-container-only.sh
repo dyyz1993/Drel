@@ -23,20 +23,20 @@ check() {
 
 check "Release defines the fixed Store policy" \
     "test \"$(rg -c 'SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY' project.yml)\" -ge 2"
-check "Policy is compile-time fixed" \
-    "rg -q '#if DREL_CONTAINER_ONLY' "$WBK_FW"/Sources/Runtime/DrelContainerBuildPolicy.swift"
+check "Policy is host-injected and SDK-neutral" \
+    "rg -q 'WebBridgeHostCapabilityPolicy' "$WBK_FW"/Sources/Runtime/DrelContainerBuildPolicy.swift && ! rg -q 'DrelContainerBuildPolicy|DREL_CONTAINER_ONLY' "$WBK_FW"/Sources --glob '*.swift'"
 check "Default browser path gates bridge injection" \
-    "rg -q 'if DrelContainerBuildPolicy\\.nativeBridgeEnabled' "$WBK_FW"/Sources/ViewModels/WebBrowserViewModel.swift"
+    "rg -q 'if WebBridgeHostCapabilityPolicy\\.nativeBridgeEnabled' "$WBK_FW"/Sources/ViewModels/WebBrowserViewModel.swift"
 check "Legacy browser path gates bridge injection" \
-    "rg -q 'guard DrelContainerBuildPolicy\\.nativeBridgeEnabled else' "$WBK_FW"/Sources/Controllers/WebViewController\\+Delegates.swift"
+    "rg -q 'guard WebBridgeHostCapabilityPolicy\\.nativeBridgeEnabled else' "$WBK_FW"/Sources/Controllers/WebViewController\\+Delegates.swift"
 check "Pooled browser is unavailable in Store builds" \
-    "rg -q 'if DrelContainerBuildPolicy\\.nativeBridgeEnabled' "$WBK_FW"/Sources/Controllers/WebViewController.swift"
+    "rg -q 'if WebBridgeHostCapabilityPolicy\\.nativeBridgeEnabled' "$WBK_FW"/Sources/Controllers/WebViewController.swift"
 check "Store build excludes the Cache debug control" \
-    "rg -U -q '#if !DREL_CONTAINER_ONLY[[:space:][:print:]]*setupCacheDebugButton\\(\\)[[:space:][:print:]]*#endif' "$WBK_FW"/Sources/Controllers/WebViewController.swift"
+    "rg -q 'if WebBridgeHostCapabilityPolicy\\.nativeBridgeEnabled' "$WBK_FW"/Sources/Controllers/WebViewController.swift"
 check "Managed launch injection is unavailable in Store builds" \
-    "rg -q 'guard DrelContainerBuildPolicy\\.nativeBridgeEnabled else' "$WBK_FW"/Sources/Controllers/WebBrowserViewController.swift"
+    "rg -q 'guard WebBridgeHostCapabilityPolicy\\.nativeBridgeEnabled else' "$WBK_FW"/Sources/Controllers/WebBrowserViewController.swift"
 check "Immersive menu hides app settings in Store builds and favorites share the capsule entry URL" \
-    "rg -q 'managedHTMLAppID != nil, DrelContainerBuildPolicy\\.nativeBridgeEnabled' "$WBK_FW"/Sources/Controllers/WebBrowserViewController\\+Menu.swift && rg -q 'toggleImmersiveFavorite' "$WBK_FW"/Sources/Controllers/WebBrowserViewController\\+Menu.swift && ! rg -q 'favoriteService\\.addFavorite' "$WBK_FW"/Sources/Controllers/WebBrowserViewController\\+Menu.swift"
+    "rg -q 'managedHTMLAppID != nil, WebBridgeHostCapabilityPolicy\\.nativeBridgeEnabled' "$WBK_FW"/Sources/Controllers/WebBrowserViewController\\+Menu.swift && rg -q 'toggleImmersiveFavorite' "$WBK_FW"/Sources/Controllers/WebBrowserViewController\\+Menu.swift && ! rg -q 'favoriteService\\.addFavorite' "$WBK_FW"/Sources/Controllers/WebBrowserViewController\\+Menu.swift"
 check "Push route uses URL context in Store builds" \
     "rg -q 'target\\.containerOnlyURL' SuperApp/Sources/Push/PushRouter.swift"
 check "Push URLs use the shared message presentation policy and bypass the HTML-app manifest loader" \

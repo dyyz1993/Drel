@@ -49,6 +49,7 @@ run_gate "Archive Release" "xcodebuild archive -workspace Drel.xcworkspace -sche
 run_gate "No Release test HTML" "if [ -d '$ARCHIVE_PATH/Products/Applications/Drel.app' ]; then ! find '$ARCHIVE_PATH/Products/Applications/Drel.app' -iname '*test*.html' | grep -q .; else exit 1; fi"
 run_gate "No DEBUG-only code in Release" "bash tools/verify-release-no-debug.sh '$ARCHIVE_PATH/Products/Applications/Drel.app'"
 run_gate "Drel Store container-only policy" "bash tools/verify-drel-container-only.sh"
+run_gate "Drel App WebView regression" "bash tools/run-drel-app-webview-regression.sh"
 run_gate "Drel Store minimal settings policy" "bash tools/verify-drel-release-settings.sh"
 run_gate "Drel critical-alert policy" "bash tools/verify-drel-critical-alert-policy.sh"
 run_gate "APNs single-attempt policy" "bash tools/verify-apns-single-attempt.sh"

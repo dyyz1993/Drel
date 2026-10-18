@@ -16,7 +16,7 @@ final class DrelPushChannelConfigurationViewController: UIViewController {
     private let rotateOfficialButton = UIButton(type: .system)
     private let manageSelfHostedButton = UIButton(type: .system)
 
-    private let officialBaseURL = HTMLAppGatewayDefaults.official.baseURL
+    private let officialBaseURL = DrelGatewayConfiguration.official.baseURL
     private var officialIdentity: String?
 
     override func viewDidLoad() {

@@ -6,7 +6,10 @@ import WebBridgeKit
 
 final class GatewayConfigurationViewController: UIViewController {
     private let allowsDevelopmentMode = _isDebugAssertConfiguration()
-    private lazy var registry = HTMLAppGatewayRegistry(allowsDevelopmentHTTP: allowsDevelopmentMode)
+    private lazy var registry = HTMLAppGatewayRegistry(
+        allowsDevelopmentHTTP: allowsDevelopmentMode,
+        officialGateway: DrelGatewayConfiguration.official
+    )
     private lazy var onboardingService = HTMLAppGatewayOnboardingService(
         gatewayRegistry: registry,
         allowsDevelopmentMode: allowsDevelopmentMode

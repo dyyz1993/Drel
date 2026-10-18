@@ -5,10 +5,8 @@ import UserNotifications
 /// NSE glue for end-to-end encrypted pushes.
 ///
 /// Deliberately SELF-CONTAINED (no WebBridgeKit import): the extension
-/// target must not drag the framework's CocoaPods graph. The crypto logic
-/// mirrors the framework's PushCipher contract — locked by
-/// PushCipherContractTests — so keep the two in sync when the wire format
-/// changes.
+/// target compiles the dependency-free `WBKPushWireContract` source and
+/// therefore must not drag the framework's CocoaPods graph.
 ///
 /// Key storage contract (all written by the app):
 /// 1. App-group UserDefaults: wbk.push-crypto.aes-key
@@ -17,14 +15,14 @@ import UserNotifications
 /// mirrors are expected to exist by the time a push arrives.
 enum PushCrypto {
 
-    static let ciphertextField = "ciphertext"
-    static let selfHostedEnvelopeField = "drelEnvelope"
+    static let ciphertextField = WBKPushWireContract.ciphertextField
+    static let selfHostedEnvelopeField = WBKPushWireContract.selfHostedEnvelopeField
     private static let suiteName = "group.com.webbridgekit.superapp"
-    private static let defaultsKey = "wbk.push-crypto.aes-key"
-    private static let keyFile = "push-crypto.key"
-    private static let selfHostedPrivateKeyDefaultsKey = "drel.selfhosted-push.x25519-private-key"
-    private static let selfHostedPrivateKeyFile = "drel-selfhosted-push.x25519-private-key"
-    private static let selfHostedSchema = "drel.push-envelope.v1"
+    private static let defaultsKey = WBKPushWireContract.sharedAESDefaultsKey
+    private static let keyFile = WBKPushWireContract.sharedAESFileSubpath
+    private static let selfHostedPrivateKeyDefaultsKey = WBKPushWireContract.selfHostedPrivateKeyDefaultsKey
+    private static let selfHostedPrivateKeyFile = WBKPushWireContract.selfHostedPrivateKeyFileSubpath
+    private static let selfHostedSchema = WBKPushWireContract.selfHostedSchema
 
     private struct SelfHostedEnvelope: Codable {
         let schema: String
@@ -137,8 +135,10 @@ enum PushCrypto {
 
         do {
             let secret = try privateKey.sharedSecretFromKeyAgreement(with: ephemeral)
-            let associatedData = Data(
-                "\(selfHostedSchema)|\(envelope.messageID)|\(envelope.createdAt)|\(envelope.expiresAt)".utf8
+            let associatedData = WBKPushWireContract.selfHostedAssociatedData(
+                messageID: envelope.messageID,
+                createdAt: envelope.createdAt,
+                expiresAt: envelope.expiresAt
             )
             let key = secret.hkdfDerivedSymmetricKey(
                 using: SHA256.self,
