@@ -117,4 +117,7 @@ Archive and exported IPA are retained under `/tmp/drel-1-5-0-90-cloud/` and
 - Framework source and tests are in the sibling `WebBridgeKit-Framework`
   repository; Drel source, test, release configuration, and this report are in
   the Drel repository.
-- Working changes are uncommitted in both repositories.
+- The implementation is committed in both repositories. Public release copy and
+  reviewer-facing material are drafted in `drel-1-5-0-whats-new.md` and
+  `drel-1-5-0-review-notes.md`; both remain pending owner approval and a
+  production-gateway demo.
