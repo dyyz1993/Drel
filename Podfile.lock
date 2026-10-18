@@ -42,7 +42,7 @@ DEPENDENCIES:
   - RxDataSources (~> 5.0)
   - RxSwift (~> 6.0)
   - SnapKit
-  - WebBridgeKit (from `/Users/xuyingzhou/Downloads/WebBridgeKit-Framework`)
+  - WebBridgeKit (from `../WebBridgeKit-Framework`)
 
 SPEC REPOS:
   trunk:
@@ -62,7 +62,7 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   WebBridgeKit:
-    :path: "/Users/xuyingzhou/Downloads/WebBridgeKit-Framework"
+    :path: "../WebBridgeKit-Framework"
 
 SPEC CHECKSUMS:
   Alamofire: ddb8d5201667b256dbc225f3fc6e835a0753186f
