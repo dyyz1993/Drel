@@ -34,6 +34,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     private var pendingExternalLaunchURL: URL?
     private var sceneHasExplicitLaunchDestination = false
 
+    #if DREL_V2_MANAGED_ACTIONS_ONLY
+    var hasExplicitLaunchDestination: Bool {
+        pendingExternalLaunchURL != nil || sceneHasExplicitLaunchDestination
+    }
+
+    func markSceneLaunchDestination(_ isExplicit: Bool) {
+        sceneHasExplicitLaunchDestination = isExplicit
+    }
+    #endif
+
     func application(
         _ application: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
@@ -995,13 +1005,17 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = DebugWindow(windowScene: windowScene)
         window.rootViewController = TabBarController()
+        let hasExplicitLaunchDestination = connectionOptions.notificationResponse != nil
+            || !connectionOptions.urlContexts.isEmpty
+        #if DREL_V2_MANAGED_ACTIONS_ONLY
+        appDelegate?.markSceneLaunchDestination(hasExplicitLaunchDestination)
+        #endif
         window.makeKeyAndVisible()
         self.window = window
 
         appDelegate?.adoptSceneWindow(
             window,
-            hasExplicitLaunchDestination: connectionOptions.notificationResponse != nil
-                || !connectionOptions.urlContexts.isEmpty
+            hasExplicitLaunchDestination: hasExplicitLaunchDestination
         )
         // Scene cold launches deliver URLs here, not in launchOptions.
         // Notification taps keep their existing UNUserNotificationCenter routing.

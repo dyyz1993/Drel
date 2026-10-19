@@ -36,7 +36,13 @@ enum DrelExternalAppLinkOpener {
             return
         }
 
+        #if DREL_V2_MANAGED_ACTIONS_ONLY
+        let route = (link.route?.isEmpty == false ? link.route : nil)
+            ?? URL(string: manifest.startURL)?.path
+            ?? manifest.routes.first ?? "/"
+        #else
         let route = (link.route?.isEmpty == false ? link.route : nil) ?? manifest.routes.first ?? "/"
+        #endif
         do {
             let target = try HTMLAppLaunchResolver(trustRegistry: registry).resolve(
                 appID: link.appID,
@@ -44,10 +50,24 @@ enum DrelExternalAppLinkOpener {
                 parameters: link.parameters,
                 source: .direct
             )
-            // External launches always deliver via the bridge-free
-            // containerOnlyURL (validated route + drel_param_* query items):
-            // an external caller has no bridge context, and this keeps the
-            // documented template contract identical across every train.
+            #if DREL_V2_MANAGED_ACTIONS_ONLY
+            // The signed manifest, validated route, action declaration and
+            // foreground gesture checks are the same as an in-app launch.
+            var payload = target.context.bridgePayload
+            payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
+            payload["webbridgekitPageURL"] = target.pageURL.absoluteString
+            let params = WebBrowserParams(
+                displayMode: .immersive,
+                hideNavigationBar: true,
+                hideStatusBar: true,
+                hideTabBar: true,
+                payload: payload,
+                useManifestLoader: false,
+                preferCachedContent: target.offlineMode == .partial
+            )
+            WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: viewController)
+            #else
+            // Earlier trains keep the external link's bridge-free contract.
             let params = DrelMessageOpenPolicy.browserParams(
                 for: target.containerOnlyURL,
                 mode: .immersive,
@@ -56,6 +76,7 @@ enum DrelExternalAppLinkOpener {
                 preferCachedContent: false
             )
             WebBrowserManager.shared.openBrowser(url: target.containerOnlyURL, params: params, from: viewController)
+            #endif
         } catch {
             presentAlert(title: "无法打开应用", message: error.localizedDescription, from: viewController)
         }

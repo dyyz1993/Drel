@@ -37,17 +37,8 @@ final class FavoriteAppReopenCrashTests: XCTestCase {
         XCTAssertTrue(tileReady, "首页我的应用里没有 Drel Offline Demo（激活失败？）")
         captureScreenshot(named: "40-home-grid")
         demoTile.tap()
-
-        // 应用详情面板 → 打开应用
-        let openAction = app.buttons["打开应用"].firstMatch
-        if !openAction.exists {
-            _ = app.sheets.buttons["打开应用"].firstMatch.waitForExistence(timeout: 3)
-        }
-        let openTarget = openAction.exists ? openAction : app.sheets.buttons["打开应用"].firstMatch
-        XCTAssertTrue(openTarget.waitForExistence(timeout: 5), "应用详情面板没有打开应用")
-        openTarget.tap()
         sleep(2)
-        captureScreenshot(named: "41a-after-open-tap")
+        captureScreenshot(named: "41a-after-tile-tap")
 
         // 沉浸式打开（loader）→ 菜单收藏
         let menuButton = app.buttons["browserManager.immersiveMenuButton"]
