@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#5b5cf0">
+  <title>Drel 离线网络演示</title>
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <span class="mark">D</span>
+      <div>
+        <p class="eyebrow">DREL LAB · OFFLINE + NETWORK</p>
+        <h1>离线包，仍可联网</h1>
+      </div>
+    </header>
+
+    <section class="intro" aria-labelledby="intro-title">
+      <h2 id="intro-title">本地加载应用壳，联网获取实时数据。</h2>
+      <p>本页的 HTML、样式和脚本来自 Drel 已校验的本地包；网络恢复时，再从公开接口读取 IP 与天气。</p>
+    </section>
+
+    <section class="status-card" aria-live="polite">
+      <div class="status-line"><span id="network-dot" class="dot"></span><strong id="network-state">正在检测网络</strong></div>
+      <p id="runtime-state">正在读取 Drel 运行环境</p>
+    </section>
+
+    <section class="data-grid" aria-label="实时数据">
+      <article>
+        <span class="label">公网 IP</span>
+        <strong id="ip-value">—</strong>
+        <small id="ip-source">等待刷新</small>
+      </article>
+      <article>
+        <span class="label">深圳天气</span>
+        <strong id="weather-value">—</strong>
+        <small id="weather-source">等待刷新</small>
+      </article>
+    </section>
+
+    <section class="actions">
+      <button id="refresh" type="button">刷新实时数据</button>
+      <p id="updated-at">尚未取得数据</p>
+    </section>
+
+    <section class="explain">
+      <h2>验证什么？</h2>
+      <ol>
+        <li>下载安装包后，即使断网也能打开本页。</li>
+        <li>联网时点击刷新，请求 IP 与天气接口并渲染结果。</li>
+        <li>断网时不白屏；展示本次 WebView 保存的最近结果，或明确显示尚无缓存。</li>
+      </ol>
+      <p><strong>注意：</strong>强离线保证静态应用包，不会自动永久保存任意 API 返回数据。清除网页数据后，最近结果也会消失。</p>
+    </section>
+  </main>
+  <script src="assets/app.js"></script>
+</body>
+</html>

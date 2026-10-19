@@ -63,6 +63,7 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
         case haptic
         case vibrate
         case share
+        case fullscreen
     }
 
     enum PermissionScope: String, Codable, Sendable {

@@ -93,6 +93,10 @@ test_resources/*
 !test_resources/drel-container-only-check.html
 !test_resources/offline-package/
 !test_resources/offline-package/**
+!test_resources/action-demo/
+!test_resources/action-demo/**
+!test_resources/offline-network-demo/
+!test_resources/offline-network-demo/**
 package.json
 !infra/cloudflare/drel-api-proxy/package.json
 !test_resources/offline-package/package.json
