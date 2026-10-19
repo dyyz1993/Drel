@@ -36,7 +36,8 @@ cat > "$STAGE/test/actions/manifest.webmanifest" <<'EOF'
 }
 EOF
 
-cat > "$STAGE/test/actions/gateway-manifest.json" <<'EOF'
+WEB_MANIFEST_SHA256=$(shasum -a 256 "$STAGE/test/actions/manifest.webmanifest" | awk '{print $1}')
+cat > "$STAGE/test/actions/gateway-manifest.json" <<EOF
 {
   "schemaVersion": "1",
   "appId": "dev.drel.action-demo",
@@ -51,6 +52,7 @@ cat > "$STAGE/test/actions/gateway-manifest.json" <<'EOF'
     {"action": "fullscreen", "origins": ["https://drel.app"], "purposeId": "action-demo-fullscreen", "purpose": "Present the demo immersively", "scope": "appSession"}
   ],
   "routes": ["/test/actions/v1/index.html"],
+  "webManifest": {"url": "https://drel.app/test/actions/manifest.webmanifest", "sha256": "$WEB_MANIFEST_SHA256"},
   "cache": {"strategy": "networkOnly", "version": "1", "persistent": false, "restoresLastState": true}
 }
 EOF
