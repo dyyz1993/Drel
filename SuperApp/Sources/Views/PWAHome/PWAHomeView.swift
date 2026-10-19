@@ -88,7 +88,7 @@ struct PWAHomeView: View {
             VStack(alignment: .leading, spacing: ThemeTokens.Spacing.lg) {
                 header
                 endpointCard
-                #if !DREL_RELEASE_MINIMAL_SETTINGS
+                #if !DREL_RELEASE_MINIMAL_SETTINGS || DREL_V2_MANAGED_ACTIONS_ONLY
                 appsSection
                 #endif
                 testPushSection
@@ -634,18 +634,24 @@ struct PWAHomeView: View {
 /// scrolling.
 private struct StatusBarScrim: View {
     var body: some View {
-        LinearGradient(
-            stops: [
-                .init(color: Color.appBackground, location: 0),
-                .init(color: Color.appBackground, location: 0.45),
-                .init(color: Color.appBackground.opacity(0), location: 1),
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .frame(height: 64)
-        .frame(maxWidth: .infinity)
-        .ignoresSafeArea(edges: .top)
+        GeometryReader { geometry in
+            // Duo can place system chrome at the side, leaving no top inset.
+            // A fixed top scrim would then cover the home title itself.
+            if geometry.safeAreaInsets.top > 0 {
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.appBackground, location: 0),
+                        .init(color: Color.appBackground, location: 0.45),
+                        .init(color: Color.appBackground.opacity(0), location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 64)
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .top)
+            }
+        }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

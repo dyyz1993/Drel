@@ -38,6 +38,70 @@ final class LayoutGuardTests: XCTestCase {
 
     // MARK: - Combined Layout Checks
 
+    func testPrimaryPagesRenderAfterColdLaunchAndTabSwitching() {
+        let pages = [
+            ("tab.apps", "pwaCenter.table"),
+            ("tab.notifications", "InboxViewController"),
+            ("tab.settings", "SettingsViewController"),
+            ("tab.apps", "pwaCenter.table")
+        ]
+        for (tab, content) in pages {
+            let button = app.buttons[tab]
+            XCTAssertTrue(button.waitForExistence(timeout: 10))
+            button.tap()
+            assertPageHasVisibleArea(content)
+            retainScreenshot(tab)
+        }
+
+        app.terminate()
+        app.launch()
+        assertPageHasVisibleArea("pwaCenter.table")
+        XCTAssertTrue(app.buttons["home.push.copy"].isHittable)
+        retainScreenshot("home-relaunch")
+    }
+
+    func testHomeContentSurvivesOrientationChanges() {
+        let originalOrientation = XCUIDevice.shared.orientation
+        defer { XCUIDevice.shared.orientation = originalOrientation }
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft] {
+            XCUIDevice.shared.orientation = orientation
+            assertPageHasVisibleArea("pwaCenter.table")
+            XCTAssertTrue(app.buttons["home.push.copy"].isHittable)
+            retainScreenshot("home-orientation-\(orientation.rawValue)")
+        }
+    }
+
+    func testSceneURLRoutingPreservesContent() throws {
+        guard #available(iOS 16.4, *) else {
+            throw XCTSkip("Opening an app with a URL requires iOS 16.4")
+        }
+        app.open(URL(string: "webbridgekit://tab?index=2")!)
+        assertPageHasVisibleArea("SettingsViewController")
+        app.terminate()
+        app.open(URL(string: "webbridgekit://tab?index=1")!)
+        assertPageHasVisibleArea("InboxViewController")
+    }
+
+    private func assertPageHasVisibleArea(_ identifier: String) {
+        let content = app.descendants(matching: .any)[identifier].firstMatch
+        let visibleArea = NSPredicate { [self] _, _ in
+            guard content.exists else { return false }
+            let window = app.windows.firstMatch.frame
+            let visible = content.frame.intersection(window)
+            return visible.width > window.width / 2 && visible.height > window.height / 2
+        }
+        let expectation = XCTNSPredicateExpectation(predicate: visibleArea, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 10), .completed,
+                       "\(identifier) must occupy visible content area, not a zero-height view")
+    }
+
+    private func retainScreenshot(_ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testAppsLayoutIntegrity() {
         navigateToTab(identifier: "tab.apps", zhName: "应用", enName: "Apps")
 
