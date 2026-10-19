@@ -3,11 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Drel is a developer push notification utility for iPhone.">
+  <meta name="description" content="Send iPhone push notifications from scripts and CI with Drel. Use Bark-compatible requests, open HTTPS destinations, and get Drel on the App Store.">
   <meta name="theme-color" content="#f7f8fc">
-  <title>Drel — Push, right where you need it.</title>
+  <title>Drel — iPhone Push Notifications &amp; Bark-Compatible API</title>
   <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
+<link rel="canonical" href="https://drel.app/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Drel">
+<meta property="og:url" content="https://drel.app/">
+<meta property="og:title" content="Drel — iPhone Push Notifications &amp; Bark-Compatible API">
+<meta property="og:description" content="Send iPhone push notifications from scripts and CI with Drel. Use Bark-compatible requests, open HTTPS destinations, and get Drel on the App Store.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Drel", "operatingSystem": "iOS", "applicationCategory": "UtilitiesApplication", "url": "https://drel.app/", "downloadUrl": "https://apps.apple.com/cn/app/drel/id6802806992", "description": "Send iPhone push notifications from scripts and CI with Drel. Use Bark-compatible requests, open HTTPS destinations, and get Drel on the App Store."}</script>
 </head>
 <body>
   <header class="shell nav">
@@ -19,7 +26,7 @@
       <a href="/self-hosted/">Self-host</a>
       <a href="/support/">Support</a>
       <a href="/privacy/">Privacy</a>
-      <a class="nav-cta" href="#release">iPhone · TestFlight</a>
+      <a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store</a>
     </nav>
   </header>
 
@@ -31,15 +38,15 @@
         <p class="lead">Drel gives developers one dependable place for notifications. Send a push, tap it, and open its exact HTTPS destination inside a focused native container.</p>
         <section class="skill-install" aria-labelledby="skill-install-title">
           <div>
-            <span id="skill-install-title">Build Drel apps with an agent</span>
+            <span id="skill-install-title">Build Drel apps · legacy public skill distribution</span>
             <code>npx skills add dyyz1993/WebBridgeKit --skill drel-app-development</code>
           </div>
           <button class="copy-command" type="button" data-copy-command="npx skills add dyyz1993/WebBridgeKit --skill drel-app-development" aria-describedby="skill-copy-status">Copy skill command</button>
           <span id="skill-copy-status" class="copy-status" aria-live="polite"></span>
         </section>
         <div class="actions">
-          <a class="button primary" href="#how">See the developer loop <span aria-hidden="true">→</span></a>
-          <a class="button secondary" href="/skills/drel-app-development/">Read the skill</a>
+          <a class="button primary" href="https://apps.apple.com/cn/app/drel/id6802806992">Download on the App Store</a>
+          <a class="button secondary" href="/docs/">Developer docs</a>
         </div>
       </div>
       <div class="route-stage" aria-label="A push arriving at its destination">
@@ -54,7 +61,7 @@
     <div class="strip">
       <div class="shell strip-inner">
         <span><i class="status-dot"></i> Built for developers</span>
-        <span>Open-source push service</span>
+        <span>Bark-compatible push API</span>
         <span>Focused web container</span>
         <span>Built with WebBridgeKit</span>
       </div>
@@ -90,6 +97,8 @@
           <span class="eyebrow">A developer-shaped notification</span>
           <h2>Your tools can call home.</h2>
           <p>Use a Bark-compatible push request from a shell script, CI job, personal dashboard, or an AI-built web tool. Your server remains yours.</p>
+          <p><a href="/compare/bark/">Coming from Bark? Read the compatibility and migration guide →</a></p>
+          <p><a href="/zh/compare/bark/" lang="zh-CN">中文：Bark 替代方案与推送迁移指南</a></p>
         </div>
         <div class="terminal" aria-label="Example push request">
           <div class="terminal-bar"><i class="terminal-dot"></i><i class="terminal-dot"></i><i class="terminal-dot"></i>&nbsp; terminal</div>

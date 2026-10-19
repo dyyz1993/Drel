@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bark 替代方案与 iPhone 推送通知迁移指南 | Drel</title><meta name="description" content="寻找 Bark 替代方案？了解 Drel 的 iPhone 推送通知、Bark 风格 HTTP 请求和网页打开流程，按步骤迁移脚本，并核对密钥、通知参数与自托管服务的兼容边界。">
+<link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css">
+<link rel="alternate" hreflang="en" href="https://drel.app/compare/bark/">
+<link rel="alternate" hreflang="zh-CN" href="https://drel.app/zh/compare/bark/">
+<link rel="alternate" hreflang="x-default" href="https://drel.app/compare/bark/">
+<link rel="canonical" href="https://drel.app/zh/compare/bark/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Drel">
+<meta property="og:url" content="https://drel.app/zh/compare/bark/">
+<meta property="og:title" content="Bark 替代方案与 iPhone 推送通知迁移指南 | Drel">
+<meta property="og:description" content="寻找 Bark 替代方案？了解 Drel 的 iPhone 推送通知、Bark 风格 HTTP 请求和网页打开流程，按步骤迁移脚本，并核对密钥、通知参数与自托管服务的兼容边界。">
+</head><body>
+<header class="docs-shell nav"><a class="brand" href="/"><img src="/assets/drel-mark.svg" alt="">Drel</a><nav class="nav-links"><a href="/docs/push/">推送 API</a><a href="/compare/bark/" lang="en">English</a><a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store 下载</a></nav></header>
+<main class="docs-shell"><section class="docs-hero"><h1>寻找 Bark 替代方案？</h1><p>Drel 可以接收来自脚本、CI 和自动化工具的 iPhone 推送通知，支持常见的 Bark 风格 HTTP 请求。点击通知后，可以在 Drel 内打开对应的 HTTPS 网页。建议先验证一个脚本，再逐项检查实际使用的通知参数。</p><p><a href="/compare/bark/" lang="en">English</a></p></section><div class="docs-main"><section><h2>Drel 和 Bark 有哪些共同点？</h2><p><a href="https://github.com/Finb/Bark">Bark</a> 是开源的 iOS 推送通知应用，官方文档提供 GET、POST 以及标题、正文、URL、分组、声音等参数。Drel 也支持基础的 Bark 风格请求，可以从已有的构建提醒、脚本通知和监控消息开始尝试。</p><p>Drel 是独立产品，与 Bark 没有官方关联或背书。本页说明 Drel 已公开的推送接口，不代表所有 Bark 功能、客户端行为和第三方集成都能直接互换。</p></section>
+<section><h2>按使用场景选择</h2><ul><li>需要给 iPhone 发送自定义提醒：结合 <a href="https://bark.day.app/">Bark 官方文档</a>与 <a href="/docs/push/">Drel 推送 API</a>核对所需功能。</li><li>需要点击通知后在 Drel 内查看报告或仪表盘：通过 <code>url</code> 传递 HTTPS 地址，参阅<a href="/docs/container/">网页容器文档</a>。</li><li>需要安装可离线打开的网页内容：参阅 Drel 的<a href="/docs/offline/">离线包规范</a>。实时接口数据仍可能需要联网。</li></ul></section>
+<section><h2>如何迁移一个 Bark 风格推送脚本？</h2><ol><li>从 App Store 安装 Drel，启用通知并复制 Drel 生成的推送地址。</li><li>在测试脚本里换成 Drel 的服务器地址与密钥。Bark 的密钥和设备注册信息不能直接沿用。</li><li>对标题和正文进行 URL 编码，再验证通知收到后点开的是目标页面。</li></ol><pre class="docs-code">curl 'https://api.drel.app/YOUR_DREL_KEY/Build%20complete/Open%20report' -G \
+  --data-urlencode 'url=https://tools.example/release/42'</pre><p>推送地址包含发送权限，请勿把真实密钥写进公开仓库或截图。上方只有占位符，需要自行替换并运行才会发送通知。</p></section>
+<section><h2>切换前需要核对什么？</h2><ul><li>按 <a href="/docs/push/">Drel 参数文档</a>逐项验证所需字段，不要默认加密格式、重要警报、音量控制或持续响铃与 Bark 完全一致。</li><li>同时检查 HTTP 状态与响应正文；服务接受请求不等于手机已经显示通知。</li><li>在真机锁屏状态验证通知，检查通知权限、专注模式和网络状态。</li><li>自托管需要单独配置服务凭据与配对，请参考<a href="/self-hosted/">自托管服务指南</a>。</li></ul></section>
+<section><h2>可以继续使用 Bark 的密钥吗？</h2><p>不可以，需要使用 Drel 生成的地址。这里复用的是基础 HTTP 请求的写法，不会迁移 Bark 的密钥、历史消息或设备注册信息。</p><h2>尝试 Drel 前需要卸载 Bark 吗？</h2><p>不需要，可以先发送独立的测试通知，验证后再修改生产脚本。</p><h2>Drel 在哪里下载？</h2><p><a href="https://apps.apple.com/cn/app/drel/id6802806992">在 App Store 下载 Drel</a>，开发接入请查阅<a href="/docs/">开发文档</a>。</p></section></div></main>
+<footer class="shell footer"><div class="footer-inner"><span>© 2026 Drel</span><div class="footer-links"><a href="/">Drel</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div></div></footer>
+</body></html>

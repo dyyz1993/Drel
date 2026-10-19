@@ -80,6 +80,8 @@ inject_pinned_data.swift
 node_modules/
 test-results/
 test_resources/*
+!test_resources/data-template/
+!test_resources/data-template/**
 !test_resources/pwa-notification/
 !test_resources/pwa-notification/**
 !test_resources/pwa-agent-console/

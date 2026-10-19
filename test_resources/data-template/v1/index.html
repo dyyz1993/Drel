@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Drel 数据模板</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 40px;
+    font: 16px -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: #f7f7fb; color: #17233d;
+    min-height: 100vh;
+  }
+  @media (prefers-color-scheme: dark) { body { background: #141824; color: #eef1fa; } .card { background: #1d2333; border-color: #2a3148; } }
+  .card {
+    max-width: 640px; margin: 0 auto; background: #fff; border: 1px solid #e6e9f2;
+    border-radius: 20px; padding: 24px; box-shadow: 0 10px 40px rgba(23,35,61,.06);
+  }
+  h1 { font-size: 24px; margin: 0 0 12px; letter-spacing: -0.02em; }
+  .body-text { font-size: 17px; line-height: 1.7; margin: 0 0 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  ul.items { margin: 0 0 16px; padding-left: 22px; }
+  ul.items li { margin: 8px 0; line-height: 1.55; overflow-wrap: anywhere; }
+  .meta { font-size: 12px; opacity: .55; border-top: 1px solid rgba(127,127,127,.25); padding-top: 12px; overflow-wrap: anywhere; }
+  .empty { opacity: .6; font-size: 14px; line-height: 1.7; }
+  code { background: rgba(91,92,240,.12); border-radius: 5px; padding: 1px 5px; font-size: .88em; }
+</style>
+</head>
+<body>
+<main class="card" id="card"></main>
+<script>
+(function () {
+  "use strict";
+
+  // Drel 模板数据契约 v1：推送参数以查询参数到达页面
+  // （drel_app_id / drel_route / drel_source / drel_param_<name>）。
+  // 所有值都是远程数据——只能进 textContent，绝不能拼 HTML。
+  var params = new URLSearchParams(location.search);
+  function text(name) { return params.get("drel_param_" + name) || ""; }
+  function list(name) { return params.getAll("drel_param_" + name).filter(Boolean); }
+
+  var title = text("title");
+  var body = text("body");
+  var items = list("items");
+  var route = params.get("drel_route") || "";
+  var appID = params.get("drel_app_id") || "";
+  var source = params.get("drel_source") || "";
+
+  var card = document.getElementById("card");
+
+  if (!title && !body && items.length === 0) {
+    var empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "这是 Drel 数据模板页。推送携带 appId 指向本模板并附带参数（title / body / items）时，这里会渲染推送内容。参数以 drel_param_* 查询字符串送达，离线包内同样生效。";
+    card.appendChild(empty);
+  } else {
+    if (title) {
+      var h = document.createElement("h1");
+      h.textContent = title;
+      card.appendChild(h);
+    }
+    if (body) {
+      var p = document.createElement("p");
+      p.className = "body-text";
+      p.textContent = body;
+      card.appendChild(p);
+    }
+    if (items.length > 0) {
+      var ul = document.createElement("ul");
+      ul.className = "items";
+      items.forEach(function (value) {
+        var li = document.createElement("li");
+        li.textContent = value;
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+    }
+  }
+
+  var meta = document.createElement("p");
+  meta.className = "meta";
+  meta.textContent = (appID ? "app: " + appID + "  " : "") +
+    (route ? "route: " + route + "  " : "") +
+    (source ? "source: " + source : "");
+  card.appendChild(meta);
+})();
+</script>
+</body>
+</html>

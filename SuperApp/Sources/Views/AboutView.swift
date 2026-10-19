@@ -119,7 +119,7 @@ struct AboutView: View {
     private var feedbackSection: some View {
         Section(header: Text(L10n.tr("about.section.feedback")).font(Font.app(ThemeTokens.Typography.headline))) {
             Button {
-                if let url = URL(string: "https://github.com/dyyz1993/WebBridgeKit/issues") {
+                if let url = URL(string: "https://github.com/dyyz1993/Drel/issues") {
                     UIApplication.shared.open(url)
                 }
             } label: {

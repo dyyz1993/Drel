@@ -15,7 +15,7 @@ Open `http://127.0.0.1:8788`.
 To preview the complete site including the generated offline test package:
 
 ```bash
-bash tools/build-drel-offline-demo-site.sh
+bash tools/build-drel-site.sh
 python3 -m http.server 8788 --directory build/drel-site-staging
 ```
 
@@ -29,7 +29,7 @@ python3 -m http.server 8788 --directory build/drel-site-staging
 Build, deploy and verify the public fixture with:
 
 ```bash
-bash tools/build-drel-offline-demo-site.sh
+bash tools/build-drel-site.sh
 npx wrangler pages deploy build/drel-site-staging --project-name=drel --branch=main
 bash tools/verify-drel-offline-demo-public.sh
 ```
@@ -52,3 +52,33 @@ create a manual Pages CNAME before associating the custom domain in Pages.
 Before launch, configure Cloudflare Email Routing for `support@drel.app`,
 `privacy@drel.app`, and `security@drel.app`, or replace those addresses with
 verified inboxes.
+
+## Links and public distribution
+
+- App Store: https://apps.apple.com/cn/app/drel/id6802806992 (verified product
+  page; regionless links redirected to the storefront homepage during the audit).
+- App and services: https://github.com/dyyz1993/Drel (private, access required).
+- SDK: https://github.com/dyyz1993/WebBridgeKit-Framework (private, access required).
+- Public skill installation intentionally remains
+  `npx skills add dyyz1993/WebBridgeKit --skill drel-app-development`.
+  This is legacy distribution, not the current product source. Do not redirect
+  public users to a private repository for installation.
+- Public support stays at https://drel.app/support/ and support@drel.app;
+  GitHub issue links in the app require repository access.
+
+## Search and release checks
+
+The English and Chinese Bark migration guides use documented compatibility
+claims and link to Bark's official sources. Keep their reciprocal `hreflang`
+links, canonical URLs and sitemap entries aligned. Do not add unrelated brand
+lists, hidden keywords, fabricated reviews or claims of full API parity.
+
+`robots.txt` advertises the sitemap. Product and documentation pages are listed;
+test fixtures, skill artifacts and the 404 page are excluded. Their `noindex`
+headers must be applied by the hosting platform, not just a local HTTP server.
+Search Console submission and actual indexing/ranking require separate verification.
+
+Use `build-drel-site.sh` for a full deployment. Individual demo builders reset
+staging and can otherwise omit the skill ZIP, data-template or action demo.
+Check desktop/mobile rendering, copy-command behavior, internal links and the
+App Store destination before publishing. Do not publish unreleased feature claims.
