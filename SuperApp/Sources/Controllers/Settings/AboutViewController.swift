@@ -277,7 +277,7 @@ class AboutViewController: UIViewController {
     }
 
     private func openGitHubIssues() {
-        let githubURL = "https://github.com/dyyz1993/WebBridgeKit/issues"
+        let githubURL = "https://github.com/dyyz1993/Drel/issues"
         if let url = URL(string: githubURL) {
             UIApplication.shared.open(url)
         }

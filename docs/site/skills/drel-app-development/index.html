@@ -8,6 +8,12 @@
   <title>Drel App Development Skill</title>
   <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
+<link rel="canonical" href="https://drel.app/skills/drel-app-development/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Drel">
+<meta property="og:url" content="https://drel.app/skills/drel-app-development/">
+<meta property="og:title" content="Drel App Development Skill">
+<meta property="og:description" content="A versioned agent skill for building standards-compatible Drel web and offline applications.">
 </head>
 <body>
   <header class="shell nav">
@@ -28,7 +34,7 @@
     </div>
     <section class="code-section" aria-labelledby="install-title">
       <div class="shell code-layout">
-        <div><span class="eyebrow">Install</span><h2 id="install-title">Add it to your agent.</h2><p>Use the GitHub source for updates, or download the versioned ZIP for a manual import.</p></div>
+        <div><span class="eyebrow">Install</span><h2 id="install-title">Add it to your agent.</h2><p>The command below uses the legacy public WebBridgeKit repository for skill distribution. Drel and WebBridgeKit-Framework development have moved to separate private repositories; this command does not install their current source. Use the versioned ZIP for a manual import.</p></div>
         <div class="terminal"><div class="terminal-bar"><i class="terminal-dot"></i><i class="terminal-dot"></i><i class="terminal-dot"></i>&nbsp; terminal</div><pre><span class="comment"># Install only this Drel skill</span>
 npx skills add dyyz1993/WebBridgeKit --skill drel-app-development</pre></div>
       </div>
@@ -36,7 +42,7 @@ npx skills add dyyz1993/WebBridgeKit --skill drel-app-development</pre></div>
     <div class="actions">
       <a class="button primary" href="/skills/drel-app-development/drel-app-development-1.0.0.zip">Download skill ZIP <span aria-hidden="true">↓</span></a>
       <a class="button secondary" href="/skills/drel-app-development/SKILL.md">Open SKILL.md</a>
-      <a class="button secondary" href="https://github.com/dyyz1993/WebBridgeKit/tree/master/skills/drel-app-development">View on GitHub</a>
+      <a class="button secondary" href="https://github.com/dyyz1993/WebBridgeKit/tree/master/skills/drel-app-development">Legacy public skill source</a>
     </div>
     <section class="principle"><div class="principle-card"><span class="eyebrow">Scope</span><h2>Offline is an installation contract, not a cache promise.</h2><p>Static files are verified and installed locally only after a user action. APIs and live data continue to use the network, with an explicit offline fallback.</p></div></section>
   </main>
