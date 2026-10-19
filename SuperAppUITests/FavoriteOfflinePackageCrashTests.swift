@@ -25,9 +25,9 @@ final class FavoriteOfflinePackageCrashTests: XCTestCase {
         XCTAssertTrue(homeTab.waitForExistence(timeout: 15), "首页 tab 不存在")
         homeTab.tap()
 
-        let demoTile = app.staticTexts["Drel Offline Demo"].firstMatch
+        let demoTile = app.descendants(matching: .any)["pwaHome.app.dev.drel.offline-demo"]
         XCTAssertTrue(demoTile.waitForExistence(timeout: 8), "首页没有 Drel Offline Demo")
-        demoTile.tap()
+        demoTile.press(forDuration: 1.2)
 
         // 详情面板：包未下载时是「下载离线包」；已下载过则是「删除离线包」
         // （容器状态保留，测试可重复跑），两者都视为包已就位。

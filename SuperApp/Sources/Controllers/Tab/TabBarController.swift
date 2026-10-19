@@ -104,6 +104,14 @@ class TabBarController: UITabBarController {
 
         SettingsPreferenceKeys.removeLegacyLastURLPreferencesIfNeeded()
 
+        #if DREL_V2_MANAGED_ACTIONS_ONLY
+        // A Home Screen shortcut or notification names an explicit destination.
+        // Do not open the saved default app underneath that destination.
+        if (UIApplication.shared.delegate as? AppDelegate)?.hasExplicitLaunchDestination == true {
+            return
+        }
+        #endif
+
         guard let appID = UserDefaults.standard.string(forKey: SettingsPreferenceKeys.defaultStartupAppID),
               !appID.isEmpty,
               let manifest = HTMLAppRuntimeCenter.shared.trustRegistry.manifest(for: appID),
