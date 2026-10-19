@@ -9,7 +9,7 @@ final class SuperAppHTMLAppSettingsProvider: HTMLAppSettingsViewControllerProvid
     private init() {}
 
     func makeHTMLAppSettingsViewController(appID: String, documentURL: URL?) -> UIViewController? {
-        #if DREL_CONTAINER_ONLY
+        #if DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY
         // Store build: remote pages have no native Bridge or capability grants.
         return nil
         #else

@@ -77,7 +77,7 @@ final class PWAAppCenterViewController: UIViewController {
     /// Container entry: the PWA browser menu's "应用设置" funnels into the same
     /// permission management page as the App Center detail entry.
     private func installAppSettingsHandoff() {
-        #if DREL_CONTAINER_ONLY
+        #if DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY
         WebBrowserManager.shared.appPermissionSettingsPresenter = nil
         #else
         WebBrowserManager.shared.appPermissionSettingsPresenter = { [weak self] host, manifest in
@@ -495,7 +495,7 @@ final class PWAAppCenterViewController: UIViewController {
                 UserDefaults.standard.set(manifest.appID, forKey: SettingsPreferenceKeys.defaultStartupAppID)
             })
         }
-        #if !DREL_CONTAINER_ONLY
+        #if !DREL_CONTAINER_ONLY || DREL_V2_MANAGED_ACTIONS_ONLY
         alert.addAction(UIAlertAction(title: "权限与原生能力", style: .default) { [weak self] _ in
             guard let self else { return }
             self.navigationController?.pushViewController(
