@@ -9,21 +9,49 @@
         h1 { font-size: 26px; }
         p { color: #68686d; line-height: 1.5; }
         button { width: 100%; min-height: 52px; margin-top: 20px; border: 0; border-radius: 14px; background: #4f6af6; color: white; font-size: 17px; font-weight: 600; }
+        button.secondary { background: #253045; }
     </style>
 </head>
 <body>
     <h1>Manifest v2 原生操作演示</h1>
-    <p>分享由用户主动触发，随后由 iOS 系统分享面板展示内容并让用户选择去向。Manifest 声明限定应用可调用的操作，不会创建长期分享授权。</p>
+    <p>分享由用户主动触发，随后由 iOS 系统分享面板展示内容并让用户选择去向。剪贴板和定位需要一次用户授权；添加到主页只会添加当前已注册应用。</p>
+    <button id="clipboard-v2" onclick="clipboardV2Demo()">读取剪贴板</button>
+    <button id="location-v2" onclick="locationV2Demo()">获取当前位置</button>
+    <button id="home-v2" onclick="addToHomeScreenDemo()">添加到 Drel 首页</button>
     <button id="share-v2" onclick="shareV2Demo()">分享演示内容</button>
-    <button id="fullscreen-v2" onclick="fullscreenV2Demo()">切换沉浸全屏</button>
+    <button id="fullscreen-v2" onclick="fullscreenV2Demo()" class="secondary">切换沉浸全屏</button>
+    <p id="result"></p>
     <script>
         let fullscreenEnabled = false;
+        const output = document.getElementById('result');
+        const show = (message) => { output.textContent = message; };
+        async function clipboardV2Demo() {
+            try {
+                const result = await window.BarkBridge.callNative('clipboard', { action: 'read' });
+                show(`剪贴板：${result && result.data ? result.data.text || result.data : result}`);
+            } catch (error) { show(`剪贴板失败：${error.message}`); }
+        }
+        async function locationV2Demo() {
+            try {
+                const result = await window.BarkBridge.callNative('getLocation', {});
+                show(`位置：${result && result.data ? JSON.stringify(result.data) : JSON.stringify(result)}`);
+            } catch (error) { show(`定位失败：${error.message}`); }
+        }
+        async function addToHomeScreenDemo() {
+            try {
+                const result = await window.BarkBridge.callNative('addToHomeScreen', { reason: '添加当前演示应用' });
+                show(`添加到主页：${result && result.data ? result.data.result : 'done'}`);
+            } catch (error) { show(`添加失败：${error.message}`); }
+        }
         async function shareV2Demo() {
-            await window.BarkBridge.callNative('share', {
-                text: 'WebBridgeKit action declaration demo',
-                url: 'https://example.com/pwa-v2-demo',
-                reason: '页面传入的动态文案不得覆盖签名用途'
-            });
+            try {
+                await window.BarkBridge.callNative('share', {
+                    text: 'WebBridgeKit action declaration demo',
+                    url: 'https://example.com/pwa-v2-demo',
+                    iconURL: window.location.origin + '/images/logo.png',
+                    reason: '页面传入的动态文案不得覆盖签名用途'
+                });
+            } catch (error) { show(`分享失败：${error.message}`); }
         }
         async function fullscreenV2Demo() {
             fullscreenEnabled = !fullscreenEnabled;
