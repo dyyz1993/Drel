@@ -1,5 +1,11 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Drel offline package contract."><title>Drel offline packages</title><link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css"></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Drel offline package contract."><title>Drel offline packages</title><link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css"><link rel="canonical" href="https://drel.app/docs/offline/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Drel">
+<meta property="og:url" content="https://drel.app/docs/offline/">
+<meta property="og:title" content="Drel offline packages">
+<meta property="og:description" content="Drel offline package contract.">
+</head><body>
 <header class="docs-shell nav"><a class="brand" href="/"><img src="/assets/drel-mark.svg" alt="">Drel</a><nav class="nav-links"><a href="/">Home</a><a href="/self-hosted/">Self-host</a><a href="/skills/drel-app-development/">Skill</a><a class="nav-cta" href="/support/">Support</a></nav></header>
 <main class="docs-shell"><section class="docs-hero"><span class="eyebrow">Reference · offline package v1</span><h1>Offline packages</h1><p>Use a verified package when a web app must launch without relying on browser cache. A manifest is an app description; it is not an automatic installation instruction.</p><nav class="docs-nav"><a href="/docs/">Overview</a><a href="/docs/push/">Push API</a><a href="/docs/container/">Web container</a><a aria-current="page" href="/docs/offline/">Offline packages</a><a href="/docs/versions/">Versions</a></nav></section><div class="docs-main">
 <section><h2>What becomes offline</h2><p>A complete installed package contains its declared HTML, CSS, JavaScript, images, fonts and icon assets in Drel-managed persistent storage. After every declared file is verified and the package is atomically activated, its entrypoint can open without the network or WebKit cache.</p><div class="docs-callout"><strong>Offline assets do not make APIs offline.</strong> A page can still call an HTTPS API whenever the device has a network connection. If the device is offline, API calls, third-party CDNs, dynamic images and login services need an application-level fallback.</div></section>
