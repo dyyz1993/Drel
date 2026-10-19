@@ -42,8 +42,14 @@ final class DrelSmokeTests: XCTestCase {
     // MARK: - App Launch
 
     func testAppLaunchesSuccessfully() {
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 15), "Tab bar should be visible after launch")
+        // Duo exposes its navigation rail as a toolbar, not an AX tab bar.
+        for identifier in ["tab.apps", "tab.notifications", "tab.settings"] {
+            XCTAssertTrue(app.buttons[identifier].waitForExistence(timeout: 15))
+        }
+        let home = app.descendants(matching: .any)["pwaCenter.table"].firstMatch
+        XCTAssertTrue(home.waitForExistence(timeout: 5), "Home content must render, not just navigation")
+        XCTAssertGreaterThan(home.frame.height, app.windows.firstMatch.frame.height / 2)
+        XCTAssertTrue(app.buttons["home.push.copy"].isHittable)
     }
 
     func testTabBarHasThreeUserTabs() {

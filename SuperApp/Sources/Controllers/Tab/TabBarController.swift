@@ -171,7 +171,13 @@ class TabBarController: UITabBarController {
         // The product contract requires scroll content to remain visually clear
         // of the navigation surface. A transparent, glass tab bar made cards
         // and text appear beneath the selected tab on iOS 26.
-        tabBar.isTranslucent = false
+        if #available(iOS 27.0, *) {
+            // Duo's vertical tab bar must not be subtracted as a bottom bar:
+            // the legacy opaque layout otherwise gives navigation content zero height.
+            tabBar.isTranslucent = true
+        } else {
+            tabBar.isTranslucent = false
+        }
         tabBar.unselectedItemTintColor = ThemeTokens.Color.textSecondary
         tabBar.tintColor = ThemeTokens.Color.primary
 

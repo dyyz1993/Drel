@@ -32,6 +32,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     /// A `drel://` URL that launched the app cold; processed once the window
     /// exists (see application(_:didFinishLaunchingWithOptions:)).
     private var pendingExternalLaunchURL: URL?
+    private var sceneHasExplicitLaunchDestination = false
+
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(
+            name: "Default Configuration",
+            sessionRole: connectingSceneSession.role
+        )
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
+    }
+
+    func adoptSceneWindow(_ window: UIWindow, hasExplicitLaunchDestination: Bool) {
+        // Keep existing app-level routing code pointed at the scene-owned window.
+        self.window = window
+        sceneHasExplicitLaunchDestination = hasExplicitLaunchDestination
+        Task {
+            await EngineBootstrap.shared.initialize(in: window)
+        }
+    }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         PushCipher.configure(
@@ -143,20 +166,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
         #endif
 
-        // 创建窗口（支持摇一摇触发调试面板）
-        window = DebugWindow(frame: UIScreen.main.bounds)
-
-        // 创建根视图控制器（使用 TabBar）
-        let tabBarController = TabBarController()
-
-        window?.rootViewController = tabBarController
-        window?.makeKeyAndVisible()
-
-        // Initialize all new engines
-        Task {
-            await EngineBootstrap.shared.initialize(in: self.window)
-        }
-
         // 会话恢复：iOS 在系统设置修改隐私权限（TCC）会终止 App——
         // 「前往系统设置」引导流程回来必然是冷启动。5 分钟内的上次
         // 浏览页自动重开，用户改完权限回来直接续上原页面重试。
@@ -191,7 +200,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // The external link (pending above) already claims this launch.
         if restoreEnabled, pendingExternalLaunchURL == nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-                guard let self = self, self.window?.rootViewController != nil,
+                guard let self = self, !self.sceneHasExplicitLaunchDestination,
+                      self.window?.rootViewController != nil,
                       let url = WebBrowserManager.restorableLastURL() else { return }
                 WebBrowserManager.shared.openBrowser(
                     url: url,
@@ -906,6 +916,63 @@ private class DebugWindow: UIWindow {
 #else
 private typealias DebugWindow = UIWindow
 #endif
+
+// MARK: - SceneDelegate
+
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    private var appDelegate: AppDelegate? {
+        UIApplication.shared.delegate as? AppDelegate
+    }
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        guard let windowScene = scene as? UIWindowScene else { return }
+        let window = DebugWindow(windowScene: windowScene)
+        window.rootViewController = TabBarController()
+        window.makeKeyAndVisible()
+        self.window = window
+
+        appDelegate?.adoptSceneWindow(
+            window,
+            hasExplicitLaunchDestination: connectionOptions.notificationResponse != nil
+                || !connectionOptions.urlContexts.isEmpty
+        )
+        // Scene cold launches deliver URLs here, not in launchOptions.
+        // Notification taps keep their existing UNUserNotificationCenter routing.
+        if connectionOptions.notificationResponse == nil {
+            DispatchQueue.main.async { [weak self] in
+                self?.openURLContexts(connectionOptions.urlContexts)
+            }
+        }
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        openURLContexts(URLContexts)
+    }
+
+    private func openURLContexts(_ contexts: Set<UIOpenURLContext>) {
+        for context in contexts {
+            _ = appDelegate?.application(UIApplication.shared, open: context.url)
+        }
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        appDelegate?.applicationDidBecomeActive(UIApplication.shared)
+    }
+
+    func sceneWillEnterForeground(_ scene: UIScene) {
+        appDelegate?.applicationWillEnterForeground(UIApplication.shared)
+    }
+
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        appDelegate?.applicationDidEnterBackground(UIApplication.shared)
+    }
+}
 
 // MARK: - Self-hosted push UI-test loopback fixture
 
