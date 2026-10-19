@@ -8,7 +8,7 @@
 
 // This is a reusable/Debug bridge-management screen. It must not ship in the
 // Drel Store product, where remote pages have no native Bridge surface.
-#if !DREL_CONTAINER_ONLY
+#if !DREL_CONTAINER_ONLY || DREL_V2_MANAGED_ACTIONS_ONLY
 import UIKit
 import WebBridgeKit
 
