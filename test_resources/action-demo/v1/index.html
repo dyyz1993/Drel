@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Drel Action Demo 1</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; min-height: 100vh; background: linear-gradient(170deg,#f5f7fb,#eef1f8); color: #172033; }
+    @media (prefers-color-scheme: dark) { body { background: linear-gradient(170deg,#101623,#181f2e); color: #f2f5fa; } }
+    main { max-width: 680px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 20px 40px; }
+    .card { background: rgba(255,255,255,.82); border: 1px solid rgba(23,32,51,.08); border-radius: 22px; padding: 20px; margin: 16px 0; box-shadow: 0 18px 50px rgba(23,32,51,.08); }
+    @media (prefers-color-scheme: dark) { .card { background: rgba(24,31,46,.9); border-color: rgba(255,255,255,.09); } }
+    .eyebrow { font-size: 12px; letter-spacing: .08em; color: #667085; text-transform: uppercase; font-weight: 700; }
+    h1 { margin: 8px 0 8px; font-size: 30px; letter-spacing: -.03em; }
+    p { margin: 8px 0 16px; line-height: 1.55; color: #4b5565; }
+    @media (prefers-color-scheme: dark) { p { color: #a9b2c1; } }
+    .meta { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-top: 8px; }
+    .meta div { background: rgba(77,80,216,.08); border-radius: 12px; padding: 10px; font-size: 12px; }
+    .actions { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+    button { min-height: 52px; border: 0; border-radius: 16px; padding: 12px; font: inherit; font-weight: 700; color: white; background: #4d50d8; }
+    button.secondary { background: #253045; }
+    button.full { grid-column: 1 / -1; }
+    #result { min-height: 24px; margin-top: 12px; font-size: 13px; color: #68738a; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <div class="eyebrow">Manifest v2 demo</div>
+    <h1>Drel Action Demo</h1>
+    <p>这四个按钮代表签名 Manifest 声明的低影响操作。都必须由你的前台点按触发；没有声明或超时调用会被 Drel 拒绝。</p>
+    <div class="meta">
+      <div>App ID<br><strong>dev.drel.action-demo</strong></div>
+      <div>Version<br><strong>1</strong></div>
+      <div>Origin<br><strong>https://drel.app</strong></div>
+      <div>Actions<br><strong>haptic / vibrate / share / fullscreen</strong></div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="actions">
+      <button id="haptic">触感反馈</button>
+      <button id="vibrate" class="secondary">短震动</button>
+      <button id="share">系统分享</button>
+      <button id="fullscreen" class="secondary">切换沉浸全屏</button>
+      <button id="undeclared" class="full">测试未声明动作</button>
+    </div>
+    <div id="result">等待操作…</div>
+  </section>
+</main>
+<script>
+  let fullscreenEnabled = false;
+  const output = document.getElementById('result');
+  const show = (message) => { output.textContent = message; };
+  async function call(action, params = {}) {
+    show(`调用 ${action} …`);
+    try {
+      const result = await window.BarkBridge.callNative(action, params);
+      show(`${action}: ${result && result.success === false ? '拒绝' : '成功'}`);
+      return result;
+    } catch (error) {
+      show(`${action}: 拒绝 (${error && error.message ? error.message : 'error'})`);
+    }
+  }
+  document.getElementById('haptic').onclick = () => call('haptic', { style: 'medium' });
+  document.getElementById('vibrate').onclick = () => call('vibrate', { duration: 200 });
+  document.getElementById('share').onclick = () => call('share', { text: 'Drel Action Demo 1', url: 'https://drel.app/test/actions/' });
+  document.getElementById('fullscreen').onclick = () => {
+    fullscreenEnabled = !fullscreenEnabled;
+    return call('fullscreen', { enabled: fullscreenEnabled });
+  };
+  document.getElementById('undeclared').onclick = () => call('clipboard', { action: 'read' });
+</script>
+</body>
+</html>
