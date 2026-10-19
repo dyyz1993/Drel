@@ -10,7 +10,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 rg -q '^  Drel15Release: release$' project.yml || fail "Drel 1.5 release configuration missing"
 rg -q '^  Drel15Store:$' project.yml || fail "Drel 1.5 Store scheme missing"
 rg -A 7 '^        Drel15Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.5.0"' || fail "Drel 1.5 version mismatch"
-rg -A 7 '^        Drel15Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "91"' || fail "Drel 1.5 build mismatch"
+rg -A 7 '^        Drel15Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "92"' || fail "Drel 1.5 build mismatch"
 rg -A 2 '^        Drel15Release:$' project.yml | rg -q 'DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY' || fail "Drel 1.5 host policy flags missing"
 rg -A 8 '^        Drel15Release:$' project.yml | rg -q 'CODE_SIGN_STYLE: Manual' || fail "Drel 1.5 must use manual App Store signing"
 rg -A 8 '^        Drel15Release:$' project.yml | rg -q 'PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store' || fail "Drel 1.5 App Store profile missing"
