@@ -160,7 +160,6 @@ class SettingsViewModel {
                     iconTintColor: ot
                 )
         ]
-        #if !DREL_RELEASE_MINIMAL_SETTINGS
         storageItems.append(contentsOf: [
                 SettingsItem(
                     icon: nil,
@@ -179,7 +178,6 @@ class SettingsViewModel {
                     iconTintColor: wt
                 )
         ])
-        #endif
         sections.append(SettingsSection(header: L10n.tr("settings.section.storage"), items: storageItems))
 
         var notificationItems: [SettingsItem] = [
