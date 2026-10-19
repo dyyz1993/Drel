@@ -219,7 +219,6 @@ class SettingsViewModel {
         #endif
         sections.append(SettingsSection(header: L10n.tr("settings.section.notification"), items: notificationItems))
 
-        #if !DREL_RELEASE_MINIMAL_SETTINGS
         sections.append(
             SettingsSection(header: L10n.tr("settings.section.preferences"), items: [
                 SettingsItem(
@@ -242,21 +241,6 @@ class SettingsViewModel {
                 )
             ])
         )
-        #else
-        sections.append(
-            SettingsSection(header: L10n.tr("settings.section.preferences"), items: [
-                SettingsItem(
-                    icon: "paintpalette.fill",
-                    lucideIcon: nil,
-                    title: L10n.tr("settings.appearance"),
-                    action: .appearance,
-                    value: L10n.tr("settings.appearance.system"),
-                    iconBackgroundColor: pubg,
-                    iconTintColor: put
-                )
-            ])
-        )
-        #endif
 
         #if !DREL_RELEASE_MINIMAL_SETTINGS && !DREL_CONTAINER_ONLY
         sections.append(SettingsSection(header: L10n.tr("settings.section.developer"), items: [
