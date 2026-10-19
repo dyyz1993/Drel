@@ -523,15 +523,11 @@ class TabBarController: UITabBarController {
         case .cacheManagement:
             nav.pushViewController(ManagementViewController(), animated: true)
         case .favorites:
-            #if !DREL_RELEASE_MINIMAL_SETTINGS
             nav.pushViewController(FavoriteViewController(viewModel: FavoriteViewModel()), animated: true)
-            #endif
         case .history:
-            #if !DREL_RELEASE_MINIMAL_SETTINGS
             let vc = UIHostingController(rootView: RecentAccessHistoryView())
             vc.title = "最近访问"
             nav.pushViewController(vc, animated: true)
-            #endif
         case .notificationSettings:
             NotificationSettingsOpener.open()
         case .pushEncryption:

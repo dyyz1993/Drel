@@ -78,6 +78,15 @@ class FavoriteCell: UITableViewCell {
         return label
     }()
 
+    private let metadataLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeTokens.Typography.caption
+        label.textColor = ThemeTokens.Color.textTertiary
+        label.numberOfLines = 1
+        label.lineBreakMode = .byTruncatingMiddle
+        return label
+    }()
+
     // MARK: - Properties
 
     private var currentFavorite: URLFavorite?
@@ -112,6 +121,7 @@ class FavoriteCell: UITableViewCell {
         containerView.addSubview(faviconImageView)
         containerView.addSubview(titleRowStack)
         containerView.addSubview(urlLabel)
+        containerView.addSubview(metadataLabel)
 
         containerView.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(6)
@@ -140,6 +150,12 @@ class FavoriteCell: UITableViewCell {
             make.top.equalTo(titleLabel.snp.bottom).offset(4)
             make.left.equalTo(faviconImageView.snp.right).offset(12)
             make.right.equalToSuperview().offset(-14)
+        }
+
+        metadataLabel.snp.makeConstraints { make in
+            make.top.equalTo(urlLabel.snp.bottom).offset(2)
+            make.left.equalTo(faviconImageView.snp.right).offset(12)
+            make.right.equalToSuperview().offset(-14)
             make.bottom.equalToSuperview().offset(-16)
         }
 
@@ -165,6 +181,7 @@ class FavoriteCell: UITableViewCell {
         } else {
             urlLabel.text = favorite.url
         }
+        metadataLabel.text = Self.metadataText(for: favorite)
 
         // 设置图标
         if let favicon = favorite.favicon, let image = UIImage(data: favicon) {
@@ -179,6 +196,15 @@ class FavoriteCell: UITableViewCell {
         accessibilityIdentifier = "favorite.card.\(favorite.id)"
     }
 
+    private static func metadataText(for favorite: URLFavorite) -> String? {
+        let registry = HTMLAppRuntimeCenter.shared.trustRegistry
+        guard let url = URL(string: favorite.url),
+              let manifest = registry.registeredApp(matching: url) else {
+            return nil
+        }
+        return "应用版本 \(manifest.effectiveOfflineCache.version)"
+    }
+
     // MARK: - Actions
 
     // MARK: - Reuse
@@ -190,6 +216,7 @@ class FavoriteCell: UITableViewCell {
         pinIconView.isHidden = true
         // 重置所有 UI 状态
         titleLabel.text = nil
+        metadataLabel.text = nil
         urlLabel.text = nil
         faviconImageView.backgroundColor = ThemeTokens.Color.surface
     }
