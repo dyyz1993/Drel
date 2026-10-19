@@ -49,11 +49,14 @@ cat > "$STAGE/test/actions/gateway-manifest.json" <<EOF
     {"action": "haptic", "origins": ["https://drel.app"], "purposeId": "action-demo-haptic", "purpose": "Demonstrate brief haptic feedback", "scope": "appSession"},
     {"action": "vibrate", "origins": ["https://drel.app"], "purposeId": "action-demo-vibrate", "purpose": "Demonstrate brief vibration", "scope": "appSession"},
     {"action": "share", "origins": ["https://drel.app"], "purposeId": "action-demo-share", "purpose": "Share the Drel action demo", "scope": "appSession"},
-    {"action": "fullscreen", "origins": ["https://drel.app"], "purposeId": "action-demo-fullscreen", "purpose": "Present the demo immersively", "scope": "appSession"}
+    {"action": "fullscreen", "origins": ["https://drel.app"], "purposeId": "action-demo-fullscreen", "purpose": "Present the demo immersively", "scope": "appSession"},
+    {"action": "clipboard", "origins": ["https://drel.app"], "purposeId": "action-demo-clipboard", "purpose": "Read or write clipboard content for this demo", "scope": "always"},
+    {"action": "location", "origins": ["https://drel.app"], "purposeId": "action-demo-location", "purpose": "Get the current position for this demo", "scope": "always"},
+    {"action": "addToHomeScreen", "origins": ["https://drel.app"], "purposeId": "action-demo-home", "purpose": "Add this demo to the Drel home screen", "scope": "appSession"}
   ],
   "routes": ["/test/actions/v1/index.html"],
   "webManifest": {"url": "https://drel.app/test/actions/manifest.webmanifest", "sha256": "$WEB_MANIFEST_SHA256"},
-  "cache": {"strategy": "networkOnly", "version": "1", "persistent": false, "restoresLastState": true}
+  "cache": {"strategy": "networkOnly", "version": "2", "persistent": false, "restoresLastState": true}
 }
 EOF
 
