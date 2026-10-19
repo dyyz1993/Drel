@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCHIVE_PATH="${1:-/tmp/wbk-v2-runtime-release/Drel-1.5.0-90.xcarchive}"
+EXPECTED_BUILD="${DREL_V2_EXPECTED_BUILD:-90}"
 APP_PATH="$ARCHIVE_PATH/Products/Applications/Drel.app"
 PLIST="$APP_PATH/Info.plist"
 
@@ -12,7 +13,7 @@ value() { /usr/libexec/PlistBuddy -c "Print :$1" "$PLIST" 2>/dev/null || true; }
 [[ -d "$APP_PATH" ]] || fail "Drel.app missing from archive"
 [[ "$(value CFBundleIdentifier)" == "com.webbridgekit.superapp" ]] || fail "unexpected bundle identifier"
 [[ "$(value CFBundleShortVersionString)" == "1.5.0" ]] || fail "archive is not version 1.5.0"
-[[ "$(value CFBundleVersion)" == "90" ]] || fail "archive is not build 90"
+[[ "$(value CFBundleVersion)" == "$EXPECTED_BUILD" ]] || fail "archive is not build $EXPECTED_BUILD"
 [[ -f "$ARCHIVE_PATH/Info.plist" ]] || fail "archive metadata missing"
 /usr/libexec/PlistBuddy -c 'Print :ApplicationProperties' "$ARCHIVE_PATH/Info.plist" >/dev/null 2>&1 || fail "archive ApplicationProperties missing"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH" >/dev/null 2>&1 || fail "archive app signature invalid"
@@ -42,4 +43,4 @@ for marker in '--pwa-v2-actions' 'fixture-share-demo' 'v2-actions.html'; do
     ! strings -a "$APP_PATH/Drel" | grep -qF -- "$marker" || fail "debug fixture leaked into Store binary: $marker"
 done
 
-echo "PASS: signed Drel 1.5.0 (90) archive identity, privacy strings, and fixture boundary verified."
+echo "PASS: signed Drel 1.5.0 ($EXPECTED_BUILD) archive identity, privacy strings, and fixture boundary verified."
