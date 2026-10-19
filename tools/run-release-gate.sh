@@ -12,8 +12,12 @@ RELEASE_SCHEME="${DREL_RELEASE_GATE_SCHEME:-Drel14Store}"
 SWIFTLINT_BIN="$(command -v swiftlint)"
 ARCHIVE_VERSION_OVERRIDES=""
 ARCHIVE_PROVISIONING_UPDATES=""
+ARCHIVE_SIGNING_OVERRIDES=""
 if [[ "${DREL_RELEASE_GATE_ALLOW_PROVISIONING_UPDATES:-}" == "1" ]]; then
     ARCHIVE_PROVISIONING_UPDATES="-allowProvisioningUpdates"
+fi
+if [[ "${DREL_RELEASE_GATE_AUTOMATIC_SIGNING:-}" == "1" ]]; then
+    ARCHIVE_SIGNING_OVERRIDES='CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development" PROVISIONING_PROFILE_SPECIFIER=""'
 fi
 if [[ -n "${DREL_RELEASE_GATE_MARKETING_VERSION:-}" ]]; then
     [[ "$DREL_RELEASE_GATE_MARKETING_VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]] || {
@@ -65,7 +69,7 @@ run_gate "Crash scan" "bash scripts/scan-crash-logs.sh --json | grep '\"total\":
 # Keep archive intermediates separate from any interactive/simulator build.
 # Xcode otherwise uses its shared default DerivedData path and two overlapping
 # builds can corrupt header maps or object-file renames.
-run_gate "Archive Release" "xcodebuild archive -workspace Drel.xcworkspace -scheme '$RELEASE_SCHEME' -archivePath '$ARCHIVE_PATH' -derivedDataPath '${DERIVED_DATA}-archive' -destination 'generic/platform=iOS' $ARCHIVE_VERSION_OVERRIDES $ARCHIVE_PROVISIONING_UPDATES"
+run_gate "Archive Release" "xcodebuild archive -workspace Drel.xcworkspace -scheme '$RELEASE_SCHEME' -archivePath '$ARCHIVE_PATH' -derivedDataPath '${DERIVED_DATA}-archive' -destination 'generic/platform=iOS' $ARCHIVE_VERSION_OVERRIDES $ARCHIVE_PROVISIONING_UPDATES $ARCHIVE_SIGNING_OVERRIDES"
 ARCHIVE_READY="$GATE_LAST_PASS"
 if [[ "$ARCHIVE_READY" == "1" ]]; then
     if [[ -n "${DREL_RELEASE_GATE_MARKETING_VERSION:-}" ]]; then
@@ -87,7 +91,11 @@ run_gate "Drel critical-alert policy" "bash tools/verify-drel-critical-alert-pol
 run_gate "APNs single-attempt policy" "bash tools/verify-apns-single-attempt.sh"
 if [[ "$ARCHIVE_READY" == "1" ]]; then
     if [[ "$RELEASE_SCHEME" == "Drel15Store" ]]; then
-        run_gate "Drel 1.5 Store archive surface" "bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
+        if [[ "${DREL_RELEASE_GATE_AUTOMATIC_SIGNING:-}" == "1" ]]; then
+            run_gate "Drel 1.5 staging archive surface" "DREL_V2_ARCHIVE_SIGNING=development bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
+        else
+            run_gate "Drel 1.5 Store archive surface" "bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
+        fi
     else
         run_gate "Drel Store archive surface" "bash tools/verify-drel-store-archive.sh '$ARCHIVE_PATH'"
     fi

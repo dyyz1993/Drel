@@ -27,7 +27,7 @@ final class PWAPermissionTests: XCTestCase {
 
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 20), "Fixture app should stay visible; stale home state indicates simulator hygiene issue")
-        appButton.tap()
+        appButton.press(forDuration: 1.2)
         XCTAssertTrue(app.buttons["权限与原生能力"].waitForExistence(timeout: 4))
         app.buttons["权限与原生能力"].tap()
 
@@ -52,32 +52,84 @@ final class PWAPermissionTests: XCTestCase {
         add(attachment)
     }
 
-    func testManagedPWABridgeRequestOffersScopesAndCanBeCancelled() {
+    func testHomeTileLongPressShowsSettingsAndPhoneShortcutGuide() {
+        app.launch()
+
+        let tile = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(tile.waitForExistence(timeout: 20))
+        tile.press(forDuration: 1.2)
+        XCTAssertTrue(app.buttons["设为默认启动应用"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["添加到 iPhone 主屏幕…"].exists)
+        app.buttons["设为默认启动应用"].tap()
+        let updatedTile = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        let badgeExpectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label CONTAINS %@", "默认启动应用"),
+            object: updatedTile
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [badgeExpectation], timeout: 5), .completed)
+        let badgeScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        badgeScreenshot.name = "home-default-startup-badge"
+        badgeScreenshot.lifetime = .keepAlways
+        add(badgeScreenshot)
+
+        tile.press(forDuration: 1.2)
+        app.buttons["添加到 iPhone 主屏幕…"].tap()
+        XCTAssertTrue(app.staticTexts["应用链接已复制"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '快捷指令'")).firstMatch.exists)
+        let guideScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        guideScreenshot.name = "iphone-home-screen-shortcut-guide"
+        guideScreenshot.lifetime = .keepAlways
+        add(guideScreenshot)
+        app.buttons["稍后"].tap()
+
+        tile.tap()
+        XCTAssertTrue(element("browserManager.webView").waitForExistence(timeout: 12))
+        XCTAssertFalse(app.buttons["打开应用"].exists)
+    }
+
+    func testInstalledOfflinePackageShowsHomeBadge() {
+        app.launchArguments.append("--activate-offline-demo")
+        app.launch()
+
+        let tile = element("pwaHome.app.dev.drel.offline-demo")
+        XCTAssertTrue(tile.waitForExistence(timeout: 20))
+        tile.press(forDuration: 1.2)
+        let download = app.buttons["下载离线包"]
+        if download.waitForExistence(timeout: 3) {
+            download.tap()
+        } else {
+            app.buttons["关闭"].tap()
+        }
+        let installed = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label CONTAINS %@", "离线包已安装"),
+            object: tile
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [installed], timeout: 30), .completed)
+        let hud = app.staticTexts["离线包已准备完成"]
+        let hudDismissed = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"),
+            object: hud
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [hudDismissed], timeout: 5), .completed)
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "home-installed-offline-badge"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    func testClipboardWithoutSignedActionIsDeniedWithoutPrompt() {
         app.launch()
 
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let bridgeButton = app.webViews.buttons["读取剪贴板"]
         XCTAssertTrue(bridgeButton.waitForExistence(timeout: 12))
         bridgeButton.tap()
 
-        XCTAssertTrue(element("pwa.permission.prompt").waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["原生能力申请"].exists)
-        // 2026-08-22 产品决策：两选（允许 / 拒绝）
-        for title in ["允许", "拒绝"] {
-            XCTAssertTrue(app.buttons[title].exists, "Missing permission choice: \(title)")
-        }
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = "pwa-bridge-permission-prompt"
-        attachment.lifetime = .keepAlways
-        add(attachment)
-        app.buttons["拒绝"].tap()
         XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
-        XCTAssertTrue(bridgeButton.exists)
+        XCTAssertTrue(app.webViews.staticTexts["Error: PWA 未获得该原生能力授权"].waitForExistence(timeout: 5))
     }
 
     func testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt() {
@@ -87,8 +139,6 @@ final class PWAPermissionTests: XCTestCase {
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let shareButton = app.webViews.buttons["分享演示内容"]
         XCTAssertTrue(shareButton.waitForExistence(timeout: 12))
@@ -115,8 +165,6 @@ final class PWAPermissionTests: XCTestCase {
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let fullscreenButton = app.webViews.buttons["切换沉浸全屏"]
         XCTAssertTrue(fullscreenButton.waitForExistence(timeout: 12))
@@ -144,8 +192,6 @@ final class PWAPermissionTests: XCTestCase {
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let clipboardButton = app.webViews.buttons["读取剪贴板"]
         XCTAssertTrue(clipboardButton.waitForExistence(timeout: 12))
@@ -169,8 +215,6 @@ final class PWAPermissionTests: XCTestCase {
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let locationButton = app.webViews.buttons["获取当前位置"]
         XCTAssertTrue(locationButton.waitForExistence(timeout: 12))
@@ -193,8 +237,6 @@ final class PWAPermissionTests: XCTestCase {
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let homeButton = app.webViews.buttons["添加到 Drel 首页"]
         XCTAssertTrue(homeButton.waitForExistence(timeout: 12))
@@ -246,37 +288,19 @@ final class PWAPermissionTests: XCTestCase {
         add(attachment)
     }
 
-    func testBluetoothRequestUsesManagedPWAConsentBeforeSystemAccess() {
+    func testBluetoothWithoutSignedActionIsDeniedWithoutPrompt() {
         app.launch()
 
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let bridgeButton = app.webViews.buttons["查看蓝牙状态"]
         XCTAssertTrue(bridgeButton.waitForExistence(timeout: 12))
         bridgeButton.tap()
 
-        let prompt = element("pwa.permission.prompt")
-        XCTAssertTrue(prompt.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["允许使用蓝牙？"].exists)
-        XCTAssertTrue(app.staticTexts["允许后，iOS 仍可能显示系统权限确认。"].exists)
-        XCTAssertTrue(app.buttons["允许"].exists)
-        XCTAssertTrue(app.buttons["拒绝"].exists)
-        XCTAssertTrue(app.buttons["允许"].exists)
-        XCTAssertTrue(app.buttons["取消"].exists)
-
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = "pwa-bluetooth-permission-prompt"
-        attachment.lifetime = .keepAlways
-        add(attachment)
-
-        // Keep the UI test deterministic: cancel before CoreBluetooth can ask
-        // for the simulator's system-level authorization.
-        app.buttons["取消"].tap()
-        XCTAssertFalse(prompt.waitForExistence(timeout: 2))
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
+        XCTAssertTrue(app.webViews.staticTexts["Error: PWA 未获得该原生能力授权"].waitForExistence(timeout: 5))
     }
 
     func testGrantedCapabilityCanBeReviewedAndRevoked() {
@@ -285,7 +309,7 @@ final class PWAPermissionTests: XCTestCase {
 
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
-        appButton.tap()
+        appButton.press(forDuration: 1.2)
         XCTAssertTrue(app.buttons["权限与原生能力"].waitForExistence(timeout: 4))
         app.buttons["权限与原生能力"].tap()
 
@@ -307,8 +331,6 @@ final class PWAPermissionTests: XCTestCase {
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
-        app.buttons["打开应用"].tap()
 
         let menu = element("browserManager.immersiveMenuButton")
         XCTAssertTrue(menu.waitForExistence(timeout: 12))

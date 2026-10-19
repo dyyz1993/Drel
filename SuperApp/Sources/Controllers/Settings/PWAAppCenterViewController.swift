@@ -168,7 +168,8 @@ final class PWAAppCenterViewController: UIViewController {
             onManagePushAddress: { [weak self] in self?.showPushAddressManagement() },
             onConfigurePush: { [weak self] in self?.configureActivePushChannel() },
             onSelectPushChannel: { [weak self] channel in self?.selectPushChannel(channel) },
-            onSelectApp: { [weak self] appID in self?.showAppDetails(appID: appID) },
+            onSelectApp: { [weak self] appID in self?.openApp(appID: appID) },
+            onShowAppDetails: { [weak self] appID in self?.showAppDetails(appID: appID) },
             onManageApps: { [weak self] in self?.showGatewayManagement() },
             onOpenAPIExamples: { [weak self] in self?.showAPIExamples() },
             onOpenGuideAndDebug: { [weak self] in self?.showGuideAndDebug() }
@@ -364,7 +365,9 @@ final class PWAAppCenterViewController: UIViewController {
                 iconCacheKey: "\(manifest.appID)|\(manifest.webManifest?.sha256 ?? "no-web-manifest")",
                 fallbackInitial: appInitial(name: displayName, appID: manifest.appID),
                 tint: appTint(for: manifest),
-                version: manifest.effectiveOfflineCache.version
+                version: manifest.effectiveOfflineCache.version,
+                isDefaultStartup: UserDefaults.standard.string(forKey: SettingsPreferenceKeys.defaultStartupAppID) == manifest.appID,
+                isOfflineInstalled: hasCurrentOfflinePackage(for: manifest)
             )
         }
         if !manifests.isEmpty {
@@ -447,6 +450,11 @@ final class PWAAppCenterViewController: UIViewController {
         }
     }
 
+    private func openApp(appID: String) {
+        guard let manifest = manifests.first(where: { $0.appID == appID }) else { return }
+        launch(manifest)
+    }
+
     private func showAppDetails(appID: String) {
         guard let manifest = manifests.first(where: { $0.appID == appID }) else { return }
         let offline = offlinePackageSummary(for: manifest)
@@ -478,6 +486,9 @@ final class PWAAppCenterViewController: UIViewController {
         #endif
         let alert = UIAlertController(title: manifest.name, message: message, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "打开应用", style: .default) { [weak self] _ in self?.launch(manifest) })
+        alert.addAction(UIAlertAction(title: "添加到 iPhone 主屏幕…", style: .default) { [weak self] _ in
+            self?.showPhoneHomeScreenGuide(for: manifest)
+        })
         if manifest.effectiveOfflineCache.isStrongOfflineEligible {
             let hasCurrentPackage = hasCurrentOfflinePackage(for: manifest)
             alert.addAction(UIAlertAction(
@@ -494,12 +505,14 @@ final class PWAAppCenterViewController: UIViewController {
         }
         let defaultStartupAppID = UserDefaults.standard.string(forKey: SettingsPreferenceKeys.defaultStartupAppID)
         if defaultStartupAppID == manifest.appID {
-            alert.addAction(UIAlertAction(title: "取消默认启动应用", style: .default) { _ in
+            alert.addAction(UIAlertAction(title: "取消默认启动应用", style: .default) { [weak self] _ in
                 UserDefaults.standard.removeObject(forKey: SettingsPreferenceKeys.defaultStartupAppID)
+                self?.updateHomeApps()
             })
         } else {
-            alert.addAction(UIAlertAction(title: "设为默认启动应用", style: .default) { _ in
+            alert.addAction(UIAlertAction(title: "设为默认启动应用", style: .default) { [weak self] _ in
                 UserDefaults.standard.set(manifest.appID, forKey: SettingsPreferenceKeys.defaultStartupAppID)
+                self?.updateHomeApps()
             })
         }
         #if !DREL_CONTAINER_ONLY || DREL_V2_MANAGED_ACTIONS_ONLY
@@ -525,6 +538,26 @@ final class PWAAppCenterViewController: UIViewController {
             popover.sourceRect = view.bounds
         }
         present(alert, animated: true)
+    }
+
+    private func showPhoneHomeScreenGuide(for manifest: HTMLAppManifest) {
+        var components = URLComponents()
+        components.scheme = "drel"
+        components.host = "app"
+        components.queryItems = [URLQueryItem(name: "app_id", value: manifest.appID)]
+        guard let url = components.url else { return }
+        UIPasteboard.general.url = url
+        let guide = UIAlertController(
+            title: "应用链接已复制",
+            message: "在 iPhone 的“快捷指令”中，新建快捷指令：先添加“URL”操作并粘贴链接，再添加“打开 URL”操作。打开快捷指令详情，选择“添加到主屏幕”，设置名称和图标。点图标会启动 Drel 并打开这款已注册应用。",
+            preferredStyle: .alert
+        )
+        guide.addAction(UIAlertAction(title: "稍后", style: .cancel))
+        guide.addAction(UIAlertAction(title: "打开快捷指令", style: .default) { _ in
+            guard let shortcutsURL = URL(string: "shortcuts://create-shortcut") else { return }
+            UIApplication.shared.open(shortcutsURL)
+        })
+        present(guide, animated: true)
     }
 
     private func launch(_ manifest: HTMLAppManifest) {
@@ -573,6 +606,7 @@ final class PWAAppCenterViewController: UIViewController {
             guard let self else { return }
             do {
                 let removed = try await self.offlinePackageInstaller.removeInstalledPackage(appID: manifest.appID)
+                self.updateHomeApps()
                 HUDService.shared.showSuccess(withStatus: removed ? "离线包已删除" : "没有可删除的离线包")
             } catch {
                 self.showMessage(title: "无法删除离线包", message: error.localizedDescription)
