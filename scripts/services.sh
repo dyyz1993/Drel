@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON_BIN="$(command -v "${PYTHON_BIN:-python3}")"
 PID_DIR="$PROJECT_ROOT/.services"
 mkdir -p "$PID_DIR"
 
@@ -62,7 +63,7 @@ _wait_for_http_status() {
 }
 
 _xml_escape() {
-    python3 -c 'import html, sys; print(html.escape(sys.stdin.read(), quote=True))'
+    "$PYTHON_BIN" -c 'import html, sys; print(html.escape(sys.stdin.read(), quote=True))'
 }
 
 _launchctl_domain() {
@@ -179,7 +180,7 @@ start_http() {
 
     log "Starting test HTTP server on :$HTTP_PORT ..."
     cd "$PROJECT_ROOT"
-    _launch_service "http" "exec python3 - <<'PY'
+    _launch_service "http" "exec \"$PYTHON_BIN\" - <<'PY'
 import http.server, socketserver, os
 os.chdir('$PROJECT_ROOT')
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -216,7 +217,7 @@ start_prototype() {
 
     log "Starting prototype HTML server on :$PROTO_PORT ..."
     cd "$PROJECT_ROOT/docs/prototype"
-    _launch_service "prototype" "exec python3 - <<'PY'
+    _launch_service "prototype" "exec \"$PYTHON_BIN\" - <<'PY'
 import http.server, socketserver, os
 os.chdir('$PROJECT_ROOT/docs/prototype')
 class Handler(http.server.SimpleHTTPRequestHandler):
