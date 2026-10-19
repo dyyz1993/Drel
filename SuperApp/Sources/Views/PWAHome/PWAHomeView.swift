@@ -26,6 +26,8 @@ final class PWAHomeViewModel: ObservableObject {
         let fallbackInitial: String
         let tint: UIColor
         let version: String?
+        let isDefaultStartup: Bool
+        let isOfflineInstalled: Bool
     }
 
     @Published var pushURL: String
@@ -77,6 +79,7 @@ struct PWAHomeView: View {
     let onConfigurePush: () -> Void
     let onSelectPushChannel: (DrelPushChannel) -> Void
     let onSelectApp: (String) -> Void
+    let onShowAppDetails: (String) -> Void
     let onManageApps: () -> Void
     let onOpenAPIExamples: () -> Void
     let onOpenGuideAndDebug: () -> Void
@@ -414,20 +417,14 @@ struct PWAHomeView: View {
 
             Divider().overlay(Color.appSeparator)
 
-            Button(action: onManageApps) {
-                HStack {
-                    Text("点击应用进入详情与配置")
-                        .font(Font.app(ThemeTokens.Typography.metadata))
-                        .foregroundColor(Color.appTextSecondary)
-                    Spacer()
-                    Image(uiImage: LucideIcon.chevronRight.templateImage(pointSize: ThemeTokens.Icons.Sizes.chevron) ?? UIImage())
-                        .renderingMode(.template)
-                        .foregroundColor(Color.appTextTertiary)
-                }
-                .padding(.horizontal, ThemeTokens.Spacing.lg)
-                .frame(minHeight: 44)
+            HStack {
+                Text("轻点打开应用，长按查看设置")
+                    .font(Font.app(ThemeTokens.Typography.metadata))
+                    .foregroundColor(Color.appTextSecondary)
+                Spacer()
             }
-            .buttonStyle(PressScaleButtonStyle())
+            .padding(.horizontal, ThemeTokens.Spacing.lg)
+            .frame(minHeight: 44)
         }
         .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ThemeTokens.CornerRadius.card))
@@ -448,6 +445,28 @@ struct PWAHomeView: View {
                 )
                     .id(app.iconCacheKey)
                     .frame(width: 44, height: 44)
+                    .overlay(alignment: .topTrailing) {
+                        if app.isDefaultStartup {
+                            Image(uiImage: LucideIcon.home.templateImage(pointSize: 11, weight: .bold) ?? UIImage())
+                                .renderingMode(.template)
+                                .foregroundColor(.white)
+                                .frame(width: 18, height: 18)
+                                .background(Color.appPrimary, in: Circle())
+                                .offset(x: 6, y: -6)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        if app.isOfflineInstalled {
+                            Image(uiImage: LucideIcon.download.templateImage(pointSize: 11, weight: .bold) ?? UIImage())
+                                .renderingMode(.template)
+                                .foregroundColor(.white)
+                                .frame(width: 18, height: 18)
+                                .background(Color.appSuccess, in: Circle())
+                                .offset(x: 5, y: 5)
+                                .accessibilityHidden(true)
+                        }
+                    }
 
                 Text(app.name)
                     .font(Font.app(ThemeTokens.Typography.caption))
@@ -468,11 +487,18 @@ struct PWAHomeView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PressScaleButtonStyle())
+        .highPriorityGesture(
+            LongPressGesture(minimumDuration: 0.55)
+                .onEnded { _ in onShowAppDetails(app.id) }
+        )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel([
             app.name,
-            app.version.map { "应用版本 \($0)" }
+            app.version.map { "应用版本 \($0)" },
+            app.isDefaultStartup ? "默认启动应用" : nil,
+            app.isOfflineInstalled ? "离线包已安装" : nil
         ].compactMap { $0 }.joined(separator: "、"))
+        .accessibilityHint("轻点打开应用，长按查看设置")
         .accessibilityIdentifier("pwaHome.app.\(app.id)")
     }
 

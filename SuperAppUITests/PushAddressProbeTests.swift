@@ -235,7 +235,7 @@ final class PushAddressProbeTests: XCTestCase {
                 print("[OFFLINE-UPDATE] tile missing: \(appID)")
                 continue
             }
-            tile.tap()
+            tile.press(forDuration: 1.2)
 
             // ActionSheet：v2 已装、网关是 v3 → 按钮应为「下载离线包」或「更新离线包」
             let action = app.sheets.buttons.matching(

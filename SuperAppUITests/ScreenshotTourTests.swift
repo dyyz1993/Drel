@@ -416,10 +416,9 @@ final class PermissionLifecycleShotTests: XCTestCase {
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         snap("01-app-grid")
 
-        // 2. 打开演示页（宫格 → 详情弹层 → 打开应用）
-        appButton.tap()
-        sleep(2)
-        let launch = app.buttons.containing(NSPredicate(format: "label CONTAINS '打开应用'")).firstMatch
+        // 2. 长按查看详情，再从弹层打开演示页。
+        appButton.press(forDuration: 1.2)
+        let launch = app.buttons["打开应用"].firstMatch
         XCTAssertTrue(launch.waitForExistence(timeout: 5))
         snap("02-app-details")
         launch.tap()
@@ -503,10 +502,6 @@ final class SystemDeniedFlowTests: XCTestCase {
         let appButton = app.buttons["pwaHome.app.com.webbridgekit.fixture.permissions"]
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        sleep(2)
-        let launch = app.buttons.containing(NSPredicate(format: "label CONTAINS '打开应用'")).firstMatch
-        XCTAssertTrue(launch.waitForExistence(timeout: 5))
-        launch.tap()
         sleep(7)
         snap("sysdenied-01-fixture-page")
 
@@ -563,10 +558,6 @@ final class SystemDeniedCenterTests: XCTestCase {
         let appButton = app.buttons["pwaHome.app.com.webbridgekit.fixture.permissions"]
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        sleep(2)
-        let launch = app.buttons.containing(NSPredicate(format: "label CONTAINS '打开应用'")).firstMatch
-        XCTAssertTrue(launch.waitForExistence(timeout: 5))
-        launch.tap()
         sleep(6)
         let menu = app.descendants(matching: .any)["browserManager.immersiveMenuButton"]
         XCTAssertTrue(menu.waitForExistence(timeout: 8))
@@ -596,10 +587,6 @@ final class CameraTwoLayerTests: XCTestCase {
         let appButton = app.buttons["pwaHome.app.com.webbridgekit.fixture.permissions"]
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
-        sleep(2)
-        let launch = app.buttons.containing(NSPredicate(format: "label CONTAINS '打开应用'")).firstMatch
-        XCTAssertTrue(launch.waitForExistence(timeout: 5))
-        launch.tap()
         sleep(8)
         snap("cam-01-page")
 
@@ -828,10 +815,6 @@ final class WebGrantRevokeTests: XCTestCase {
         func openFixturePage() -> Bool {
             for _ in 0..<3 {
                 guard tapStable(appButton) else { continue }
-                sleep(2)
-                let launch = app.buttons.containing(NSPredicate(format: "label CONTAINS '打开应用'")).firstMatch
-                guard launch.waitForExistence(timeout: 5) else { continue }
-                launch.tap()
                 let clip = app.buttons.containing(NSPredicate(format: "label CONTAINS '读取剪贴板'")).firstMatch
                 if clip.waitForExistence(timeout: 12) { return true }
                 let close = app.buttons["browserManager.closeButton"]
