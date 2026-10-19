@@ -95,9 +95,6 @@ class TabBarController: UITabBarController {
     /// Opens the selected trusted app once for a cold Drel launch. This is
     /// intentionally app-ID based, never a saved arbitrary web URL.
     private func openDefaultStartupAppIfNeeded() {
-        #if DREL_RELEASE_MINIMAL_SETTINGS
-        return
-        #else
         struct Static {
             static var hasChecked = false
         }
@@ -143,7 +140,6 @@ class TabBarController: UITabBarController {
             // A removed or invalid manifest must never block Drel's regular home.
             UserDefaults.standard.removeObject(forKey: SettingsPreferenceKeys.defaultStartupAppID)
         }
-        #endif
     }
 
     // MARK: - Setup
@@ -205,9 +201,16 @@ class TabBarController: UITabBarController {
         return MainViewController(viewModel: viewModel)
     }
 
-    private func createInboxViewController() -> InboxViewController {
+    private func createInboxViewController() -> UIViewController {
         let viewModel = InboxViewModel()
-        return InboxViewController(viewModel: viewModel)
+        let inbox = InboxViewController(viewModel: viewModel)
+        #if DEBUG
+        if #available(iOS 27.1, *),
+           ProcessInfo.processInfo.arguments.contains("--duo-inbox-prototype") {
+            return DuoInboxPrototypeViewController(inboxViewController: inbox)
+        }
+        #endif
+        return inbox
     }
 
     private func createDiscoverViewController() -> DiscoverViewController {
@@ -537,13 +540,9 @@ class TabBarController: UITabBarController {
             nav.pushViewController(vc, animated: true)
             #endif
         case .defaultStartupApp:
-            #if !DREL_RELEASE_MINIMAL_SETTINGS
             let vc = UIHostingController(rootView: DefaultStartupAppView())
             vc.title = "默认启动应用"
             nav.pushViewController(vc, animated: true)
-            #else
-            showAppShellInfo(title: "Default startup", message: "Saved web-tool startup is planned for a later Drel release.")
-            #endif
         case .appearance:
             let vc = UIHostingController(rootView: AppearanceSettingsView())
             vc.title = L10n.tr("settings.appearance")
