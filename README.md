@@ -1,10 +1,10 @@
-# Drel Application (`Drel-App`)
+# Drel Application (`Drel`)
 
-基于 `WebBridgeKit-Framework` 构建的完整 iOS 产品宿主应用（内部 Target 名称 `SuperApp`，对外产品名 `Drel`）、通知服务扩展（`NotificationServiceExtension`）、UI 自动化测试套件（`DrelUITests`）及配套服务端（`Server/`）。
+基于 `WebBridgeKit-Framework` 构建的完整 iOS 产品宿主应用（Target、Scheme 与对外产品名均为 `Drel`）、通知服务扩展（`NotificationServiceExtension`）、UI 自动化测试套件（`DrelUITests`）及配套服务端（`Server/`）。
 
 ## 1. 仓库定位与目录结构
 
-本工程是从原 `WebBridgeKit` 单体仓库按照 `ADR-0002` 与 `ADR-0006` 拆分出的**独立 Drel 产品工程**。`SuperApp` 是遗留内部 target 名，对外工程、workspace、scheme 与产品名统一使用 Drel：
+本工程是从原 `WebBridgeKit` 单体仓库按照 `ADR-0002` 与 `ADR-0006` 拆分出的**独立 Drel 产品工程**。`SuperApp/` 是保留的源码目录名；工程、target、workspace、scheme 与产品名统一使用 Drel：
 
 - **`SuperApp/`**：完整产品宿主源码（首页、收信箱 Inbox、PWA 应用中心、发现页、设置、审批流、展示目录）与资源。
 - **`NotificationServiceExtension/`**：独立 APNs 通知扩展（负责 `PushCipher` 对称加密消息与 `drel.push-envelope.v1` X25519 自托管信封的端到端解密及自定义头像处理，零 CocoaPods 依赖）。
@@ -17,7 +17,7 @@
 
 ## 2. 环境准备与联调构建
 
-默认约定将 `WebBridgeKit-Framework` 与 `Drel-App` 并列放置在同一父目录下（可通过环境变量 `WBK_FRAMEWORK_PATH` 自定义底层框架路径）：
+默认约定将 `WebBridgeKit-Framework` 与 `Drel` 并列放置在同一父目录下（可通过环境变量 `WBK_FRAMEWORK_PATH` 自定义底层框架路径）：
 
 ```bash
 # 1. 生成 Xcode 工程并安装依赖（自动关联 ../WebBridgeKit-Framework）
@@ -28,8 +28,8 @@ pod install
 bash scripts/services.sh start
 bash scripts/services.sh verify
 
-# 3. 编译 SuperApp
-xcodebuild build -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -arch arm64 -derivedDataPath /tmp/drel-app-dd CODE_SIGNING_ALLOWED=NO
+# 3. 编译 Drel
+xcodebuild build -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -arch arm64 -derivedDataPath /tmp/drel-app-dd
 
 # 4. 运行应用层门禁与协议校验
 bash tools/verify-deliverable-boundaries.sh
