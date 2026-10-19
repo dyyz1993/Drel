@@ -29,8 +29,74 @@ struct HTMLAppCapabilitiesV2Tests {
         #expect(signed.capabilitiesV2 == [declaration()])
     }
 
-    @Test("Rejects always and other unsupported scopes and actions")
-    func rejectsUnsupportedScopeAndAction() async throws {
+    @Test("Rejects always for non-grant actions")
+    func rejectsAlwaysForNonGrantAction() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manifest = HTMLAppPolicyManifest(
+            schemaVersion: "1",
+            appId: "com.example.actions",
+            name: "Actions",
+            startURL: "https://apps.example.com/actions/index.html",
+            allowedOrigins: ["https://apps.example.com"],
+            capabilities: [],
+            capabilitiesV2: [
+                HTMLAppPolicyManifest.CapabilityDeclaration(
+                    action: .share,
+                    origins: ["https://apps.example.com"],
+                    purposeId: "share-report",
+                    purpose: "Share the selected report",
+                    scope: .always
+                )
+            ],
+            routes: ["/actions/index.html"],
+            cache: .init(strategy: .networkOnly, version: "1", persistent: false),
+            signature: nil
+        )
+        let service = makeService(dataDir: directory.path)
+        await #expect(throws: HTTPError.self) {
+            try await service.save(manifest)
+        }
+    }
+
+    @Test("Accepts always for clipboard and location grants")
+    func acceptsAlwaysForGrantAction() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manifest = HTMLAppPolicyManifest(
+            schemaVersion: "1",
+            appId: "com.example.grants",
+            name: "Grants",
+            startURL: "https://apps.example.com/grants/index.html",
+            allowedOrigins: ["https://apps.example.com"],
+            capabilities: [],
+            capabilitiesV2: [
+                HTMLAppPolicyManifest.CapabilityDeclaration(
+                    action: .clipboard,
+                    origins: ["https://apps.example.com"],
+                    purposeId: "clipboard-grant",
+                    purpose: "Read or write clipboard content",
+                    scope: .always
+                ),
+                HTMLAppPolicyManifest.CapabilityDeclaration(
+                    action: .location,
+                    origins: ["https://apps.example.com"],
+                    purposeId: "location-grant",
+                    purpose: "Get the current position",
+                    scope: .always
+                )
+            ],
+            routes: ["/grants/index.html"],
+            cache: .init(strategy: .networkOnly, version: "1", persistent: false),
+            signature: nil
+        )
+        let service = makeService(dataDir: directory.path)
+        let signed = try await service.save(manifest)
+        #expect(signed.capabilitiesV2.count == 2)
+    }
+
+    @Test("Rejects unknown action")
+    func rejectsUnknownAction() async throws {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let json = """
@@ -42,7 +108,7 @@ struct HTMLAppCapabilitiesV2Tests {
           "allowedOrigins": ["https://apps.example.com"],
           "capabilities": [],
           "capabilities_v2": [{
-            "action": "share",
+            "action": "notARealAction",
             "origins": ["https://apps.example.com"],
             "purposeId": "share-report",
             "purpose": "Share the selected report",

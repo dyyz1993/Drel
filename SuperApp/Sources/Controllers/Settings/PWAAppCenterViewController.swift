@@ -62,6 +62,12 @@ final class PWAAppCenterViewController: UIViewController {
         )
         NotificationCenter.default.addObserver(
             self,
+            selector: #selector(refreshAppsAfterPushActivation),
+            name: .htmlAppHomeScreenDidChange,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
             selector: #selector(refreshPushState),
             name: DrelPushChannelStore.didChangeNotification,
             object: nil
@@ -357,7 +363,8 @@ final class PWAAppCenterViewController: UIViewController {
                 iconURL: metadata?.iconURLs.last,
                 iconCacheKey: "\(manifest.appID)|\(manifest.webManifest?.sha256 ?? "no-web-manifest")",
                 fallbackInitial: appInitial(name: displayName, appID: manifest.appID),
-                tint: appTint(for: manifest)
+                tint: appTint(for: manifest),
+                version: manifest.effectiveOfflineCache.version
             )
         }
         if !manifests.isEmpty {

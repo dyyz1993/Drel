@@ -17,6 +17,7 @@ final class PWAPermissionCenterViewController: UIViewController {
     private struct RowModel {
         let capability: HTMLAppCapability
         let grant: HTMLAppPermissionGrant?
+        let actionIdentity: String?
         let systemStatus: HTMLAppCapabilityResult.Status
         let section: Section
 
@@ -110,7 +111,14 @@ final class PWAPermissionCenterViewController: UIViewController {
         }
 
         let grants = runtime.permissionLedger.grants(for: subject)
-        rows = manifest.capabilities.map { capability in
+        var declaredCapabilities = manifest.capabilities
+        for declaration in manifest.capabilitiesV2 {
+            let capability = HTMLAppBridgeCapabilityPolicy.capability(for: declaration.action)
+            if !declaredCapabilities.contains(capability) {
+                declaredCapabilities.append(capability)
+            }
+        }
+        rows = declaredCapabilities.map { capability in
             let grant = grants.first { $0.capability == capability }
             let systemStatus = runtime.systemPermissionAdapter.authorizationStatus(for: capability)
             let section: RowModel.Section
@@ -127,7 +135,13 @@ final class PWAPermissionCenterViewController: UIViewController {
             } else {
                 section = .unused
             }
-            return RowModel(capability: capability, grant: grant, systemStatus: systemStatus, section: section)
+            return RowModel(
+                capability: capability,
+                grant: grant,
+                actionIdentity: grant?.actionIdentity,
+                systemStatus: systemStatus,
+                section: section
+            )
         }
 
         render(manifest: manifest, subject: subject)
@@ -288,6 +302,7 @@ final class PWAPermissionCenterViewController: UIViewController {
             actionButton.accessibilityIdentifier = "pwa-permission.revoke.\(row.capability.rawValue)"
             actionButton.addTarget(self, action: #selector(revokeTapped(_:)), for: .touchUpInside)
             actionButton.tag = row.capability.hashValue
+            actionButton.accessibilityValue = row.actionIdentity ?? row.capability.rawValue
             actionButton.accessibilityLabel = "撤销\(row.capability.localizedName)"
         } else if row.systemStatus == .denied {
             actionButton.setTitle("前往系统设置", for: .normal)
@@ -298,11 +313,6 @@ final class PWAPermissionCenterViewController: UIViewController {
             actionButton.setTitle("尚未请求", for: .normal)
             actionButton.setTitleColor(ThemeTokens.Color.textTertiary, for: .normal)
             actionButton.isEnabled = false
-        }
-
-        // Map hashValue back to the capability safely at tap time.
-        if row.grant != nil {
-            actionButton.accessibilityValue = row.capability.rawValue
         }
 
         let row0 = UIStackView(arrangedSubviews: [icon, textColumn, actionButton])

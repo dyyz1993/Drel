@@ -25,6 +25,7 @@ final class PWAHomeViewModel: ObservableObject {
         let iconCacheKey: String
         let fallbackInitial: String
         let tint: UIColor
+        let version: String?
     }
 
     @Published var pushURL: String
@@ -454,10 +455,24 @@ struct PWAHomeView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
                     .frame(maxWidth: .infinity)
+
+                if let version = app.version {
+                    Text("应用版本 \(version)")
+                        .font(Font.app(ThemeTokens.Typography.caption2))
+                        .foregroundColor(Color.appTextTertiary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .frame(maxWidth: .infinity)
+                }
             }
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PressScaleButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([
+            app.name,
+            app.version.map { "应用版本 \($0)" }
+        ].compactMap { $0 }.joined(separator: "、"))
         .accessibilityIdentifier("pwaHome.app.\(app.id)")
     }
 

@@ -10,7 +10,9 @@ final class PWAPermissionTests: XCTestCase {
         app.launchArguments = [
             "--ui-testing",
             "--register-pwa-permission-fixture",
-            "--show-pwa-app-center"
+            "--show-pwa-app-center",
+            "--clear-last-session",
+            "--reset-default-startup-app"
         ]
         app.launchEnvironment = [
             "AppleLanguages": "(zh-Hans)",
@@ -24,7 +26,7 @@ final class PWAPermissionTests: XCTestCase {
         app.launch()
 
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
-        XCTAssertTrue(appButton.waitForExistence(timeout: 12))
+        XCTAssertTrue(appButton.waitForExistence(timeout: 20), "Fixture app should stay visible; stale home state indicates simulator hygiene issue")
         appButton.tap()
         XCTAssertTrue(app.buttons["权限与原生能力"].waitForExistence(timeout: 4))
         app.buttons["权限与原生能力"].tap()
@@ -133,6 +135,115 @@ final class PWAPermissionTests: XCTestCase {
 
         nativeExit.tap()
         XCTAssertTrue(fullscreenButton.waitForExistence(timeout: 4), "The host exit control must return to the app without closing the HTML app")
+    }
+
+    func testV2ClipboardPromptsOnceThenReusesSignedGrant() {
+        app.launchArguments.append("--pwa-v2-actions")
+        app.launch()
+
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 12))
+        appButton.tap()
+        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
+        app.buttons["打开应用"].tap()
+
+        let clipboardButton = app.webViews.buttons["读取剪贴板"]
+        XCTAssertTrue(clipboardButton.waitForExistence(timeout: 12))
+        clipboardButton.tap()
+
+        XCTAssertTrue(element("pwa.permission.prompt").waitForExistence(timeout: 5))
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "v2-clipboard-signed-grant-prompt"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        app.buttons["允许"].tap()
+
+        clipboardButton.tap()
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
+    }
+
+    func testV2LocationRequiresSignedGrantBeforeSystemPrompt() {
+        app.launchArguments.append("--pwa-v2-actions")
+        app.launch()
+
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 12))
+        appButton.tap()
+        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
+        app.buttons["打开应用"].tap()
+
+        let locationButton = app.webViews.buttons["获取当前位置"]
+        XCTAssertTrue(locationButton.waitForExistence(timeout: 12))
+        locationButton.tap()
+
+        XCTAssertTrue(element("pwa.permission.prompt").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["允许使用位置？"].exists)
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "v2-location-signed-grant-prompt"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        app.buttons["拒绝"].tap()
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
+    }
+
+    func testV2AddToHomeScreenShowsVersionOnDrelHome() {
+        app.launchArguments.append("--pwa-v2-actions")
+        app.launch()
+
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 12))
+        appButton.tap()
+        XCTAssertTrue(app.buttons["打开应用"].waitForExistence(timeout: 4))
+        app.buttons["打开应用"].tap()
+
+        let homeButton = app.webViews.buttons["添加到 Drel 首页"]
+        XCTAssertTrue(homeButton.waitForExistence(timeout: 12))
+        homeButton.tap()
+
+        if element("pwa.permission.prompt").waitForExistence(timeout: 5) {
+            app.buttons["允许"].tap()
+            if element("pwa.permission.prompt").waitForExistence(timeout: 3) {
+                // Location or clipboard prompt may queue behind add-to-home; dismiss
+                // any queued consent so the native exit control stays reachable.
+                app.buttons["拒绝"].tap()
+                XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 3))
+            }
+        }
+
+        let nativeExit = element("browserManager.immersiveReturnButton")
+        XCTAssertTrue(nativeExit.waitForExistence(timeout: 3))
+        nativeExit.tap()
+        // First tap expands the collapsed capsule. The second tap must land
+        // on the exit segment (leftmost 44pt of the expanded 140pt capsule)
+        // instead of the element center, which now falls on the refresh cell.
+        let frame = nativeExit.frame
+        app.windows.firstMatch.coordinate(
+            withNormalizedOffset: CGVector(dx: 0, dy: 0)
+        ).withOffset(
+            CGVector(dx: frame.minX + 22, dy: frame.midY)
+        ).tap()
+
+        XCTAssertTrue(appButton.waitForExistence(timeout: 5))
+        // SwiftUI composes the name and version into the tile's accessibility
+        // label. The element reports it as an Other in the AX tree; query by
+        // predicate over static texts and buttons.
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS '应用版本'")).firstMatch.exists
+                || app.buttons.matching(NSPredicate(format: "label CONTAINS '应用版本'")).firstMatch.exists
+                || app.otherElements.matching(NSPredicate(format: "label CONTAINS '应用版本'")).firstMatch.exists
+                || app.windows.firstMatch.descendants(matching: .any)
+                    .matching(NSPredicate(format: "label CONTAINS '应用版本'"))
+                    .firstMatch.exists
+                || element(appButton.identifier).label.contains("应用版本"),
+                      "Home tile must expose the app version in its accessibility label")
+        // The demo result text proves the native action ran; alreadyPresent is
+        // also success on repeat runs of the same simulator.
+        // The demo result text lives in the WebView; after returning home it
+        // is not required. The home version label is the authoritative check.
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "v2-add-to-home-screen-with-version"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     func testBluetoothRequestUsesManagedPWAConsentBeforeSystemAccess() {

@@ -68,7 +68,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         WebBrowserManager.shared.webGrantsPresenter = nil
         #elseif DREL_V2_MANAGED_ACTIONS_ONLY
         WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
-        WebBridgeHostCapabilityPolicy.nativeActionAllowlist = ["haptic", "vibrate", "share", "fullscreen"]
+        WebBridgeHostCapabilityPolicy.nativeActionAllowlist = [
+            "haptic", "vibrate", "share", "fullscreen",
+            "clipboard", "getLocation", "addToHomeScreen"
+        ]
         WebBrowserManager.shared.webGrantsPresenter = nil
         #else
         WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
@@ -89,6 +92,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         CrashLogManager.shared.initialize()
         NetworkMonitor.shared.startMonitoring()
         HTMLAppHostUI.settingsViewControllerProvider = SuperAppHTMLAppSettingsProvider.shared
+        Self.configureHomeScreenPresenter()
         Self.cleanupDeadSeedFavorites()
 
         if let serverURL = ServerConfigManager.shared.getActiveBaseURL() {
@@ -350,6 +354,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             capabilities: [.bluetooth, .clipboard, .camera, .location, .fileImport, .share],
             capabilitiesV2: includesV2Actions ? [
                 HTMLAppActionDeclaration(
+                    action: .clipboard,
+                    origins: [origin],
+                    purposeId: "fixture-clipboard-demo",
+                    purpose: "读取或写入演示内容",
+                    scope: .always
+                ),
+                HTMLAppActionDeclaration(
+                    action: .location,
+                    origins: [origin],
+                    purposeId: "fixture-location-demo",
+                    purpose: "获取当前位置完成演示",
+                    scope: .always
+                ),
+                HTMLAppActionDeclaration(
+                    action: .addToHomeScreen,
+                    origins: [origin],
+                    purposeId: "fixture-home-demo",
+                    purpose: "把演示应用添加到 Drel 首页",
+                    scope: .appSession
+                ),
+                HTMLAppActionDeclaration(
                     action: .share,
                     origins: [origin],
                     purposeId: "fixture-share-demo",
@@ -386,7 +411,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                     origin: origin
                 ),
                 capability: .clipboard,
-                scope: .always
+                scope: .always,
+                actionIdentity: "fixture-clipboard-demo"
             )
         }
     }
@@ -875,6 +901,41 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             #endif
 
             UserDefaults.standard.set(true, forKey: key)
+        }
+    }
+
+    /// Wires the SDK's trusted add-to-home action to Drel's own app catalog.
+    /// JavaScript cannot choose an arbitrary URL; the provider re-resolves the
+    /// document back to a registered manifest and the activation store filters
+    /// what appears on the home grid.
+    private static func configureHomeScreenPresenter() {
+        let runtime = HTMLAppRuntimeCenter.shared
+        WebBridgeHostCapabilityPolicy.homeScreenContextProvider = { documentURL, origin in
+            guard let manifest = runtime.trustRegistry.registeredManifests().first(where: {
+                $0.allows(documentURL: documentURL)
+            }), HTMLAppOrigin.canonicalOrigin(forDocumentURL: documentURL) == origin else {
+                return nil
+            }
+            return HTMLAppHomeScreenTarget(
+                manifest: manifest,
+                documentURL: documentURL,
+                origin: origin
+            )
+        }
+
+        let activationStore = HTMLAppPushActivationStore()
+        let metadataStore = HTMLAppPresentationMetadataStore()
+        WebBridgeHostCapabilityPolicy.homeScreenPresenter = { target in
+            if activationStore.contains(target.manifest.appID) {
+                return .alreadyPresent
+            }
+            if target.manifest.webManifest != nil {
+                let resolved = try await HTMLAppWebManifestAdapter().load(forTrustedParent: target.manifest)
+                try metadataStore.set(resolved, for: target.manifest.appID)
+            }
+            activationStore.activate(target.manifest.appID)
+            NotificationCenter.default.post(name: .htmlAppHomeScreenDidChange, object: target.manifest.appID)
+            return .added
         }
     }
 }

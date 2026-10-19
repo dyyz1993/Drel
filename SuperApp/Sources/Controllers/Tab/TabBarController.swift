@@ -204,12 +204,6 @@ class TabBarController: UITabBarController {
     private func createInboxViewController() -> UIViewController {
         let viewModel = InboxViewModel()
         let inbox = InboxViewController(viewModel: viewModel)
-        #if DEBUG
-        if #available(iOS 27.1, *),
-           ProcessInfo.processInfo.arguments.contains("--duo-inbox-prototype") {
-            return DuoInboxPrototypeViewController(inboxViewController: inbox)
-        }
-        #endif
         return inbox
     }
 
