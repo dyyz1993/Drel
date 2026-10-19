@@ -382,6 +382,12 @@ final class PWAAppCenterViewController: UIViewController {
                 case .success(let report):
                     do {
                         try self.onboardingService.activate(report)
+                        // The official action demo is a first-run reviewer and
+                        // owner verification fixture, unlike third-party apps
+                        // which must be activated by a trusted push route.
+                        if report.manifests.contains(where: { $0.appID == "dev.drel.action-demo" }) {
+                            self.receivedAppStore.activate("dev.drel.action-demo")
+                        }
                         if ProcessInfo.processInfo.arguments.contains("--activate-offline-demo"),
                            report.manifests.contains(where: { $0.appID == "dev.drel.offline-demo" }) {
                             self.receivedAppStore.activate("dev.drel.offline-demo")
