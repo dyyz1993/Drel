@@ -612,7 +612,7 @@
 "official.push.action.registering" = "正在启用…";
 "official.push.action.settings" = "前往系统设置";
 "official.push.action.preparing" = "正在准备…";
-"official.push.action.send_safari" = "用 Safari 发送测试";
+"official.push.action.send_safari" = "发送测试通知";
 "official.push.help.enable" = "无需配置服务器；点一次启用通知即可开始";
 "official.push.address.pending" = "启用通知后显示";
 "official.push.address.enable_to_receive" = "地址已生成；启用通知后即可接收推送。";

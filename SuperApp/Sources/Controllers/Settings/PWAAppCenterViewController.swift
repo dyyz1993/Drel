@@ -92,7 +92,11 @@ final class PWAAppCenterViewController: UIViewController {
             if let nav = host.navigationController {
                 nav.pushViewController(permissions, animated: true)
             } else {
-                self.present(UINavigationController(rootViewController: permissions), animated: true)
+                // 权限与能力页必须全屏呈现（2026-10-21 用户验收），
+                // 不能落成半高 pageSheet。
+                let nav = UINavigationController(rootViewController: permissions)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true)
             }
         }
         #endif
@@ -518,10 +522,10 @@ final class PWAAppCenterViewController: UIViewController {
         #if !DREL_CONTAINER_ONLY || DREL_V2_MANAGED_ACTIONS_ONLY
         alert.addAction(UIAlertAction(title: "权限与原生能力", style: .default) { [weak self] _ in
             guard let self else { return }
-            self.navigationController?.pushViewController(
-                PWAPermissionCenterViewController(appID: manifest.appID),
-                animated: true
-            )
+            // 权限与能力页必须全屏呈现、不带底部 tab（2026-10-21 用户验收）
+            let center = PWAPermissionCenterViewController(appID: manifest.appID)
+            center.hidesBottomBarWhenPushed = true
+            self.navigationController?.pushViewController(center, animated: true)
         })
         #endif
         #if !DREL_CONTAINER_ONLY || DREL_V2_MANAGED_ACTIONS_ONLY
@@ -541,23 +545,7 @@ final class PWAAppCenterViewController: UIViewController {
     }
 
     private func showPhoneHomeScreenGuide(for manifest: HTMLAppManifest) {
-        var components = URLComponents()
-        components.scheme = "drel"
-        components.host = "app"
-        components.queryItems = [URLQueryItem(name: "app_id", value: manifest.appID)]
-        guard let url = components.url else { return }
-        UIPasteboard.general.url = url
-        let guide = UIAlertController(
-            title: "应用链接已复制",
-            message: "在 iPhone 的“快捷指令”中，新建快捷指令：先添加“URL”操作并粘贴链接，再添加“打开 URL”操作。打开快捷指令详情，选择“添加到主屏幕”，设置名称和图标。点图标会启动 Drel 并打开这款已注册应用。",
-            preferredStyle: .alert
-        )
-        guide.addAction(UIAlertAction(title: "稍后", style: .cancel))
-        guide.addAction(UIAlertAction(title: "打开快捷指令", style: .default) { _ in
-            guard let shortcutsURL = URL(string: "shortcuts://create-shortcut") else { return }
-            UIApplication.shared.open(shortcutsURL)
-        })
-        present(guide, animated: true)
+        PhoneHomeScreenGuidePresenter.present(from: self, manifest: manifest)
     }
 
     private func launch(_ manifest: HTMLAppManifest) {

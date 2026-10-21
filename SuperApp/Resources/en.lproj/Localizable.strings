@@ -612,7 +612,7 @@
 "official.push.action.registering" = "Enabling…";
 "official.push.action.settings" = "Open System Settings";
 "official.push.action.preparing" = "Preparing…";
-"official.push.action.send_safari" = "Send Test in Safari";
+"official.push.action.send_safari" = "Send Test Notification";
 "official.push.help.enable" = "No server setup required; enable notifications once to begin";
 "official.push.address.pending" = "Shown after notifications are enabled";
 "official.push.address.enable_to_receive" = "Your address is ready. Enable notifications to receive pushes.";
