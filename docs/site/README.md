@@ -46,6 +46,24 @@ The generated `test/offline-network/gateway-manifest.json` is deliberately an
 operator input: it must be signed by the gateway before `appId + route` push
 opening is trusted by Drel.
 
+## Desktop entry
+
+`/launch/` is the public generic Home Screen entry. For a trusted HTML app it
+accepts `app_id`, `name`, and an optional `/`-rooted `route`; for an ordinary
+web page it accepts an HTTPS `url`, `name`, and optional HTTPS `icon`. After the
+user adds the page to the Home Screen, its standalone load attempts to
+hand off to Drel through a script-dispatched anchor using the custom URL scheme,
+with a visible manual-open and copy fallback if the handoff does not succeed.
+On iOS 18.3.1, reopening a Home Screen web app can resume its existing page
+without rerunning its load script. The page therefore retries the handoff when
+it becomes visible again. First and second Home Screen taps opened the target
+page in Drel on the simulator after this change. Returning to the web app with
+the system's back control can also retrigger the handoff, because web content
+has no distinct Home Screen icon activation signal. Keep the manual fallback and
+verify this behavior on the signed phone build before release. The ordinary-page
+route opens inside Drel's normal browser without trusted-app bridge privileges.
+Safari install mode keeps the install instructions visible.
+
 Add each domain through **Workers & Pages → project → Custom domains**. Do not
 create a manual Pages CNAME before associating the custom domain in Pages.
 

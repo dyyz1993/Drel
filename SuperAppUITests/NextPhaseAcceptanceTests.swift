@@ -23,7 +23,7 @@ final class NextPhaseAcceptanceTests: XCTestCase {
         XCTAssertTrue(element("pwaCenter.table").waitForExistence(timeout: 15))
         XCTAssertTrue(element("pwaHome.root").exists)
         XCTAssertTrue(app.buttons["home.push.send-safari"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.buttons["home.push.send-safari"].label, "用 Safari 发送测试")
+        XCTAssertEqual(app.buttons["home.push.send-safari"].label, "发送测试通知")
         let address = element("home.push.address")
         XCTAssertTrue(makeVisible(address))
         XCTAssertTrue(address.label.contains(fixtureIdentity))

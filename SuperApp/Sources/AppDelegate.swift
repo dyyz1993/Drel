@@ -103,6 +103,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         NetworkMonitor.shared.startMonitoring()
         HTMLAppHostUI.settingsViewControllerProvider = SuperAppHTMLAppSettingsProvider.shared
         Self.configureHomeScreenPresenter()
+        Self.configurePermissionCenterOpener()
         Self.cleanupDeadSeedFavorites()
 
         if let serverURL = ServerConfigManager.shared.getActiveBaseURL() {
@@ -343,7 +344,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // "test-gateway" made the grant vanish the moment the center opened
         // on a device with a configured gateway. Fall back to the test
         // identity only when no gateway is active.
-        let activeGateway = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official).activeGateway()
+        let gatewayRegistry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
+        if gatewayRegistry.activeGateway() == nil {
+            // 全新安装的首次运行：官方网关可能尚未激活，而本会话稍后的
+            // 官方网关引导会激活它并切换 gatewayIdentity——那会按上面的
+            // 语义清空授权账本。这里先把官方网关激活，保证 fixture 注册、
+            // 授权记录与权限中心读取全程使用同一个身份。
+            try? gatewayRegistry.save(DrelGatewayConfiguration.official, activate: true)
+        }
+        let activeGateway = gatewayRegistry.activeGateway()
         let fixtureIdentity = activeGateway
             .map { "\($0.id)#\($0.publicKeyID ?? "unsigned")" }
             ?? "test-gateway"
@@ -622,8 +631,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     // MARK: - drel:// external app link
 
     /// `drel://app?app_id=…&route=…&param_<name>=…` opens a gateway-signed
-    /// registered HTML app — the app equivalent of a push launch. Anything
-    /// else under the scheme routes QR import payloads or is refused.
+    /// registered HTML app — the app equivalent of a push launch. The separate
+    /// `drel://open?url=https://…` form opens an ordinary HTTPS page in Drel's
+    /// browser without granting registered-app bridge privileges.
     private func handleDrelExternalURL(_ url: URL) -> Bool {
         if DrelExternalAppLink.parse(url) != nil {
             openExternalAppLinkFromHandoff(url)
@@ -631,6 +641,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
 
         switch url.host?.lowercased() {
+        case "open":
+            guard let targetURL = externalHTTPSURL(from: url) else {
+                presentExternalURLAlert(
+                    title: "链接无效",
+                    message: "桌面入口只接受有效的 HTTPS 网页地址。"
+                )
+                return true
+            }
+            DrelFavoriteOpenPolicy.open(targetURL, from: window?.rootViewController)
+            return true
         case "self-hosted-push", "managed-encrypted-push":
             // A deployment QR opened outside the in-app scanner. Keep the
             // payload on the clipboard and guide to the import UI instead of
@@ -640,6 +660,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             return true
         default:
             return false
+        }
+    }
+
+    private func externalHTTPSURL(from url: URL) -> URL? {
+        guard url.scheme?.lowercased() == "drel",
+              url.host?.lowercased() == "open",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let values = components.queryItems?.filter({ $0.name == "url" }),
+              values.count == 1,
+              let rawValue = values.first?.value,
+              rawValue.utf8.count <= 4096,
+              let targetURL = URL(string: rawValue),
+              targetURL.scheme?.lowercased() == "https",
+              let host = targetURL.host, !host.isEmpty,
+              targetURL.user == nil, targetURL.password == nil else {
+            return nil
+        }
+        return targetURL
+    }
+
+    private func presentExternalURLAlert(title: String, message: String) {
+        DispatchQueue.main.async { [weak self] in
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "好", style: .default))
+            self?.window?.rootViewController?.present(alert, animated: true)
         }
     }
 
@@ -914,6 +959,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
     }
 
+    /// 授权面板快捷入口：从面板跳到该应用的权限与能力页。全屏推入，
+    /// 不落 tab 栏（与权限页验收要求一致）。
+    private static func configurePermissionCenterOpener() {
+        HTMLAppPermissionPromptPresenter.permissionCenterOpener = { appID in
+            DispatchQueue.main.async {
+                guard let presenter = topMostViewController() else { return }
+                let center = PWAPermissionCenterViewController(appID: appID)
+                center.hidesBottomBarWhenPushed = true
+                if let nav = presenter.navigationController {
+                    nav.pushViewController(center, animated: true)
+                } else {
+                    let nav = UINavigationController(rootViewController: center)
+                    nav.modalPresentationStyle = .fullScreen
+                    presenter.present(nav, animated: true)
+                }
+            }
+        }
+    }
+
     /// Wires the SDK's trusted add-to-home action to Drel's own app catalog.
     /// JavaScript cannot choose an arbitrary URL; the provider re-resolves the
     /// document back to a registered manifest and the activation store filters
@@ -947,6 +1011,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             NotificationCenter.default.post(name: .htmlAppHomeScreenDidChange, object: target.manifest.appID)
             return .added
         }
+        // 网页 `addToHomeScreen {placement:"phoneHomeScreen"}` 动作弹出
+        // iPhone 主屏幕添加引导；从最顶层 VC 呈现，浏览器/应用中心同源。
+        WebBridgeHostCapabilityPolicy.phoneHomeScreenGuidePresenter = { target in
+            DispatchQueue.main.async {
+                guard let presenter = Self.topMostViewController() else { return }
+                PhoneHomeScreenGuidePresenter.present(from: presenter, manifest: target.manifest)
+            }
+        }
+    }
+
+    /// 全局 SDK 钩子弹窗用的最顶层 VC：跨 key window 沿 presented 链下探。
+    private static func topMostViewController() -> UIViewController? {
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow }),
+              let root = window.rootViewController else { return nil }
+        var top = root
+        while let presented = top.presentedViewController { top = presented }
+        return top
     }
 }
 

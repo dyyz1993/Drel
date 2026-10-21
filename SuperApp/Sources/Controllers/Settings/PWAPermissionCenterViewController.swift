@@ -118,29 +118,20 @@ final class PWAPermissionCenterViewController: UIViewController {
                 declaredCapabilities.append(capability)
             }
         }
-        rows = declaredCapabilities.map { capability in
-            let grant = grants.first { $0.capability == capability }
-            let systemStatus = runtime.systemPermissionAdapter.authorizationStatus(for: capability)
-            let section: RowModel.Section
-            if grant != nil && systemStatus == .denied {
-                // WebBridgeKit allowed it, but iOS refuses: needs the Settings handoff.
-                section = .needsAttention
-            } else if grant != nil && systemStatus == .granted {
-                section = .allowed
-            } else if grant != nil {
-                section = .needsAttention
-            } else if systemStatus == .denied {
-                // 未授权但 iOS 系统已拒绝：用户需要知道去系统设置开启
-                section = .needsAttention
-            } else {
-                section = .unused
+        // 权限中心只呈现持久的「始终允许」授权（2026-10-21 用户验收）：
+        // 「允许一次」是一次性事实，用完即走，不进入此列表；没有任何
+        // 「始终允许」授权时页面保持空状态。
+        rows = declaredCapabilities.compactMap { capability in
+            guard let grant = grants.first(where: { $0.capability == capability && $0.scope == .always }) else {
+                return nil
             }
+            let systemStatus = runtime.systemPermissionAdapter.authorizationStatus(for: capability)
             return RowModel(
                 capability: capability,
                 grant: grant,
-                actionIdentity: grant?.actionIdentity,
+                actionIdentity: grant.actionIdentity,
                 systemStatus: systemStatus,
-                section: section
+                section: systemStatus == .granted ? .allowed : .needsAttention
             )
         }
 
@@ -173,9 +164,13 @@ final class PWAPermissionCenterViewController: UIViewController {
         contentStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         contentStack.addArrangedSubview(makeHeaderCard(manifest: manifest))
 
-        // 只展示已授权与需处理项；「尚未使用」纯噪音，用户明确要求不显示
-        let visibleSections: [RowModel.Section] = [.needsAttention, .allowed]
-        for section in visibleSections {
+        // 没有「始终允许」授权：不渲染任何能力行，保持空状态页。
+        guard !rows.isEmpty else {
+            contentStack.addArrangedSubview(makeEmptyGrantsView())
+            return
+        }
+
+        for section in [RowModel.Section.needsAttention, .allowed] {
             let sectionRows = rows.filter { $0.section == section }
             guard !sectionRows.isEmpty else { continue }
             contentStack.addArrangedSubview(makeSectionTitle(section.title, count: sectionRows.count))
@@ -184,9 +179,45 @@ final class PWAPermissionCenterViewController: UIViewController {
             }
         }
 
-        if rows.contains(where: { $0.grant != nil }) {
-            contentStack.addArrangedSubview(makeRevokeAllButton(subject: subject))
-        }
+        contentStack.addArrangedSubview(makeRevokeAllButton(subject: subject))
+    }
+
+    /// 空状态：没有「始终允许」授权时整页只保留头部说明 + 这块占位。
+    private func makeEmptyGrantsView() -> UIView {
+        let icon = UIImageView(image: LucideIcon.shield.templateImage(pointSize: 40, weight: .light))
+        icon.tintColor = ThemeTokens.Color.textTertiary
+        icon.contentMode = .scaleAspectFit
+        icon.translatesAutoresizingMaskIntoConstraints = false
+
+        let titleLabel = UILabel()
+        titleLabel.text = "暂无「始终允许」的授权"
+        titleLabel.font = ThemeTokens.Typography.body
+        titleLabel.textColor = ThemeTokens.Color.textSecondary
+        titleLabel.textAlignment = .center
+        titleLabel.adjustsFontForContentSizeCategory = true
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = "网页应用获得「始终允许」授权后会列在这里，可随时撤销；「允许一次」的授权只当场生效，不会保留。"
+        subtitleLabel.font = ThemeTokens.Typography.caption
+        subtitleLabel.textColor = ThemeTokens.Color.textTertiary
+        subtitleLabel.numberOfLines = 0
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.adjustsFontForContentSizeCategory = true
+
+        let stack = UIStackView(arrangedSubviews: [icon, titleLabel, subtitleLabel])
+        stack.axis = .vertical
+        stack.spacing = ThemeTokens.Spacing.sm
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.isAccessibilityElement = true
+        stack.accessibilityIdentifier = "pwa-permission.emptyState"
+        stack.accessibilityLabel = "暂无始终允许的授权"
+
+        NSLayoutConstraint.activate([
+            icon.widthAnchor.constraint(equalToConstant: 40),
+            icon.heightAnchor.constraint(equalToConstant: 40)
+        ])
+        return stack
     }
 
     private func makeHeaderCard(manifest: HTMLAppManifest) -> UIView {
@@ -270,16 +301,43 @@ final class PWAPermissionCenterViewController: UIViewController {
         let card = ThemeCard()
         card.accessibilityIdentifier = "pwa-permission.capability.\(row.capability.rawValue)"
 
-        let icon = UIImageView(image: row.capability.panelIcon.image())
-        icon.tintColor = ThemeTokens.Color.textSecondary
-        icon.contentMode = .scaleAspectFit
+        // 图标容器化（iOS 设置页风格）：浅色圆角底 + primary 色矢量图标。
+        // 图标本身来自内置 Lucide 库（Sources/Theme/icons.xcassets），非手绘图片。
+        let iconContainer = UIView()
+        iconContainer.backgroundColor = ThemeTokens.Color.primarySoft
+        iconContainer.layer.cornerRadius = 12
+        let icon = UIImageView(image: row.capability.panelIcon.templateImage(pointSize: 19, weight: .medium))
+        icon.tintColor = ThemeTokens.Color.primary
+        icon.contentMode = .center
         icon.translatesAutoresizingMaskIntoConstraints = false
+        iconContainer.addSubview(icon)
 
         let nameLabel = UILabel()
-        nameLabel.text = "\(row.capability.localizedName) · \(row.scopeText)"
+        nameLabel.text = row.capability.localizedName
         nameLabel.font = ThemeTokens.Typography.rowTitle
         nameLabel.textColor = ThemeTokens.Color.text
         nameLabel.adjustsFontForContentSizeCategory = true
+
+        // 授权范围用芯片呈现，替代「能力 · 范围」拼接文案（2026-10-21 样式验收）。
+        // 用 disabled UIButton 保证 stack 内背景/内边距渲染可靠（UILabel 方案
+        // 实测 AX 有 frame 但像素不可见）。
+        let scopeChip = UIButton(type: .system)
+        scopeChip.setTitle(row.scopeText, for: .normal)
+        scopeChip.setTitleColor(ThemeTokens.Color.success, for: .normal)
+        scopeChip.backgroundColor = ThemeTokens.Color.successSoft
+        scopeChip.titleLabel?.font = ThemeTokens.Typography.caption1
+        scopeChip.contentEdgeInsets = UIEdgeInsets(top: 4, left: 9, bottom: 4, right: 9)
+        scopeChip.isUserInteractionEnabled = false
+        scopeChip.layer.cornerRadius = 10
+        scopeChip.clipsToBounds = true
+        scopeChip.accessibilityIdentifier = "pwa-permission.scope.\(row.capability.rawValue)"
+        scopeChip.accessibilityLabel = "\(row.capability.localizedName)·\(row.scopeText)"
+
+        let nameRow = UIStackView(arrangedSubviews: [nameLabel, scopeChip])
+        nameRow.axis = .horizontal
+        nameRow.spacing = ThemeTokens.Spacing.xs
+        nameRow.alignment = .center
+        scopeChip.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         let systemLabel = UILabel()
         systemLabel.text = "iOS 系统：\(row.systemText)"
@@ -289,24 +347,31 @@ final class PWAPermissionCenterViewController: UIViewController {
             : ThemeTokens.Color.textSecondary
         systemLabel.adjustsFontForContentSizeCategory = true
 
-        let textColumn = UIStackView(arrangedSubviews: [nameLabel, systemLabel])
+        let textColumn = UIStackView(arrangedSubviews: [nameRow, systemLabel])
         textColumn.axis = .vertical
         textColumn.spacing = ThemeTokens.Spacing.xs
 
+        // 操作按钮：胶囊样式固定右缘，不再是无样式的裸文字（2026-10-21 样式验收）
         let actionButton = UIButton(type: .system)
         actionButton.titleLabel?.font = ThemeTokens.Typography.buttonMedium
-        actionButton.heightAnchor.constraint(equalToConstant: 34)
+        actionButton.layer.cornerRadius = 14
+        actionButton.contentEdgeInsets = UIEdgeInsets(top: 7, left: 14, bottom: 7, right: 14)
         if row.grant != nil {
             actionButton.setTitle("撤销", for: .normal)
             actionButton.setTitleColor(ThemeTokens.Color.error, for: .normal)
+            actionButton.backgroundColor = ThemeTokens.Color.errorSoft
             actionButton.accessibilityIdentifier = "pwa-permission.revoke.\(row.capability.rawValue)"
             actionButton.addTarget(self, action: #selector(revokeTapped(_:)), for: .touchUpInside)
             actionButton.tag = row.capability.hashValue
-            actionButton.accessibilityValue = row.actionIdentity ?? row.capability.rawValue
+            // accessibilityValue 必须是 capability rawValue：revokeTapped 用它
+            // 反解能力。v2 授权带 actionIdentity（purposeId），放这里会让反解
+            // 失败、撤销按钮静默无效（2026-10-21 实测修复）。
+            actionButton.accessibilityValue = row.capability.rawValue
             actionButton.accessibilityLabel = "撤销\(row.capability.localizedName)"
         } else if row.systemStatus == .denied {
             actionButton.setTitle("前往系统设置", for: .normal)
             actionButton.setTitleColor(ThemeTokens.Color.primary, for: .normal)
+            actionButton.backgroundColor = ThemeTokens.Color.primarySoft
             actionButton.accessibilityIdentifier = "pwa-permission.settings.\(row.capability.rawValue)"
             actionButton.addTarget(self, action: #selector(systemSettingsTapped), for: .touchUpInside)
         } else {
@@ -315,7 +380,7 @@ final class PWAPermissionCenterViewController: UIViewController {
             actionButton.isEnabled = false
         }
 
-        let row0 = UIStackView(arrangedSubviews: [icon, textColumn, actionButton])
+        let row0 = UIStackView(arrangedSubviews: [iconContainer, textColumn, actionButton])
         row0.axis = .horizontal
         row0.spacing = ThemeTokens.Spacing.md
         row0.alignment = .center
@@ -323,6 +388,8 @@ final class PWAPermissionCenterViewController: UIViewController {
         textColumn.translatesAutoresizingMaskIntoConstraints = false
         textColumn.setContentHuggingPriority(.required - 1, for: .horizontal)
         textColumn.setContentCompressionResistancePriority(.required - 1, for: .horizontal)
+        actionButton.setContentHuggingPriority(.required, for: .horizontal)
+        actionButton.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         row0.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(row0)
@@ -330,21 +397,26 @@ final class PWAPermissionCenterViewController: UIViewController {
             row0.topAnchor.constraint(equalTo: card.topAnchor, constant: ThemeTokens.Spacing.md),
             row0.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -ThemeTokens.Spacing.md),
             row0.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: ThemeTokens.Spacing.lg),
-            row0.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -ThemeTokens.Spacing.sm),
-            icon.widthAnchor.constraint(equalToConstant: 22),
-            icon.heightAnchor.constraint(equalToConstant: 22)
+            row0.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -ThemeTokens.Spacing.md),
+            iconContainer.widthAnchor.constraint(equalToConstant: 40),
+            iconContainer.heightAnchor.constraint(equalToConstant: 40),
+            icon.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor)
         ])
         return card
     }
 
     private func makeRevokeAllButton(subject: HTMLAppPermissionSubject) -> UIView {
+        // 破坏性总操作用描边幽灵样式：比实底块更轻，避免与能力卡撤销按钮抢视觉
         let button = UIButton(type: .system)
         button.setTitle("撤销全部授权", for: .normal)
         button.setTitleColor(ThemeTokens.Color.error, for: .normal)
         button.titleLabel?.font = ThemeTokens.Typography.buttonMedium
-        button.backgroundColor = ThemeTokens.Color.errorSoft
-        button.layer.cornerRadius = ThemeTokens.CornerRadius.md
-        button.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        button.backgroundColor = .clear
+        button.layer.cornerRadius = 14
+        button.layer.borderWidth = 1
+        button.layer.borderColor = ThemeTokens.Color.error.withAlphaComponent(0.35).cgColor
+        button.heightAnchor.constraint(equalToConstant: 44).isActive = true
         button.accessibilityIdentifier = "pwa-permission.revokeAll"
         button.addTarget(self, action: #selector(revokeAllTapped), for: .touchUpInside)
         return button

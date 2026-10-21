@@ -376,6 +376,115 @@ final class DeepVerificationTests: XCTestCase {
         app.alerts.buttons["好"].firstMatch.tap()
     }
 
+    /// A home-screen entry may hand an ordinary HTTPS page to Drel without
+    /// registering it as a privileged HTML app.
+    func testExternalHTTPSLinkOpensInsideDrelAsNormalPage() throws {
+        Self.openExternally(
+            "drel://open?url=https%3A%2F%2Fpi-chat.shanbox.19930810.xyz%3A8443%2Ftest_resources%2Fbridge-interaction.html"
+        )
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let openButton = springboard.buttons["打开"].firstMatch
+        if openButton.waitForExistence(timeout: 5) {
+            openButton.tap()
+        }
+
+        let browser = app.descendants(matching: .any).matching(identifier: "browserManager.webView").firstMatch
+        XCTAssertTrue(browser.waitForExistence(timeout: 12), "HTTPS home-screen link should open Drel's in-app browser")
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5), "An ordinary page should keep normal browser navigation")
+        saveScreenshot("/tmp/wbk-drel-external-https-opened.png")
+    }
+
+    func testExternalURLRejectsNonHTTPSSchemes() throws {
+        Self.openExternally("drel://open?url=http%3A%2F%2Fexample.com%2F")
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let openButton = springboard.buttons["打开"].firstMatch
+        if openButton.waitForExistence(timeout: 5) {
+            openButton.tap()
+        }
+        XCTAssertTrue(app.alerts["链接无效"].waitForExistence(timeout: 8))
+        XCTAssertFalse(
+            app.descendants(matching: .any).matching(identifier: "browserManager.webView").firstMatch.exists,
+            "Non-HTTPS external URLs must not open in Drel"
+        )
+        app.alerts.buttons["好"].tap()
+    }
+
+    /// Full iOS Home Screen route: Safari adds the HTTPS entry as a web clip,
+    /// and opening that icon redirects into Drel with the selected page URL.
+    func testHomeScreenEntryAddsAndOpensPiChatInsideDrel() throws {
+        let target = "https://pi-chat.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html"
+        let icon = "https://pi-chat.shanbox.19930810.xyz:8443/icons/icon-180.png"
+        var entry = URLComponents(string: "https://drel.app/launch/")!
+        entry.queryItems = [
+            URLQueryItem(name: "url", value: target),
+            URLQueryItem(name: "name", value: "Pi Chat Home Screen Auto Launch"),
+            URLQueryItem(name: "icon", value: icon),
+            URLQueryItem(name: "entry_version", value: "6")
+        ]
+        Self.openExternally(entry.url!.absoluteString)
+
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        let share = safari.buttons["ShareButton"]
+        XCTAssertTrue(share.waitForExistence(timeout: 15), "Safari should show the Drel desktop entry page")
+        share.tap()
+
+        let addToHome = safari.cells.matching(
+            NSPredicate(format: "label CONTAINS %@ OR label CONTAINS[c] %@", "添加到主屏幕", "Add to Home Screen")
+        ).firstMatch
+        for _ in 0..<5 where !addToHome.exists {
+            safari.swipeUp()
+        }
+        XCTAssertTrue(addToHome.waitForExistence(timeout: 12), "Safari share sheet should offer Add to Home Screen")
+        addToHome.tap()
+
+        let addConfirmation = safari.buttons.matching(
+            NSPredicate(format: "label == %@ OR label == %@", "添加", "Add")
+        ).firstMatch
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let springboardAddConfirmation = springboard.buttons.matching(
+            NSPredicate(format: "label == %@ OR label == %@", "添加", "Add")
+        ).firstMatch
+        if addConfirmation.waitForExistence(timeout: 4) {
+            XCTAssertTrue(
+                safari.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Pi Chat Home Screen Auto Launch")).firstMatch.exists,
+                "Home Screen confirmation should use the requested app name"
+            )
+            addConfirmation.tap()
+        } else if springboardAddConfirmation.waitForExistence(timeout: 4) {
+            XCTAssertTrue(
+                springboard.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Pi Chat Home Screen Auto Launch")).firstMatch.exists,
+                "Home Screen confirmation should use the requested app name"
+            )
+            springboardAddConfirmation.tap()
+        } else {
+            XCTFail("Could not find the Home Screen confirmation control. Safari: \(safari.debugDescription) SpringBoard: \(springboard.debugDescription)")
+            return
+        }
+
+        let iconOnHome = springboard.icons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Pi Chat Home Screen Auto Launch")
+        ).firstMatch
+        XCTAssertTrue(iconOnHome.waitForExistence(timeout: 15), "Pi Chat icon should appear on the simulator Home Screen")
+        saveScreenshot("/tmp/drel-pi-chat-home-screen-icon.png")
+        iconOnHome.tap()
+
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 8), "Opening the Home Screen icon should auto-launch Drel without a second tap")
+        let browser = app.descendants(matching: .any).matching(identifier: "browserManager.webView").firstMatch
+        XCTAssertTrue(browser.waitForExistence(timeout: 20), "The standalone launcher should hand off Pi Chat to Drel automatically")
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5), "The unregistered page should use normal in-app browser chrome")
+        XCTAssertTrue(
+            app.navigationBars.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS[c] %@", "pi-chat.shanbox.19930810.xyz")
+            ).firstMatch.waitForExistence(timeout: 20),
+            "Drel must load the requested Pi Chat destination, not merely display an empty browser shell"
+        )
+        XCTAssertTrue(
+            app.staticTexts["PI Agent Chat"].waitForExistence(timeout: 10),
+            "The destination page content should render inside Drel"
+        )
+        saveScreenshot("/tmp/drel-pi-chat-opened-in-app.png")
+    }
+
     /// Registered half: after importing the official gateway (env-prefilled
     /// payload), `drel://app` for a live registered app opens it immersive
     /// — the external equivalent of a push launch.

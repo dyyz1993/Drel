@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Drel App">
+<meta name="theme-color" content="#f6f7fb">
+<link id="homeIcon" rel="apple-touch-icon" href="./assets/app-icon.png">
+<title>Drel App</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;color:#1d2440;background:#f6f7fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:calc(env(safe-area-inset-top) + 28px) 22px calc(env(safe-area-inset-bottom) + 28px);display:flex;justify-content:center}.shell{width:min(100%,430px);display:flex;flex-direction:column;gap:22px}.brand{display:flex;align-items:center;gap:10px;color:#74809f;font-size:13px;font-weight:650}.dot{width:8px;height:8px;border-radius:50%;background:#4f6af6}.hero{background:white;border:1px solid #e3e7f1;border-radius:28px;padding:24px;box-shadow:0 8px 30px #20284a0a}.app{display:flex;align-items:center;gap:16px}.app img{width:68px;height:68px;border-radius:18px;box-shadow:0 3px 12px #212a4814}.app h1{font-size:22px;line-height:1.2;margin:0 0 6px}.app p{margin:0;color:#7b86a4;font-size:14px}.ready{margin-top:24px;border-radius:14px;background:#eef1ff;color:#465edc;padding:12px 14px;font-size:14px;font-weight:600}.steps{display:grid;gap:12px}.step{display:flex;gap:13px;align-items:flex-start;background:#fff;border:1px solid #e7eaf2;border-radius:18px;padding:15px}.num{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#eef1ff;color:#4f6af6;font-weight:700;font-size:13px}.step strong{display:block;font-size:15px;margin:1px 0 4px}.step span{display:block;font-size:13px;line-height:1.45;color:#77819c}.button{display:flex;align-items:center;justify-content:center;width:100%;height:54px;border:0;border-radius:17px;background:#4f6af6;color:#fff;text-decoration:none;font-size:16px;font-weight:700;box-shadow:0 8px 20px #4f6af63a}.foot{text-align:center;color:#8b94aa;font-size:12px;line-height:1.5}.hidden{display:none}.fallback{width:min(100%,360px);display:none;justify-items:center;gap:16px;text-align:center}.fallback p{margin:0;color:#7b86a4;font-size:13px;line-height:1.5}.launch-status{color:#465edc;font-size:16px;font-weight:650}.copy-button{height:48px;padding:0 24px;border:0;border-radius:15px;background:#eef1ff;color:#4f6af6;font:700 15px -apple-system,BlinkMacSystemFont,sans-serif}.standalone-opening body{align-items:center;padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom)}.standalone-opening .shell>*:not(#standaloneFallback){display:none!important}.standalone-opening #standaloneFallback{display:grid}.standalone-opening #fallbackHint{max-width:300px}.standalone-opening .fallback-ready .hidden{display:flex!important}
+</style>
+</head>
+<body>
+<main class="shell">
+  <div class="brand"><i class="dot"></i>Drel · 应用桌面入口</div>
+  <section class="hero">
+    <div class="app"><img id="appIcon" src="./assets/app-icon.png" alt="应用图标"><div><h1 id="appName">Drel App</h1><p>已准备好添加到主屏幕</p></div></div>
+    <div class="ready" id="status">安装步骤：在 Safari 添加后，从桌面图标继续</div>
+  </section>
+  <section class="steps" id="installGuide" aria-label="添加步骤">
+    <div class="step"><div class="num">1</div><div><strong>打开 Safari 的分享菜单</strong><span>点底部或顶部的分享图标。</span></div></div>
+    <div class="step"><div class="num">2</div><div><strong>选择“添加到主屏幕”</strong><span>确认名称和图标后，点右上角“添加”。</span></div></div>
+  </section>
+  <a class="button" id="openDrel" href="#">在 Drel 中打开</a>
+  <p class="foot" id="hint">主屏幕入口会打开独立网页界面；点上方按钮即可进入 Drel 的对应应用。</p>
+  <section class="fallback" id="standaloneFallback" aria-live="polite">
+    <div class="launch-status" id="launchStatus">正在打开 Drel…</div>
+    <a class="button hidden" id="standaloneOpenDrel" href="#">手动打开 Drel</a>
+    <button class="copy-button hidden" id="copyDrelLink" type="button">复制 Drel 链接</button>
+    <p id="fallbackHint">如果没有自动进入 Drel，可以手动打开或复制链接。</p>
+  </section>
+</main>
+<script>
+const q = new URLSearchParams(location.search);
+const appId = q.get('app_id') || '';
+const route = q.get('route') || '';
+const rawTargetURL = q.get('url') || '';
+const name = q.get('name') || '';
+const icon = q.get('icon') || '';
+const safeName = name.replace(/[&<>"']/g, '').trim() || 'Drel App';
+let target;
+if (appId) {
+  if (!/^[A-Za-z0-9._-]{1,128}$/.test(appId) || (route && (!route.startsWith('/') || route.startsWith('//')))) {
+    target = null;
+  } else {
+    target = new URL('drel://app');
+    target.searchParams.set('app_id', appId);
+    if (route && route !== '/') target.searchParams.set('route', route);
+  }
+} else {
+  try {
+    const externalURL = new URL(rawTargetURL);
+    if (externalURL.protocol === 'https:' && externalURL.hostname && !externalURL.username && !externalURL.password) {
+      target = new URL('drel://open');
+      target.searchParams.set('url', externalURL.toString());
+    }
+  } catch {}
+}
+if (!target) {
+  document.getElementById('status').textContent = '入口参数无效，请从 Drel 重新打开。';
+  document.getElementById('openDrel').setAttribute('aria-disabled','true');
+  document.getElementById('standaloneOpenDrel').setAttribute('aria-disabled','true');
+} else {
+  document.title = safeName;
+  document.querySelector('meta[name="apple-mobile-web-app-title"]').content = safeName;
+  document.getElementById('appName').textContent = safeName;
+  if (appId) target.searchParams.set('param_title', '来自主屏幕入口');
+  if (icon) {
+    try {
+      const iconURL = new URL(icon);
+      if (iconURL.protocol === 'https:' && iconURL.hostname) {
+        document.getElementById('homeIcon').href = iconURL.toString();
+        document.getElementById('appIcon').src = iconURL.toString();
+      }
+    } catch {}
+  }
+  document.getElementById('openDrel').href = target.toString();
+  document.getElementById('standaloneOpenDrel').href = target.toString();
+}
+const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches;
+if (standalone) {
+  document.documentElement.classList.add('standalone-opening');
+  document.getElementById('installGuide').classList.add('hidden');
+  document.getElementById('status').textContent = '继续进入 Drel';
+  const link = document.getElementById('openDrel');
+  if (link.getAttribute('aria-disabled') !== 'true') {
+    document.getElementById('copyDrelLink').addEventListener('click', async () => {
+      const value = document.getElementById('standaloneOpenDrel').href;
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch {
+        const field = document.createElement('textarea');
+        field.value = value;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        document.execCommand('copy');
+        field.remove();
+      }
+      document.getElementById('fallbackHint').textContent = 'Drel 链接已复制。';
+    });
+    // A Home Screen web app may be resumed instead of reloaded on a later tap.
+    // Retry whenever its document becomes visible; throttle duplicate events
+    // from the same activation and keep a manual fallback if iOS declines it.
+    let lastAttempt = 0;
+    let fallbackTimer;
+    const attemptHandoff = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastAttempt < 1200) return;
+      lastAttempt = Date.now();
+      document.getElementById('launchStatus').textContent = '正在打开 Drel…';
+      document.getElementById('standaloneFallback').classList.remove('fallback-ready');
+      const handoff = document.createElement('a');
+      handoff.href = target.toString();
+      handoff.rel = 'noopener';
+      handoff.style.position = 'fixed';
+      handoff.style.left = '-10000px';
+      document.body.appendChild(handoff);
+      handoff.click();
+      handoff.remove();
+      clearTimeout(fallbackTimer);
+      fallbackTimer = setTimeout(() => {
+        if (document.visibilityState !== 'visible') return;
+        document.getElementById('launchStatus').textContent = '没有自动打开？';
+        document.getElementById('standaloneFallback').classList.add('fallback-ready');
+      }, 1800);
+    };
+    document.addEventListener('visibilitychange', attemptHandoff);
+    window.addEventListener('pageshow', attemptHandoff);
+    attemptHandoff();
+  } else {
+    document.getElementById('launchStatus').textContent = '入口链接无效';
+    document.getElementById('fallbackHint').textContent = '入口链接无效，请返回 Safari 重新添加。';
+    document.getElementById('copyDrelLink').style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
