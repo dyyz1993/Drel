@@ -50,7 +50,7 @@ final class OfficialFirstRunTests: XCTestCase {
 
         action.tap()
 
-        XCTAssertTrue(waitUntil(timeout: 5) { action.label == "用 Safari 发送测试" })
+        XCTAssertTrue(waitUntil(timeout: 5) { action.label == "发送测试通知" })
         let address = app.descendants(matching: .any).matching(identifier: "home.push.address").firstMatch
         XCTAssertTrue(makeVisible(address, in: app))
         XCTAssertTrue(address.label.contains(fixtureIdentity))

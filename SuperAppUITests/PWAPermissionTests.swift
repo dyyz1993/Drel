@@ -20,6 +20,18 @@ final class PWAPermissionTests: XCTestCase {
             "WBK_OFFICIAL_PUSH_TEST_STATE": "initial-ready",
             "WBK_OFFICIAL_PUSH_TEST_IDENTITY": "permission_fixture_identity"
         ]
+        addUIInterruptionMonitor(withDescription: "Paste Permission") { alert in
+            let allow = alert.buttons["允许粘贴"]
+            if allow.exists { allow.tap(); return true }
+            let allowEn = alert.buttons["Allow Paste"]
+            if allowEn.exists { allowEn.tap(); return true }
+            let deny = alert.buttons["不允许粘贴"]
+            if deny.exists { deny.tap(); return true }
+            let denyEn = alert.buttons["Don't Allow"]
+            if denyEn.exists { denyEn.tap(); return true }
+            return false
+        }
+        app.activate()
     }
 
     func testPWAAppDetailsExposeDeclaredAndGrantedCapabilities() {
@@ -74,13 +86,29 @@ final class PWAPermissionTests: XCTestCase {
 
         tile.press(forDuration: 1.2)
         app.buttons["添加到 iPhone 主屏幕…"].tap()
-        XCTAssertTrue(app.staticTexts["应用链接已复制"].waitForExistence(timeout: 4))
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '快捷指令'")).firstMatch.exists)
+        XCTAssertTrue(element("homeShortcut.guide").waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["放到 iPhone 主屏幕"].exists)
+        XCTAssertTrue(app.buttons["打开 Safari 入口页"].exists)
+        Thread.sleep(forTimeInterval: 0.5)
         let guideScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        guideScreenshot.name = "iphone-home-screen-shortcut-guide"
+        guideScreenshot.name = "iphone-home-screen-shortcut-guide-link"
         guideScreenshot.lifetime = .keepAlways
         add(guideScreenshot)
-        app.buttons["稍后"].tap()
+
+        // 单页半屏引导（2026-10-21 精简版）：安全声明同屏可见，不再有长正文标题。
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "不能静默安装主屏幕图标"))
+                .firstMatch.exists,
+            "The guide should say that Drel cannot silently install a Home Screen icon"
+        )
+        Thread.sleep(forTimeInterval: 0.5)
+        let workflowScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        workflowScreenshot.name = "iphone-home-screen-shortcut-guide-workflow"
+        workflowScreenshot.lifetime = .keepAlways
+        add(workflowScreenshot)
+
+        app.buttons["关闭引导"].tap()
+        XCTAssertFalse(element("homeShortcut.guide").waitForExistence(timeout: 2))
 
         tile.tap()
         XCTAssertTrue(element("browserManager.webView").waitForExistence(timeout: 12))
@@ -115,6 +143,42 @@ final class PWAPermissionTests: XCTestCase {
         screenshot.name = "home-installed-offline-badge"
         screenshot.lifetime = .keepAlways
         add(screenshot)
+    }
+
+    func testHomeShortcutGuideOpensDesktopEntry() {
+        app.launch()
+
+        let tile = element("pwaHome.app.dev.drel.action-demo")
+        XCTAssertTrue(tile.waitForExistence(timeout: 20))
+        tile.press(forDuration: 1.2)
+        app.buttons["添加到 iPhone 主屏幕…"].tap()
+        XCTAssertTrue(element("homeShortcut.guide").waitForExistence(timeout: 4))
+        let openEntry = app.buttons["打开 Safari 入口页"]
+        XCTAssertTrue(openEntry.waitForExistence(timeout: 12), "主屏幕入口流程应提供 HTTPS 入口页")
+        Thread.sleep(forTimeInterval: 0.5)
+        let guideScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        guideScreenshot.name = "iphone-home-screen-desktop-entry"
+        guideScreenshot.lifetime = .keepAlways
+        add(guideScreenshot)
+
+        // 合并按钮状态机：点「打开 Safari 入口页」后原位变为「我已添加，完成」
+        openEntry.tap()
+        let finish = app.buttons["我已添加，完成"]
+        XCTAssertTrue(finish.waitForExistence(timeout: 6), "打开入口后按钮应变为「我已添加，完成」")
+        Thread.sleep(forTimeInterval: 0.5)
+        let finishScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        finishScreenshot.name = "iphone-home-screen-guide-merged-button-done-state"
+        finishScreenshot.lifetime = .keepAlways
+        add(finishScreenshot)
+
+        // Safari 往返后 sheet 重新渲染需要时间；点击失败时重试一次。
+        app.activate()
+        Thread.sleep(forTimeInterval: 1.5)
+        finish.tap()
+        if element("homeShortcut.guide").exists {
+            finish.tap()
+        }
+        XCTAssertFalse(element("homeShortcut.guide").waitForExistence(timeout: 3), "完成应关闭引导")
     }
 
     func testClipboardWithoutSignedActionIsDeniedWithoutPrompt() {
@@ -202,7 +266,7 @@ final class PWAPermissionTests: XCTestCase {
         attachment.name = "v2-clipboard-signed-grant-prompt"
         attachment.lifetime = .keepAlways
         add(attachment)
-        app.buttons["允许"].tap()
+        app.buttons["始终允许"].tap()
 
         clipboardButton.tap()
         XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
@@ -226,7 +290,7 @@ final class PWAPermissionTests: XCTestCase {
         attachment.name = "v2-location-signed-grant-prompt"
         attachment.lifetime = .keepAlways
         add(attachment)
-        app.buttons["拒绝"].tap()
+        app.buttons["取消"].tap()
         XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
     }
 
@@ -243,13 +307,8 @@ final class PWAPermissionTests: XCTestCase {
         homeButton.tap()
 
         if element("pwa.permission.prompt").waitForExistence(timeout: 5) {
-            app.buttons["允许"].tap()
-            if element("pwa.permission.prompt").waitForExistence(timeout: 3) {
-                // Location or clipboard prompt may queue behind add-to-home; dismiss
-                // any queued consent so the native exit control stays reachable.
-                app.buttons["拒绝"].tap()
-                XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 3))
-            }
+            app.buttons["取消"].tap()
+            XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 3))
         }
 
         let nativeExit = element("browserManager.immersiveReturnButton")

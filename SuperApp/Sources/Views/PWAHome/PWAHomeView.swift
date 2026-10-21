@@ -351,7 +351,7 @@ struct PWAHomeView: View {
             .overlay(Color.clear.accessibilityIdentifier("pwaHome.sendTest"))
 
             Text(viewModel.isPushReady
-                 ? "将在外部浏览器发起请求，返回 App 后即可收到通知"
+                 ? "已通过当前应用直接发送；若未收到，请检查系统通知设置"
                  : L10n.tr("official.push.help.enable"))
                 .font(Font.app(ThemeTokens.Typography.caption))
                 .foregroundColor(Color.appTextSecondary)
@@ -421,6 +421,8 @@ struct PWAHomeView: View {
                 Text("轻点打开应用，长按查看设置")
                     .font(Font.app(ThemeTokens.Typography.metadata))
                     .foregroundColor(Color.appTextSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Spacer()
             }
             .padding(.horizontal, ThemeTokens.Spacing.lg)
@@ -452,7 +454,7 @@ struct PWAHomeView: View {
                                 .foregroundColor(.white)
                                 .frame(width: 18, height: 18)
                                 .background(Color.appPrimary, in: Circle())
-                                .offset(x: 6, y: -6)
+                                .offset(x: -2, y: 2)
                                 .accessibilityHidden(true)
                         }
                     }
@@ -463,7 +465,7 @@ struct PWAHomeView: View {
                                 .foregroundColor(.white)
                                 .frame(width: 18, height: 18)
                                 .background(Color.appSuccess, in: Circle())
-                                .offset(x: 5, y: 5)
+                                .offset(x: -2, y: -2)
                                 .accessibilityHidden(true)
                         }
                     }
@@ -683,7 +685,7 @@ private struct StatusBarScrim: View {
                     stops: [
                         .init(color: Color.appBackground, location: 0),
                         .init(color: Color.appBackground, location: 0.45),
-                        .init(color: Color.appBackground.opacity(0), location: 1),
+                        .init(color: Color.appBackground.opacity(0), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom

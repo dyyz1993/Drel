@@ -228,9 +228,14 @@ class PushNotificationManager: NSObject {
       key: key,
       completion: completion
     )
-    if let deviceToken {
+    // Reinstalling the app rotates the APNs token even when the bundle id is
+    // unchanged. A cached token from a previous install makes Apple reject
+    // delivery with BadDeviceToken, so every explicit activation must ask the
+    // system for the current token; the callback re-registers with the server.
+    deviceToken = nil
+    if let freshToken = deviceToken {
       registerTokenToBarkServer(
-        token: deviceToken, serverURL: serverURL, key: key, completion: completion)
+        token: freshToken, serverURL: serverURL, key: key, completion: completion)
       pendingOfficialRegistration = nil
     } else {
       UIApplication.shared.registerForRemoteNotifications()
