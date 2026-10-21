@@ -1,9 +1,9 @@
-# Drel 外部应用拉起链接（drel://app）v1
+# Drel 外部拉起链接（drel://）v1
 
-> 状态：v1（随 1.4.0 (75) 发布）。其他 App、快捷指令、二维码都可以用它
-> 直接拉起 Drel 里一个**已注册**的 HTML 应用并携带参数。
+> 状态：v1（随 1.4.0 (75) 发布）。其他 App 或网页桌面入口可以拉起 Drel，
+> 打开一个已注册 HTML 应用，或在普通浏览器中打开 HTTPS 页面。
 
-## 链接格式
+## 已注册 HTML 应用
 
 ```
 drel://app?app_id=<必填>&route=<可选>&param_<name>=<值>...
@@ -27,12 +27,23 @@ drel://app?app_id=dev.drel.data-template&route=/test/template/v1/index.html&para
 - **冷启动**：支持（链接在 UI 就绪后处理，并抑制本次启动的会话恢复）。
 - **离线**：目标应用若已下载离线包，参数照常送达本地入口。
 
-## 安全边界（为什么没有 url= 参数）
+## 普通 HTTPS 网页
 
-本链接**刻意不提供任意 URL 直通**——只接受 appId+route，且必须命中网关
-签名的受信注册表（`HTMLAppLaunchResolver`，fail-closed）。未注册的 appId
-只会得到解释性弹窗，不会打开任何浏览器。这是它与被否决的
-`webbridgekit://open?url=` 的本质区别，也是 App Review 安全立场的延续。
+桌面网页入口可以把普通 HTTPS 地址交给 Drel 的内置浏览器：
+
+```text
+drel://open?url=https%3A%2F%2Fexample.com%2Fpage
+```
+
+此形式在 Drel 内以普通网页模式打开，不要求网关注册，也不会授予受信 HTML
+应用的桥接能力。仅接受 HTTPS、非空主机名、没有用户名或密码的 URL，长度上限
+为 4096 字节。其他协议以及无效参数会被拒绝。
+
+## 安全边界
+
+`drel://app` 只接受 appId+route，且必须命中网关签名的受信注册表
+（`HTMLAppLaunchResolver`，fail-closed）。`drel://open` 仅用于普通 HTTPS 浏览，
+不会创建受信应用身份或传递受信应用参数。桌面入口页会校验地址后再构造此链接。
 
 参数值是远程不可信数据：模板页必须只用 `textContent` 渲染（见
 [drel-offline-template.md](drel-offline-template.md)）。

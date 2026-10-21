@@ -1,0 +1,11 @@
+{
+  "id": "/launch/index.html",
+  "name": "Drel App",
+  "short_name": "Drel App",
+  "start_url": "/launch/index.html",
+  "scope": "/launch/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#f6f7fb",
+  "icons": [{"src":"/launch/assets/app-icon.png","sizes":"512x512","type":"image/png","purpose":"any"}]
+}

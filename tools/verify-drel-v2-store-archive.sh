@@ -42,10 +42,10 @@ if [[ "$SIGNING_MODE" == "distribution" ]]; then
 fi
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.usernotifications.communication' "$PROFILE_PLIST" 2>/dev/null || true)" == "true" ]] || fail "profile lacks Communication Notifications entitlement"
 
-for key in NSCameraUsageDescription NSPhotoLibraryAddUsageDescription NSContactsUsageDescription NSMicrophoneUsageDescription NSSpeechRecognitionUsageDescription; do
+for key in NSCameraUsageDescription NSPhotoLibraryAddUsageDescription NSContactsUsageDescription NSMicrophoneUsageDescription NSSpeechRecognitionUsageDescription NSLocationWhenInUseUsageDescription; do
     [[ -n "$(value "$key")" ]] || fail "required privacy usage string missing: $key"
 done
-for key in NSBluetoothAlwaysUsageDescription NSFaceIDUsageDescription NSLocationWhenInUseUsageDescription NSMotionUsageDescription NSPhotoLibraryUsageDescription; do
+for key in NSBluetoothAlwaysUsageDescription NSFaceIDUsageDescription NSMotionUsageDescription NSPhotoLibraryUsageDescription; do
     [[ -z "$(value "$key")" ]] || fail "deferred capability usage string leaked: $key"
 done
 [[ -z "$(value NSAppTransportSecurity:NSAllowsArbitraryLoads)" ]] || fail "arbitrary HTTP loading leaked"
