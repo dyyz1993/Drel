@@ -57,9 +57,8 @@
         async function shareV2Demo() {
             try {
                 await window.BarkBridge.callNative('share', {
-                    text: 'WebBridgeKit action declaration demo',
-                    url: 'https://example.com/pwa-v2-demo',
-                    iconURL: window.location.origin + '/images/logo.png',
+                    text: '来自「原生能力演示」的分享内容',
+                    url: window.location.href,
                     reason: '页面传入的动态文案不得覆盖签名用途'
                 });
             } catch (error) { show(`分享失败：${error.message}`); }

@@ -71,9 +71,8 @@
   document.getElementById('haptic').onclick = () => call('haptic', { style: 'medium' });
   document.getElementById('vibrate').onclick = () => call('vibrate', { duration: 200 });
   document.getElementById('share').onclick = () => call('share', {
-    text: 'Drel Action Demo 2',
-    url: 'https://drel.app/test/actions/',
-    iconURL: 'https://drel.app/test/offline/assets/app-icon.png'
+    text: '来自「Drel Action Demo」的分享内容',
+    url: window.location.href
   });
   document.getElementById('fullscreen').onclick = () => {
     fullscreenEnabled = !fullscreenEnabled;
