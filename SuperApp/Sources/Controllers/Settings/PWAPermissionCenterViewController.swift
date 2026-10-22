@@ -184,6 +184,7 @@ final class PWAPermissionCenterViewController: UIViewController {
         // 没有「始终允许」授权：不渲染任何能力行，保持空状态页。
         guard !rows.isEmpty else {
             contentStack.addArrangedSubview(makeEmptyGrantsView())
+            contentStack.addArrangedSubview(makeLedgerDiagnostics(subject: subject))
             return
         }
 
@@ -197,6 +198,32 @@ final class PWAPermissionCenterViewController: UIViewController {
         }
 
         contentStack.addArrangedSubview(makeRevokeAllButton(subject: subject))
+        contentStack.addArrangedSubview(makeLedgerDiagnostics(subject: subject))
+    }
+
+    /// 账本实况（诊断用，2026-10-22）：真机上「始终允许」活不过冷启动，
+    /// 需要一眼看出授权到底有没有落盘、以及当前 subject 身份是什么。
+    private func makeLedgerDiagnostics(subject: HTMLAppPermissionSubject) -> UIView {
+        let details = runtime.permissionLedger.grants(for: subject)
+            .map { "\($0.capability.rawValue)=\($0.scope.rawValue)" }
+            .joined(separator: ", ")
+        let persisted = UserDefaults.standard.data(
+            forKey: "com.webbridgekit.html-app-runtime.permission-grants"
+        ) != nil
+
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.font = ThemeTokens.Typography.caption2
+        label.textColor = ThemeTokens.Color.textTertiary
+        label.text = """
+        诊断 · 应用 \(subject.appID)
+        网关身份 \(subject.gatewayIdentity)
+        来源 \(subject.origin)
+        本应用授权 \(details.isEmpty ? "（无）" : details)
+        账本已落盘 \(persisted ? "是" : "否")
+        """
+        label.accessibilityIdentifier = "pwa-permission.diagnostics"
+        return label
     }
 
     /// 空状态：没有「始终允许」授权时整页只保留头部说明 + 这块占位。
