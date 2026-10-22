@@ -1,15 +1,31 @@
-# Drel 权限三档验收自动化（2026-10-21，第二轮样式与交互更新后复验）
+# Drel 权限三档验收自动化（2026-10-21~22，含 UI 重绘）
 
 模拟器：`Drel-Flow-Verify`（iPhone 17 Pro / iOS 27.0）。
 `simctl location` 预设 31.2304,121.4737；定位系统权限预授。
 
-## 结果（第二轮）
+## 结果（第三轮 UI 重绘）
 
 | 套件 | 结果 |
 |---|---|
 | `PWAPermissionFlowTests`（4 例） | 4/4 通过 |
 | `PWAPermissionTests`（13 例） | 13/13 通过 |
 | 崩溃扫描 | total: 0 |
+
+## 第三轮：按 iOS「设置 › 隐私与安全性」语言重绘权限页
+
+用户反馈（2026-10-22）：绿色胶囊 + 浅红撤销块并列互相抢视线、图标对比过硬、
+信息层级拥挤。重绘原则：一层主信息（能力名）+ 两行副标题（授权范围 / 系统状态），
+右侧纯文字操作，不上彩色徽章与实底按钮。
+
+- 图标：32pt 极浅主色圆角容器（cornerRadius 9）+ 17pt medium 蓝色 Lucide 图标，
+  对比柔和；图标仍来自内置 Lucide 矢量库，非图片资源；
+- 行内文字：能力名（rowTitle）／授权范围（textSecondary）／iOS 系统状态
+  （textTertiary，异常时 warning），三行层级明确；
+- 撤销：右侧纯文字按钮（error 色），iOS 设置内联删除样式；
+- 撤销全部授权：低调文字链（caption 字号），不再与卡片争视觉重量；
+- 头部卡片说明精简为一句「授权只对该应用生效，可随时撤销」；
+- 分组标题加 8pt 上间距，insetGrouped 呼吸感。
+截图：`screenshots/permission-center-ios-style.png`。
 
 ## 第二轮新增/变更（对照用户验收反馈）
 
