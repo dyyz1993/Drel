@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Drel 数据模板演示</title>
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+  <main class="legal-shell">
+    <a href="/" class="brand"><img src="/assets/drel-mark.svg" alt="Drel"><span>Drel</span></a>
+    <section class="legal-card">
+      <p class="eyebrow">PUBLIC TEST FIXTURE</p>
+      <h1>数据模板应用</h1>
+      <p>这是一个可复用的应用骨架：页面结构、样式和图标已就位，运行时数据从模板变量注入。它同时发布强离线包，用来演示「同一份源码如何既联网取数又能离线启动」。</p>
+
+      <h2>体验步骤</h2>
+      <ol>
+        <li>在 Drel 中打开这个应用，观察模板变量渲染出的内容。</li>
+        <li>在应用详情里安装离线包，让资源在本地按 SHA-256 校验后保存。</li>
+        <li>断开网络后重新启动，页面仍能打开。</li>
+      </ol>
+
+      <h2>测试材料</h2>
+      <ul>
+        <li><a href="/test/template/v1/index.html">在线预览</a></li>
+        <li><a href="/test/template/manifest.webmanifest">Web App Manifest</a></li>
+        <li><a href="/test/template/package.json">Drel 资源清单</a></li>
+        <li><a href="/test/template/gateway-manifest.json">网关父清单（待签名）</a></li>
+        <li><a href="/test/template/drel-data-template-v1.zip">诊断 ZIP</a></li>
+      </ul>
+
+      <p>诊断 ZIP 仅供人工检查，运行时不会执行它。要复用这个骨架，请复制构建脚本并替换脚本头部的四值：源码目录、公网根地址、应用 ID 和版本号。</p>
+    </section>
+  </main>
+</body>
+</html>

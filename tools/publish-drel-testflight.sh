@@ -59,6 +59,13 @@ cat > "$EXPORT_OPTS" <<'PLIST'
 </dict></plist>
 PLIST
 
+say "发布前规范门禁（版本身份 / 发布材料 / 仓库卫生）"
+python3 tools/verify-release-identity.py --marketing 1.5.0 --build "$BUILD" \
+  || bad "发布身份校验失败：请先修好版本号、发布材料或提交状态"
+python3 tools/verify-release-notes.py || bad "CHANGELOG 与发布材料不一致"
+python3 tools/verify-repo-hygiene.py || bad "仓库卫生校验失败"
+ok "规范门禁通过"
+
 say "归档 Drel 1.5.0 ($BUILD)"
 xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \

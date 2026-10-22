@@ -488,6 +488,28 @@ Use these scripts as the repeatable evidence source before declaring a module "a
 | `swiftlint --quiet` | SwiftLint quality gate | No output, exit 0 | Before every commit |
 | `bash tools/ci-lint.sh` | Design-system lint wrapper: colors, icons, fonts, `.opencode`, crash logs, token JSON, touch targets, deliverable boundaries | `17 passed, 0 failed`; warnings may remain documented debt | Before UI/design commits and release gates |
 
+### Repository Convention Gates (文档与发布规范，2026-10-22 起)
+
+这些门禁把"该做什么"变成可执行检查，同时挂在 CI 的 `📋 Repository Conventions`
+job 与 `tools/run-release-gate.sh` 上。改了文档、CHANGELOG、官网或发布材料时必须全绿。
+
+| Script | Purpose | Pass Signal | When To Run |
+|--------|---------|-------------|-------------|
+| `python3 tools/verify-docs-links.py` | 仓库内 Markdown 内部链接可达性 | `Summary: all checks passed.` | 任何改文档/改名/移动文件之后 |
+| `python3 tools/verify-release-notes.py` | CHANGELOG 与 `docs/release/<version>/` 双向一致；每条变更须有 Scope/Verified/Evidence；Security/Bridge 条目证据文件必须存在 | `Summary: all checks passed.` | 改 CHANGELOG、改发布材料、改 `project.yml` 版本号之后 |
+| `python3 tools/verify-release-identity.py --marketing <ver>` | 版本身份可追溯：store 配置版本号唯一、待发版本有 CHANGELOG 段与发布材料、对外文案不宣称未开放能力、工作树已提交 | `Summary: all checks passed.` | 发版前（`publish-drel-testflight.sh` 会自动调用） |
+| `python3 tools/verify-repo-hygiene.py` | 单文件 ≤20MB、无凭证形态（APNs `.p8`、admin key）、必需文件齐全 | `Summary: all checks passed.` | 每次提交前；CI 跑 `--check-history` |
+| `python3 tools/verify-drel-site.py --dir build/drel-site-staging` | 官网链接可达、每个 demo 目录四件套齐全、离线包 SHA-256 与实际字节一致、`_headers` MIME 规则覆盖 | `Summary: all checks passed.` | 改官网、改 demo、改构建脚本之后 |
+| `python3 tools/serve-drel-site.py --port 8788` | 本地预览官网，**复现 Cloudflare Pages 的 `_headers` 规则**（manifest MIME、不可变缓存） | 页面 200 且 manifest 为 `application/manifest+json` | 本地验收官网；**不要**用 `python3 -m http.server` 预览，它不解析 `_headers`，会导致离线包装不上 |
+| `bash tools/preview-drel-env.sh` | 一条命令拉起完整本地验收环境：三个服务 + 官网预览 + 签名本地网关 + 模拟器上的 App | 输出「Local acceptance environment ready」 | 开始一轮验收时用一次；`--no-app` 跳过 App 构建，`--stop` 全部停止 |
+
+**规范细则见 [docs/CONTRIBUTING_GUIDE.md](docs/CONTRIBUTING_GUIDE.md)**：规范 → 检查脚本 → 强制点 的完整对照表，
+以及发版流程（版本号 → CHANGELOG → 提交 → 门禁 → TestFlight → tag）。
+
+**Git 分支保护建议**（仓库转 Public 后在 Settings → Branches → main 开启）：
+`📋 Repository Conventions`、`🔒 Release Purity`、`🎨 Design System Lint`、`SwiftLint`、
+`Drel Smoke Tests` 设为 required status checks，并禁止绕过。
+
 ### Module Regression Gates
 
 | Script / Command | Purpose | Pass Signal | Notes |

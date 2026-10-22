@@ -16,6 +16,12 @@ if [[ ! -d "$STAGE/test/offline" ]]; then
 fi
 mkdir -p "$STAGE/test/actions/v1"
 cp "$SOURCE/index.html" "$STAGE/test/actions/v1/index.html"
+# Landing page: without it the demo resources resolve but the directory
+# URL returns 404, which is how this demo stayed invisible for months.
+if [[ -f "$ROOT/docs/site/test/actions/index.html" ]]; then
+  mkdir -p "$STAGE/test/actions"
+  cp "$ROOT/docs/site/test/actions/index.html" "$STAGE/test/actions/index.html"
+fi
 
 cat > "$STAGE/test/actions/manifest.webmanifest" <<'EOF'
 {

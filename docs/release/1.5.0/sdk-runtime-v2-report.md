@@ -60,13 +60,13 @@ shows the host exit affordance, and does not close the HTML app when exited.
 
 ## Screenshot
 
-![iOS system share sheet from the V2 demo](../../build/reports/v2-runtime/screenshots/v2-share-system-sheet/A6F0E216-5E01-407A-B46A-5EE37AD1026B.png)
+![iOS system share sheet from the V2 demo](artifacts/v2-share-system-sheet.png)
 
-File: `../../build/reports/v2-runtime/screenshots/v2-share-system-sheet/A6F0E216-5E01-407A-B46A-5EE37AD1026B.png`
+File: `artifacts/v2-share-system-sheet.png`
 
-![Fullscreen demo with the native host exit control](../../build/reports/v2-runtime/screenshots/v2-fullscreen-host-exit-visible/v2-fullscreen-host-exit-visible.png)
+![Fullscreen demo with the native host exit control](artifacts/v2-fullscreen-host-exit.png)
 
-File: `../../build/reports/v2-runtime/screenshots/v2-fullscreen-host-exit-visible/v2-fullscreen-host-exit-visible.png`
+File: `artifacts/v2-fullscreen-host-exit.png`
 
 The screenshot is from an iOS 26.4.1 simulator running the local test fixture.
 It shows the content preview and native per-share choices. It is not a

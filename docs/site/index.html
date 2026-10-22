@@ -22,8 +22,11 @@
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="#how">How it works</a>
       <a href="/docs/">Docs</a>
-      <a href="/skills/drel-app-development/">Skill</a>
+      <a href="/docs/bridge/">Bridge</a>
+      <a href="/docs/app/">Build</a>
       <a href="/self-hosted/">Self-host</a>
+      <a href="/test/">Try it</a>
+      <a href="/skills/drel-app-development/">Skill</a>
       <a href="/support/">Support</a>
       <a href="/privacy/">Privacy</a>
       <a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store</a>
@@ -118,6 +121,40 @@ curl <span class="token">https://api.drel.app/</span>\
         <h2>Your webpage opens. It does not inherit the phone.</h2>
         <p>Drel's first App Store release is a notification and web-container product. Remote pages cannot invoke native Bridge actions; sensitive actions still require native validation and explicit consent.</p>
       </div>
+    </section>
+
+    <section class="shell section" id="try">
+      <div class="section-head">
+        <h2>Try it<br>right now.</h2>
+        <p class="section-copy">Live fixtures you can open in Drel. Each one proves a specific part of the contract.</p>
+      </div>
+      <div class="feature-grid demo-grid">
+        <article class="feature" data-step="01 / OFFLINE">
+          <div class="feature-icon">⬇</div>
+          <h3>Strong offline package</h3>
+          <p>Install a hash-verified package, then open it with the network off.</p>
+          <a class="button secondary" href="/test/offline/">Open the demo →</a>
+        </article>
+        <article class="feature" data-step="02 / NETWORK">
+          <div class="feature-icon">◐</div>
+          <h3>Offline + live data</h3>
+          <p>The honest fallback: cached data is labelled as cached, never faked as live.</p>
+          <a class="button secondary" href="/test/offline-network/">Open the demo →</a>
+        </article>
+        <article class="feature" data-step="03 / ACTIONS">
+          <div class="feature-icon">✦</div>
+          <h3>Native actions</h3>
+          <p>Haptic, vibrate, share and fullscreen — declared in a signed manifest, granted by you.</p>
+          <a class="button secondary" href="/test/actions/">Open the demo →</a>
+        </article>
+        <article class="feature" data-step="04 / TEMPLATE">
+          <div class="feature-icon">▤</div>
+          <h3>App template</h3>
+          <p>A reusable app skeleton you can repackage with four edited values.</p>
+          <a class="button secondary" href="/test/template/">Open the demo →</a>
+        </article>
+      </div>
+      <p class="section-copy" style="margin-top:28px">Every fixture lists its own manifest, resource manifest and expected behaviour. <a href="/test/">Browse all demos →</a></p>
     </section>
   </main>
 
