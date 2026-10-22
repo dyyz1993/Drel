@@ -357,7 +357,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             .map { "\($0.id)#\($0.publicKeyID ?? "unsigned")" }
             ?? "test-gateway"
         runtime.gatewayIdentity = fixtureIdentity
-        runtime.permissionLedger.revokeAll(appID: "com.webbridgekit.fixture.permissions")
+        // 「始终允许」是用户决定，必须活过重启：这里不能无条件清 fixture 授权，
+        // 否则每次冷启动都会丢掉上次的持久授权并重新弹面板（2026-10-22 实测）。
+        // 只有测试显式要求全新账本时才清（--reset-permission-grants）。
+        if ProcessInfo.processInfo.arguments.contains("--reset-permission-grants") {
+            runtime.permissionLedger.revokeAll(appID: "com.webbridgekit.fixture.permissions")
+        }
         let origin = ProcessInfo.processInfo.environment["WBK_PWA_PERMISSION_ORIGIN"] ?? "http://localhost:8081"
         let route = includesV2Actions
             ? "/test_resources/pwa-permission/v2-actions.html"
