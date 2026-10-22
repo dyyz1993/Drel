@@ -32,9 +32,9 @@ struct WebOriginGrantsView: View {
                 List {
                     ForEach(grantsByOrigin, id: \.origin) { group in
                         Section {
-                            ForEach(Array(group.grants.enumerated()), id: \.offset) { _, grant in
+                            ForEach(Array(group.grants.enumerated()), id: \.offset) { index, grant in
                                 GrantRow(grant: grant) {
-                                    revoke(grant)
+                                    requestRevoke(grant)
                                 }
                             }
                         } header: {
@@ -55,16 +55,38 @@ struct WebOriginGrantsView: View {
         .navigationTitle("网页授权管理")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: reload)
+        .alert("撤销这项授权？", isPresented: $showingRevokeConfirm) {
+            Button("撤销", role: .destructive) { confirmRevoke() }
+            Button("取消", role: .cancel) { pendingRevoke = nil }
+        } message: {
+            Text("撤销后，该网页再次使用对应能力时会重新请求授权。")
+        }
     }
 
+    @State private var showingRevokeConfirm = false
+    @State private var pendingRevoke: HTMLAppPermissionGrant?
+
     private func reload() {
-        let grouped = Dictionary(grouping: HTMLAppPermissionLedger.shared.allGrants()) { $0.origin }
+        // 只列持久授权：「仅这一次」是一次性事实，不该出现在授权管理里
+        // （2026-10-22 与权限中心口径对齐）。注意账本本身不持久化 .once，
+        // 这里主要过滤掉会话级授权中的瞬时记录。
+        let persistent = HTMLAppPermissionLedger.shared.allGrants().filter { $0.scope != .once }
+        let grouped = Dictionary(grouping: persistent) { $0.origin }
         grantsByOrigin = grouped
             .map { (origin: $0.key, grants: $0.value.sorted { $0.grantedAt > $1.grantedAt }) }
             .sorted { $0.origin < $1.origin }
     }
 
-    private func revoke(_ grant: HTMLAppPermissionGrant) {
+    /// 撤销必须二次确认（2026-10-22 用户实测：点卡片整行就消失了）。
+    /// 直接执行会让误触瞬间丢掉授权，且行本身没有可观察的撤销入口。
+    private func requestRevoke(_ grant: HTMLAppPermissionGrant) {
+        pendingRevoke = grant
+        showingRevokeConfirm = true
+    }
+
+    private func confirmRevoke() {
+        guard let grant = pendingRevoke else { return }
+        pendingRevoke = nil
         HTMLAppPermissionLedger.shared.revoke(
             appID: grant.appID,
             origin: grant.origin,
@@ -108,9 +130,14 @@ private struct GrantRow: View {
 
             Spacer(minLength: 0)
 
+            // 热区收紧到按钮自身：默认 List 行的 Button 可点区域会横向铺满整行，
+            // 用户点卡片空白处也会触发撤销（2026-10-22 用户实测）
             Button("撤销", action: onRevoke)
                 .font(Font.app(ThemeTokens.Typography.buttonMedium))
                 .foregroundStyle(Color(ThemeTokens.Color.error))
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .frame(minWidth: 44, minHeight: 34)
         }
         .padding(.vertical, ThemeTokens.Spacing.xs)
     }
