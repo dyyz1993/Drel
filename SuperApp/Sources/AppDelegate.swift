@@ -104,6 +104,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         HTMLAppHostUI.settingsViewControllerProvider = SuperAppHTMLAppSettingsProvider.shared
         Self.configureHomeScreenPresenter()
         Self.configurePermissionCenterOpener()
+        Self.syncRuntimeGatewayIdentity()
         Self.cleanupDeadSeedFavorites()
 
         if let serverURL = ServerConfigManager.shared.getActiveBaseURL() {
@@ -980,6 +981,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                     presenter.present(nav, animated: true)
                 }
             }
+        }
+    }
+
+    /// 启动时把已激活网关身份同步给运行时。
+    ///
+    /// 此前 gatewayIdentity 只在打开应用中心/权限中心时才被赋值，导致商店构建
+    /// 冷启动后它仍是空字符串；此时 Bridge 调用受保护能力会在
+    /// `permissionSubject` 处判为「未配置可信网关」直接拒绝 —— 授权根本没机会
+    /// 落账，表现为「始终允许」活不过杀掉重开（2026-10-22 用户实测）。
+    private static func syncRuntimeGatewayIdentity() {
+        let runtime = HTMLAppRuntimeCenter.shared
+        let registry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
+        if let active = registry.activeGateway() {
+            runtime.gatewayIdentity = "\(active.id)#\(active.publicKeyID ?? "unsigned")"
         }
     }
 
