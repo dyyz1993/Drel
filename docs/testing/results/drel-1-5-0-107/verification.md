@@ -33,7 +33,7 @@ cd ../WebBridgeKit-Framework && xcodebuild test -workspace WebBridgeKit.xcworksp
 | 用例清单（含耗时） | `test-cases.txt` |
 | 关键步骤截图（26 张，按用例命名） | `screenshots/` |
 | 用例级动画（WebP + gif） | `animations/` |
-| 全程录屏 MP4（176MB，7.2 分钟） | 未入库，在 `build/reports/drel-permission-regression/`（可用回归脚本随时重新生成） |
+| 全程 1fps 抽样动画（432 帧） | `animations/full-run.webp`；MP4 录屏按新策略抽帧后即删（2026-10-22 用户决策） |
 | 全程 1fps 抽样动画（432 帧） | `animations/full-run.webp` |
 
 ## 关键用例对应关系

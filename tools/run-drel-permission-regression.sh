@@ -7,7 +7,9 @@
 #   2. build-for-testing + test-without-building（PWAPermissionFlowTests +
 #      PWAPermissionTests，即三档授权面板、允许一次重复弹窗、始终允许快路径、
 #      权限中心列表/撤销/空状态、半屏主屏幕引导弹窗、面板快捷入口）
-#   3. 全程 simctl 录屏 → MP4（.result 里还有 xcresult 官方录屏）
+#   3. 全程 simctl 录屏 → 抽取关键帧/合成动画 → **自动删除 MP4**
+#      （录屏仅用于抽帧；成品只保留关键帧 PNG 与 WebP 动画，体积 ~MB 级。
+#       需要保留 MP4 时传 WBK_KEEP_VIDEO=1）
 #   4. 从 MP4 抽取关键帧 + 用例截图 → 动画 WebP（gif 兜底）
 #   5. 崩溃扫描；产物全部落在 tools/../build/reports/drel-permission-regression/
 #
@@ -213,7 +215,9 @@ for test, files in groups.items():
         made += 1
         print(f"  animation: {os.path.basename(webp)}（{len(files)} 帧）")
 
-# 6.4 视频本身也转一个动画 WebP（改动的关键帧串）
+# 6.4 视频本身也转一个动画 WebP（改动的关键帧串）；抽帧完成后删除 MP4
+# ——录屏只是抽帧的中间产物，成品只留关键帧/动画（2026-10-22 用户决策：
+#   全程 MP4 上百 MB 无保留价值；需要时传 WBK_KEEP_VIDEO=1）
 if os.path.exists(VIDEO) and os.path.getsize(VIDEO) > 0:
     seqdir = os.path.join(OUT, "frames", "seq")
     os.makedirs(seqdir, exist_ok=True)
@@ -228,6 +232,10 @@ if os.path.exists(VIDEO) and os.path.getsize(VIDEO) > 0:
                        save_all=True, append_images=frames[1:],
                        duration=400, loop=0, method=6)
         print(f"  animation: full-run.webp（{len(frames)} 帧，1fps 抽样）")
+    if os.environ.get("WBK_KEEP_VIDEO") != "1":
+        size_mb = os.path.getsize(VIDEO) / 1024 / 1024
+        os.remove(VIDEO)
+        print(f"  video: MP4 已在抽帧后删除（{size_mb:.0f}MB；保留请传 WBK_KEEP_VIDEO=1）")
 
 print(f"  animations: {made} 个用例动画 -> {OUT}/animations")
 PYEOF
@@ -246,11 +254,11 @@ say "产物清单"
   cat "$OUT/test-cases.txt" 2>/dev/null || echo "（--analyze-only 模式：无本轮记录）"
   echo '```'
   echo "## 可视化证据"
-  echo "- \`drel-permission-regression.mp4\`：回归全程录屏"
   echo "- \`animations/<用例名>.webp\`：每用例截图序列动画"
   echo "- \`animations/full-run.webp\`：全程 1fps 抽样动画"
   echo "- \`screenshots/\`：全部原始截图"
   echo "- \`frames/\`：视频关键帧（首/中/尾）"
+  echo "- MP4 录屏默认抽帧后删除（保留传 WBK_KEEP_VIDEO=1）"
 } > "$OUT/REPORT.md"
 ok "报告：$OUT/REPORT.md"
 
