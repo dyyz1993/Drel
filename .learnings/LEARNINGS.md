@@ -73,3 +73,28 @@ Every saved entry, including a one-off pending learning, includes:
 - Revalidation: iOS 28+ 大版本升级后抽查一次 UILabel 背景渲染
 - Validation: verified (现象) / unresolved (机理); Last-Validated: 2026-10-21
 - Disposition: retain; Application: applied（芯片统一 UIButton 实现）
+
+## [LRN-20261022-003] feedback
+
+**Logged**: 2026-10-22
+**Priority**: medium
+**Area**: tests
+**Status**: resolved
+
+**Insight**: 用户对测试证据的留存偏好：**不要保留大体积全程录屏（MP4 数百 MB）**，
+只保留关键帧截图 + WebP 动画。流程应为「录屏 → 抽帧/合成动画 → 删除 MP4」；
+录屏只是抽帧的中间产物。需要保留原始录屏属例外，用显式开关（WBK_KEEP_VIDEO=1）。
+
+**Why**: MP4 体积大、回放效率低；关键帧+动画（MB 级）已覆盖验收与取证需求，
+且可直接进 git 归档与快速翻阅。
+
+**How to apply**: 任何新增录制类验证（录屏、性能 trace）默认抽帧后清理原始产物，
+归档只进 png/webp；例外用环境变量开关。
+
+**Context Maintenance**
+- Decay-Type: decision
+- Decay-Rate: durable（用户明确决策）
+- Authority: 用户 2026-10-22 原话；Owner: Drel 测试流程
+- Revalidation: 若用户日后要求保留原始录屏再修订
+- Validation: verified; Last-Validated: 2026-10-22; Evidence: c5a8e9d 已落地
+- Disposition: retain; Application: applied
