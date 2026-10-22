@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Drel 1.5 TestFlight 发布脚本（2026-10-22 沉淀，build 101/102 同链路验证）
+#
+# 归档 → 二进制/契约校验 → 导出 IPA → altool 上传 → 轮询 Apple 处理至 VALID。
+# 与 AGENTS.md 的规则对齐：
+#   * 归档用 Drel15Store scheme，MARKETING_VERSION=1.5.0，CURRENT_PROJECT_VERSION=<build>
+#   * 本地「WebBridgeKit App Store」描述文件曾缺 Communication Notifications，
+#     因此归档走自动开发签名（同 build 99/100/101/102 验证过的链路），
+#     导出时再换 App Store 分发签名。
+#   * 上传前后各跑一次 tools/verify-drel-v2-store-archive.sh。
+#
+# 用法：
+#   bash tools/publish-drel-testflight.sh 103            # 指定 build 号
+#   bash tools/publish-drel-testflight.sh                # 默认递增（读取 ASC 最新 build+1）
+#   WBK_SKIP_UPLOAD=1 bash tools/publish-drel-testflight.sh 103   # 只归档+导出+校验
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+APP_ID="${WBK_APP_ID:-6802806992}"
+KEY_ID="${WBK_ASC_KEY_ID:-4NXJ8HL7K9}"
+KEY_ISSUER="${WBK_ASC_ISSUER:-18f47979-0b65-4045-b969-00ba54177716}"
+ASC_API="/usr/bin/python3 $HOME/Project/study-mac-app/quite-note/tools/asc-api.py"
+EXPORT_OPTS="${WBK_EXPORT_OPTS:-/tmp/drel-export-options.plist}"
+DD="${WBK_RELEASE_DD:-/tmp/wbk-dd-publish}"
+SKIP_UPLOAD="${WBK_SKIP_UPLOAD:-0}"
+
+say() { printf '\n\033[0;34m== %s ==\033[0m\n' "$*"; }
+ok()  { printf '\033[0;32m[OK]\033[0m %s\n' "$*"; }
+bad() { printf '\033[0;31m[FAIL]\033[0m %s\n' "$*"; exit 1; }
+
+# ── build 号 ─────────────────────────────────────────────────────────────────
+BUILD="$1"
+if [[ -z "$BUILD" ]]; then
+  BUILD=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&limit=1&sort=-uploadedDate" 2>/dev/null \
+    | grep -oE '"version": *"[0-9]+"' | grep -oE '[0-9]+' | head -1)
+  [[ -n "$BUILD" ]] || bad "无法读取当前最新 build 号，请显式传入"
+  BUILD=$((BUILD + 1))
+  echo "未指定 build 号，自动取最新+1 = $BUILD"
+fi
+[[ "$BUILD" =~ ^[0-9]+$ ]] || bad "build 号必须是数字: $BUILD"
+
+STAMP=$(date +%m-%d-%H%M)
+ARCHIVE="/tmp/drel-1-5-0-build-${BUILD}-${STAMP}.xcarchive"
+EXPORT_DIR="/tmp/drel-${BUILD}-export-${STAMP}"
+mkdir -p "$(dirname "$ARCHIVE")"
+
+cat > "$EXPORT_OPTS" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>method</key><string>app-store-connect</string>
+<key>destination</key><string>export</string>
+<key>signingStyle</key><string>automatic</string>
+<key>manageAppVersionAndBuildNumber</key><false/>
+<key>teamID</key><string>B45VZCNYU3</string>
+<key>uploadSymbols</key><true/>
+</dict></plist>
+PLIST
+
+say "归档 Drel 1.5.0 ($BUILD)"
+xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
+  -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
+  -allowProvisioningUpdates 'CODE_SIGN_STYLE=Automatic' 'CODE_SIGN_IDENTITY=Apple Development' \
+  'PROVISIONING_PROFILE_SPECIFIER=' \
+  MARKETING_VERSION=1.5.0 CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1 \
+  || bad "归档失败，详见 build/archive-$BUILD.log"
+ok "归档完成：$ARCHIVE"
+
+say "归档校验（开发签名契约）"
+DREL_V2_EXPECTED_BUILD="$BUILD" DREL_V2_ARCHIVE_SIGNING=development \
+  bash tools/verify-drel-v2-store-archive.sh "$ARCHIVE" >/dev/null 2>&1 \
+  || bad "归档契约校验失败"
+ok "版本号/签名/隐私文案/定位文案/推送权限 全部符合"
+
+say "导出 App Store Connect IPA"
+rm -rf "$EXPORT_DIR"
+xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportOptionsPlist "$EXPORT_OPTS" \
+  -exportPath "$EXPORT_DIR" -allowProvisioningUpdates >"$ROOT/build/export-$BUILD.log" 2>&1 \
+  || bad "导出失败，详见 build/export-$BUILD.log"
+IPA="$EXPORT_DIR/Drel.ipa"
+[[ -f "$IPA" ]] || bad "IPA 不存在：$IPA"
+ok "IPA 就绪：$IPA"
+
+say "分发契约校验"
+rm -rf "$EXPORT_DIR/Payload-check" && mkdir -p "$EXPORT_DIR/Payload-check"
+unzip -q "$IPA" -d "$EXPORT_DIR/Payload-check"
+DREL_V2_EXPECTED_BUILD="$BUILD" DREL_V2_ARCHIVE_SIGNING=distribution \
+  DREL_V2_EXPORTED_APP_PATH="$EXPORT_DIR/Payload-check/Payload/Drel.app" \
+  bash tools/verify-drel-v2-store-archive.sh "$ARCHIVE" >/dev/null 2>&1 \
+  || bad "分发契约校验失败（生产 APNs / Distribution 签名 / 隐私文案）"
+ok "分发签名与生产推送权限符合"
+
+if [[ "$SKIP_UPLOAD" == "1" ]]; then
+  ok "WBK_SKIP_UPLOAD=1：跳过上传"
+  echo "IPA: $IPA"
+  exit 0
+fi
+
+say "上传 TestFlight（altool）"
+UPLOAD_JSON="$ROOT/build/upload-$BUILD.json"
+xcrun altool --upload-app --type ios --file "$IPA" \
+  --apiKey "$KEY_ID" --apiIssuer "$KEY_ISSUER" \
+  --output-format json >"$UPLOAD_JSON" 2>&1
+grep -q "UPLOAD SUCCEEDED" "$UPLOAD_JSON" || { cat "$UPLOAD_JSON"; bad "上传失败"; }
+ok "上传成功（详见 $UPLOAD_JSON）"
+
+say "轮询 Apple 处理状态"
+for i in $(seq 1 30); do
+  sleep 20
+  STATE=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD&fields[builds]=version,processingState" 2>/dev/null \
+    | grep -oE '"processingState": *"[A-Z_]+"' | grep -oE '[A-Z_]+' | head -1)
+  echo "  [$((i*20))s] processingState=$STATE"
+  if [[ "$STATE" == "VALID" ]]; then
+    BUILD_ID=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" 2>/dev/null \
+      | grep -oE '"id": *"[a-f0-9-]{36}"' | head -1 | grep -oE '[a-f0-9-]{36}')
+    $ASC_API get "/v1/builds/$BUILD_ID/buildBetaDetail" 2>/dev/null | grep -E "internalBuildState"
+    ok "Drel 1.5.0 ($BUILD) 处理完成，TestFlight 可安装"
+    echo
+    echo "接下来：在 TestFlight 上做真机验收（三档面板 / 允许一次重复弹窗 / 权限中心 / 主屏幕引导）"
+    exit 0
+  fi
+  if [[ "$STATE" == "FAILED" || "$STATE" == "INVALID" ]]; then
+    bad "Apple 处理失败：$STATE"
+  fi
+done
+bad "轮询超时（10 分钟未完成）；Apple 仍在后台处理，可稍后用 ASC API 复查"
