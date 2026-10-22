@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Live Drel fixtures: strong offline packages, offline fallback, declared native actions and a reusable app template.">
+  <title>Drel live demos</title>
+  <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+<link rel="canonical" href="https://drel.app/test/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Drel">
+<meta property="og:url" content="https://drel.app/test/">
+<meta property="og:title" content="Drel live demos">
+<meta property="og:description" content="Live Drel fixtures: strong offline packages, offline fallback, declared native actions and a reusable app template.">
+</head>
+<body>
+  <header class="shell nav">
+    <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="/">Home</a><a href="/docs/">Docs</a><a href="/docs/app/">Build</a><a href="/self-hosted/">Self-host</a><a aria-current="page" href="/test/">Try it</a><a class="nav-cta" href="/support/">Support</a>
+    </nav>
+  </header>
+  <main class="shell section">
+    <div class="section-head">
+      <div><span class="eyebrow">Live fixtures</span><h1>Try Drel<br>right now.</h1></div>
+      <p class="section-copy">Each fixture proves one part of the contract. Open a page in Drel to see it behave as documented.</p>
+    </div>
+    <div class="feature-grid demo-grid">
+      <article class="feature">
+        <div class="feature-icon">01</div>
+        <h3>Strong offline package</h3>
+        <p>Install a package whose resources are verified with SHA-256, then launch it with the network off.</p>
+        <a class="button secondary" href="/test/offline/">Open →</a>
+      </article>
+      <article class="feature">
+        <div class="feature-icon">02</div>
+        <h3>Offline + live data</h3>
+        <p>The package holds the UI shell; data always comes from the network. Offline, it falls back to a labelled snapshot.</p>
+        <a class="button secondary" href="/test/offline-network/">Open →</a>
+      </article>
+      <article class="feature">
+        <div class="feature-icon">03</div>
+        <h3>Declared native actions</h3>
+        <p>Haptic, vibrate, share, fullscreen, clipboard and location — each declared in a signed manifest.</p>
+        <a class="button secondary" href="/test/actions/">Open →</a>
+      </article>
+      <article class="feature">
+        <div class="feature-icon">04</div>
+        <h3>App template</h3>
+        <p>A reusable skeleton with the packaging script, ready to repackage with your own values.</p>
+        <a class="button secondary" href="/test/template/">Open →</a>
+      </article>
+    </div>
+    <div class="actions" style="margin-top:36px">
+      <a class="button primary" href="/docs/app/">Read the app guide</a>
+      <a class="button secondary" href="/docs/bridge/">Read the Bridge API</a>
+    </div>
+  </main>
+  <footer class="shell footer"><div class="footer-inner"><span>© 2026 Drel · Built with WebBridgeKit.</span><div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div></div></footer>
+</body>
+</html>

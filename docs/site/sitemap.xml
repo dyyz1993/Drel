@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://drel.app/compare/bark/</loc></url>
+  <url><loc>https://drel.app/docs/app/</loc></url>
+  <url><loc>https://drel.app/docs/bridge/</loc></url>
   <url><loc>https://drel.app/docs/container/</loc></url>
   <url><loc>https://drel.app/docs/</loc></url>
   <url><loc>https://drel.app/docs/offline/</loc></url>
@@ -12,5 +14,6 @@
   <url><loc>https://drel.app/skills/drel-app-development/</loc></url>
   <url><loc>https://drel.app/support/</loc></url>
   <url><loc>https://drel.app/terms/</loc></url>
+  <url><loc>https://drel.app/test/</loc></url>
   <url><loc>https://drel.app/zh/compare/bark/</loc></url>
 </urlset>

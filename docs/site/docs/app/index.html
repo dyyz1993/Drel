@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Build a Drel app: from an ordinary web page to a signed, offline-capable, push-launchable HTML app.">
+  <title>Build a Drel App — Four Levels Guide</title>
+  <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="canonical" href="https://drel.app/docs/app/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Drel">
+  <meta property="og:url" content="https://drel.app/docs/app/">
+  <meta property="og:title" content="Build a Drel App — Four Levels Guide">
+  <meta property="og:description" content="Build a Drel app: from an ordinary web page to a signed, offline-capable, push-launchable HTML app.">
+</head>
+<body>
+  <header class="docs-shell nav">
+    <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="/test/">Try it</a>
+      <a href="/self-hosted/">Self-host</a>
+      <a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store</a>
+    </nav>
+  </header>
+
+  <div class="docs-shell">
+    <button class="docs-menu-toggle" type="button" onclick="document.getElementById('docsSidebar').classList.toggle('is-open')" aria-label="Toggle navigation menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Docs Menu</span>
+    </button>
+  </div>
+
+  <div class="docs-container">
+    <aside class="docs-sidebar" id="docsSidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-item">Overview</a>
+        <a href="/docs/app/" class="sidebar-item active">Build an App <span class="sidebar-badge">Guide</span></a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Native Capabilities</div>
+        <a href="/docs/bridge/" class="sidebar-item">Bridge API <span class="sidebar-badge highlight">v2</span></a>
+        <a href="/docs/push/" class="sidebar-item">Push API</a>
+        <a href="/compare/bark/" class="sidebar-item">Bark Migration</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Container &amp; Offline</div>
+        <a href="/docs/container/" class="sidebar-item">Web Container</a>
+        <a href="/docs/offline/" class="sidebar-item">Offline Packages</a>
+        <a href="/docs/versions/" class="sidebar-item">Versions &amp; Contract</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Deployment</div>
+        <a href="/self-hosted/" class="sidebar-item">Self-Host Guide</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Interactive Demos</div>
+        <a href="/test/" class="sidebar-item">All Demos (/test)</a>
+        <a href="/test/actions/" class="sidebar-item">Native Actions</a>
+        <a href="/test/offline/" class="sidebar-item">Strong Offline</a>
+        <a href="/test/offline-network/" class="sidebar-item">Offline + Live Data</a>
+        <a href="/test/template/" class="sidebar-item">App Template</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Agent Tooling</div>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.1</span></a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Drel</a><span>/</span><a href="/docs/">Docs</a><span>/</span><span style="color:var(--ink)">Build an App</span>
+      </div>
+
+      <section class="docs-hero" style="border-bottom:1px solid var(--line); padding-bottom:32px;">
+        <span class="eyebrow">Guide · four levels</span>
+        <h1>Build a Drel App</h1>
+        <p>A Drel app is not a proprietary format: standard browsers must always be able to load it. Start with the smallest level that solves your problem and add the next one only when you need it.</p>
+      </section>
+
+      <div class="docs-main">
+        <section>
+          <h2>Your app and the push service are independent</h2>
+          <p>Your app is a web page. It deploys to any static host (Cloudflare Pages, Vercel, Netlify, Nginx) and needs no push backend of its own. A push service only delivers a wake-up — a URL or an <code>appId + route</code> — and is never required for the app to work.</p>
+          <div class="docs-callout">
+            <strong>Deploy together or apart.</strong> A gateway (serving signed app manifests) and a push relay are separate concerns. They can share one host and certificate, or run entirely apart. See <a href="/self-hosted/">Self-host Drel</a>.
+          </div>
+        </section>
+
+        <section>
+          <h2>Level 1 — An ordinary web page</h2>
+          <p>Zero barrier to entry. Open the URL in Drel, tap a push notification that opens it, or save it as a favorite tile. Two simple adaptations make it feel native:</p>
+          <pre class="docs-code">&lt;meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"&gt;
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}</pre>
+          <p>Support <code>prefers-color-scheme</code> for automatic dark mode, and read query parameters straight from <code>window.location.search</code>.</p>
+        </section>
+
+        <section>
+          <h2>Level 2 — An app in the App Center</h2>
+          <p>Add a standard Web App Manifest for a custom name, an icon and a standalone launch experience, then have an operator gateway sign a parent manifest.</p>
+          <pre class="docs-code">{
+  "schemaVersion": "1",
+  "appId": "com.example.orders",
+  "name": "Order Assistant",
+  "startURL": "https://app.example.com/app/index.html",
+  "allowedOrigins": ["https://app.example.com"],
+  "capabilities": [],
+  "routes": ["/app/index.html", "/app/orders/*"],
+  "cache": { "strategy": "networkOnly", "version": "1", "persistent": false }
+}</pre>
+          <p>The <code>routes</code> array decides where a push can land. A push carrying <code>appId</code> and <code>route</code> opens that exact screen.</p>
+          <pre class="docs-code">curl https://api.drel.app/push -H 'content-type: application/json' -d '{
+  "deviceKey": "YOUR_KEY",
+  "title": "New order",
+  "appId": "com.example.orders",
+  "route": "/app/orders/1024"
+}'</pre>
+        </section>
+
+        <section>
+          <h2>Level 3 — Strong offline package</h2>
+          <p>A Web App Manifest alone does not make an app durable offline. Reliable offline launch requires a verified package and a user-initiated install.</p>
+          <p>Publish three files:</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>File</th><th>Role</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>package.json</code></td><td>Resource manifest: every file with its path, size, SHA-256 and MIME type.</td></tr>
+                <tr><td><code>manifest.webmanifest</code></td><td>Standard manifest plus a <code>drel_offline</code> block pointing at the resource manifest and its digest.</td></tr>
+                <tr><td>Signed parent manifest</td><td>The <code>POST /api/v1/html-apps</code> body that the gateway signs with Ed25519.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Include every static asset — a missing chunk means a white screen offline. Keep API calls on the network, and label cached data honestly instead of faking it as live.</p>
+          <p>Hard limits: resource manifest ≤1MiB, ≤2000 files, ≤50MiB per file, ≤250MiB total.</p>
+        </section>
+
+        <section>
+          <h2>Level 4 — Native actions</h2>
+          <p>Declare each action in the signed manifest and call it behind a fallback. Read the <a href="/docs/bridge/">Bridge API reference</a> for the complete contract.</p>
+        </section>
+
+        <section>
+          <h2>Ship checklist</h2>
+          <ul>
+            <li>Works in a plain browser without the Bridge.</li>
+            <li>Safe-area insets are respected and dark mode is readable.</li>
+            <li><code>start_url</code> and <code>scope</code> carry no query string.</li>
+            <li>Every static asset is in the package with a valid hash.</li>
+            <li>Offline shows an honest fallback, not fake live data.</li>
+            <li>A push with <code>appId + route</code> lands on the intended screen.</li>
+            <li>No secret appears in <code>start_url</code>, a screenshot, or a log.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Live examples</h2>
+          <p>Every level has a running fixture: <a href="/test/offline/">strong offline</a>, <a href="/test/offline-network/">offline plus live data</a>, <a href="/test/actions/">declared actions</a> and <a href="/test/template/">the reusable template</a>.</p>
+        </section>
+
+        <div class="docs-pagination">
+          <a href="/docs/" class="pagination-card prev">
+            <span class="pagination-label">Previous</span>
+            <span class="pagination-title">← Overview</span>
+          </a>
+          <a href="/docs/bridge/" class="pagination-card next">
+            <span class="pagination-label">Next</span>
+            <span class="pagination-title">Bridge API Reference →</span>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="docs-shell footer">
+    <div class="footer-inner">
+      <span>© 2026 Drel · Built with WebBridgeKit.</span>
+      <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
+    </div>
+  </footer>
+</body>
+</html>

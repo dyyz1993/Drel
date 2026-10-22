@@ -19,6 +19,12 @@ esac
 bash "$ROOT/tools/build-drel-offline-network-demo-site.sh" "$STAGE"
 mkdir -p "$STAGE/test/template/v1"
 cp -R "$SOURCE/." "$STAGE/test/template/v1/"
+# Landing page: the demo resources were published but the directory URL
+# returned 404, so the demo was unreachable from the site.
+if [[ -f "$ROOT/docs/site/test/template/index.html" ]]; then
+  mkdir -p "$STAGE/test/template"
+  cp "$ROOT/docs/site/test/template/index.html" "$STAGE/test/template/index.html"
+fi
 # 每应用独立图标：放在 v1/ 之外，不进入离线包摘要（保持网关签名有效）
 mkdir -p "$STAGE/test/template/assets"
 cp "$ROOT/test_resources/app-icons/data-template.png" "$STAGE/test/template/assets/app-icon.png"

@@ -62,6 +62,10 @@ run_gate() {
 # do not fail a release solely because that transient start probe raced.
 run_gate "Services start and verify" "bash scripts/services.sh backend || true; bash scripts/services.sh http || true; bash scripts/services.sh proto || true; bash scripts/services.sh verify"
 run_gate "Deliverable boundaries" "bash tools/verify-deliverable-boundaries.sh"
+run_gate "Release notes and changelog" "python3 tools/verify-release-notes.py"
+run_gate "Release identity" "python3 tools/verify-release-identity.py"
+run_gate "Documentation links" "python3 tools/verify-docs-links.py"
+run_gate "Repository hygiene" "python3 tools/verify-repo-hygiene.py"
 run_gate "SwiftLint" "'$SWIFTLINT_BIN' --quiet"
 run_gate "Design lint" "bash tools/ci-lint.sh"
 run_gate "Build Debug" "xcodebuild build -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -arch arm64 -derivedDataPath '$DERIVED_DATA' CODE_SIGNING_ALLOWED=NO"

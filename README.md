@@ -1,6 +1,20 @@
 # Drel Application (`Drel`)
 
-基于 `WebBridgeKit-Framework` 构建的完整 iOS 产品宿主应用（Target、Scheme 与对外产品名均为 `Drel`）、通知服务扩展（`NotificationServiceExtension`）、UI 自动化测试套件（`DrelUITests`）及配套服务端（`Server/`）。
+基于 `WebBridgeKit-Framework` 构建的完整 iOS 产品宿主应用（Target、Scheme 与对外产品名均为 `Drel`）、通知服务扩展（`NotificationServiceExtension`）、UI 自动化测试套件（`DrelUITests/`）及配套服务端（`Server/`）。
+
+Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark 兼容推送」的完整产品层公开出来。底层 SDK `WebBridgeKit-Framework` 保持闭源，以预编译 `xcframework` 形式分发。
+
+## 快速开始
+
+| 你想做的事 | 从这里开始 |
+|---|---|
+| 了解产品与仓库结构 | [第 1 节](#1-仓库定位与目录结构) |
+| 编译并跑起来 | [第 2 节](#2-环境准备与联调构建) |
+| 查完整文档地图 | [docs/README.md](docs/README.md) |
+| 看每个版本的变更 | [CHANGELOG.md](CHANGELOG.md) |
+| 部署网关与推送服务 | [docs/guides/deployment.md](docs/guides/deployment.md) |
+| 开发一个 HTML 应用 | [docs/guides/app-development.md](docs/guides/app-development.md) |
+| 调用原生能力（Bridge） | [docs/guides/bridge-api.md](docs/guides/bridge-api.md) |
 
 ## 1. 仓库定位与目录结构
 
@@ -51,7 +65,27 @@ bash tools/verify-node-admin-local.sh
 - `HTMLAppGatewayDefaults.configureOfficial(...)`
 - `WebBridgeHostCapabilityPolicy.containerOnlyOverride`（跟随应用层 `#if DREL_CONTAINER_ONLY` 编译宏）
 
-## 4. 开发规范与底层问题协作排障指南
+## 4. 开发规范与文档
 
-完整的开发规范、代码质量门禁以及《应用层遇到底层框架问题的标准排查与处理 SOP》请查阅：
-- `docs/DEVELOPMENT_AND_COLLABORATION_GUIDE.md`
+完整的文档地图见 [`docs/README.md`](docs/README.md)。核心入口：
+
+- [应用开发指南](docs/guides/app-development.md) — 从一个普通网页到可安装、可离线、可被推送拉起的完整路径
+- [Bridge API 参考](docs/guides/bridge-api.md) — 原生能力的调用契约、授权判定链与降级规范
+- [部署手册](docs/guides/deployment.md) — 网关与推送的一体化部署与解耦独立部署
+- [协作与排障 SOP](docs/DEVELOPMENT_AND_COLLABORATION_GUIDE.md) — 应用层遇到框架问题的标准处理流程
+
+## 5. 参与贡献
+
+见 [CONTRIBUTING.md](CONTRIBUTING.md)。开源许可为 [MIT](LICENSE)。
+
+## 6. 官网与体验站点
+
+官网位于 `docs/site/`（Cloudflare Pages）。本地预览与校验：
+
+```bash
+bash tools/build-drel-site.sh                    # 构建到 build/drel-site-staging
+python3 tools/verify-drel-site.py                # 校验链接、demo 完整性与资源哈希
+python3 tools/serve-drel-site.py --port 8788     # 本地预览（含 _headers 规则）
+```
+
+可体验的演示站点说明见 [docs/site/README.md](docs/site/README.md)。

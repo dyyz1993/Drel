@@ -4,6 +4,19 @@ Drel owns the iOS product, notification extension, UI tests, website, skill and
 application/push services. The reusable SDK and its tests live in the sibling
 WebBridgeKit-Framework repository.
 
+Drel is MIT licensed. See [LICENSE](LICENSE).
+
+## Documentation map
+
+Start from [docs/README.md](docs/README.md) — it links every guide, API
+contract, release record and verification report.
+
+- [Application development guide](docs/guides/app-development.md)
+- [Bridge API reference](docs/guides/bridge-api.md)
+- [Deployment manual](docs/guides/deployment.md)
+- [Development and collaboration guide](docs/DEVELOPMENT_AND_COLLABORATION_GUIDE.md)
+- [Changelog](CHANGELOG.md)
+
 ## Checkout and setup
 
 Both active repositories are private and require authorized GitHub access.
@@ -34,6 +47,8 @@ xcodebuild build -workspace Drel.xcworkspace -scheme Drel \
 swiftlint lint --config .swiftlint.yml SuperApp/Sources/ NotificationServiceExtension/
 bash tools/verify-deliverable-boundaries.sh
 bash tools/architecture-lint.sh --ci
+python3 tools/verify-docs-links.py
+python3 tools/verify-release-notes.py
 ```
 
 Use a dedicated simulator for UI regression, with local fixture services available:
@@ -47,7 +62,25 @@ xcodebuild test -workspace Drel.xcworkspace -scheme Drel \
 
 Select the relevant release gate from `tools/` for the release train being changed.
 An SDK change requires validation in WebBridgeKit-Framework and its Drel host.
-For website changes, follow [the website guide](docs/site/README.md).
+For website changes, follow [the website guide](docs/site/README.md):
+
+```bash
+bash tools/build-drel-site.sh
+python3 tools/verify-drel-site.py
+python3 tools/serve-drel-site.py --port 8788
+```
+
+## Release records
+
+Every release needs a changelog entry and a release directory:
+
+- `CHANGELOG.md` — one section per version, each entry carrying `Scope`,
+  `Verified` and `Evidence`.
+- `docs/release/<version>/` — `RELEASE-NOTES.md`, `app-review-notes.md` and the
+  verification record.
+
+`tools/verify-release-notes.py` runs inside the release gate and fails when an
+entry lacks a scope, a verification level, or a resolvable evidence file.
 
 ## Contributions and support
 

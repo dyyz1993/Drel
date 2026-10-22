@@ -70,11 +70,28 @@ build_custom*/
 build_*/
 
 # AI/Tool generated temporary files
+# Only throwaway scripts are ignored; repository tooling under tools/ is
+# tracked source. Python tools use the .py suffix and must stay visible.
 *.py
+!tools/*.py
 *.example
 *.patch
 manifest_cache_demo
 inject_pinned_data.swift
+
+# Screen recordings and design source media are working artifacts. A single
+# 515MB .mov once sat untracked in docs/design/ and would have blocked any
+# push. Keep recordings out of Git; publish a compressed excerpt instead.
+*.mov
+*.mp4
+*.m4v
+*.webm
+docs/design/**/sim/
+docs/design/**/*.mov
+docs/promotion/*draft*.png
+
+# Agent/plugin scratch directories
+.video_agent/
 
 # Node/Testing
 node_modules/

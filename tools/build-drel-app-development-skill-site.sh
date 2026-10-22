@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STAGE="${1:-$ROOT/build/drel-site-staging}"
 SKILL="$ROOT/skills/drel-app-development"
 LANDING_PAGE="$ROOT/docs/site/skills/drel-app-development/index.html"
-VERSION="1.0.0"
+VERSION="1.1.0"
 
 case "$STAGE" in
   "$ROOT"/build/*) ;;
