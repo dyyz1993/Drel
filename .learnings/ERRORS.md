@@ -266,3 +266,27 @@ gatewayIdentity，导致调用直接被「未配置可信网关」拒绝）。
    远程 drel.app 注册的 action-demo）不是一套代码路径 —— 测试通过是假绿灯。
 2. 未先取得「真机上的实际错误文本」就凭代码推断改了两次。
 → 正确顺序：先用真机等价配置复现并拿到错误输出，再动手改。
+
+## [ERR-20261022-008] framework
+
+**Logged**: 2026-10-22
+**Symptom**: 用户实测（关键转折点证据）：“我授权完之后，打开那个应用，权限那里是能看到的。但是，我把 APP 杀掉之后再进来，就看不到了。”
+
+**Root Cause（终局根因，已通过反向单测100%证实）**:
+冷启动首页自动触发网关校验刷新 `HTMLAppGatewayOnboardingService.activate(report)`。
+该方法使用 `manifest.declares(grant.capability)` 过滤账本保留授权；而 `declares()`
+实现仅检查 `capabilities`（V1 数组）！
+剪贴板（clipboard）和定位（location）等 V2 受控动作**只声明在 capabilitiesV2 中**，
+V1 数组为空。导致每次冷启动网关刷新后，所有 V2 动作的「始终允许」授权被判定为
+「已不再声明」，全部被 `permissionLedger.replaceAll(replacementGrants)` 抹掉！
+这完美解释了用户的现象：授权后立即可见（写入成功），杀掉重开后网关刷新把它们全清了！
+
+**Verification**:
+单元测试 `testGatewayActivationKeepsV2OnlyGrants`：
+- 回退修复：`XCTAssertEqual failed: ("0") is not equal to ("2")`（剪贴板和定位全被抹掉，失败证据确凿！）
+- 应用修复：`Test Case passed (0.054 seconds)`（2 条记录完整保留，通过！）
+
+**Resolution**: 在 `HTMLAppGatewayOnboarding.swift` 和 `HTMLAppRuntime.swift` 中，
+检查授权是否被声明时同时检查 `capabilities`（V1）和 `capabilitiesV2`（V2 动作声明）。
+
+**Status**: resolved
