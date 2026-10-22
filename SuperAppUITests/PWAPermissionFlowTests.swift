@@ -66,7 +66,22 @@ final class PWAPermissionFlowTests: XCTestCase {
         if allowButton.exists { allowButton.tap() }
     }
 
+    /// 打开演示应用并进入演示页。
+    ///
+    /// 每个用例都从干净账本开始：App 侧不再无条件清 fixture 授权（那会让
+    /// 用户的「始终允许」活不过重启，2026-10-22 修复），所以测试用
+    /// `--reset-permission-grants` 显式声明要全新账本，等价于旧的每次清理语义。
+    /// test05（重启持久化）自己管理参数，不走这里的前置清理。
     private func openFixtureAppAndReachDemoPage() -> XCUIElement {
+        app.launchArguments = [
+            "--ui-testing",
+            "--register-pwa-permission-fixture",
+            "--show-pwa-app-center",
+            "--clear-last-session",
+            "--reset-default-startup-app",
+            "--pwa-v2-actions",
+            "--reset-permission-grants"
+        ]
         app.launch()
         let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
         XCTAssertTrue(appButton.waitForExistence(timeout: 20), "演示应用磁贴应出现在首页")
@@ -227,6 +242,68 @@ final class PWAPermissionFlowTests: XCTestCase {
                 attach("flow-03-reprompt-after-revoke")
             }
         }
+    }
+
+    /// 5) 「始终允许」必须活过 App 重启（2026-10-22 用户实测 bug：退出重进后
+    ///    授权丢失、每次重新弹窗）。冷启动后再次调用定位，不得再弹授权面板。
+    func test05AlwaysGrantSurvivesAppRelaunch() {
+        // 前置：清掉上一轮遗留的 fixture 授权，确保首调一定走面板（否则可能
+        // 直接命中账本、断言“面板出现”失败——那是测试污染不是产品行为）。
+        // 注意：重启那一步必须去掉 --reset-permission-grants，否则测的就是
+        // “清空后当然没授权”，而不是“持久授权是否活过重启”。
+        app.launchArguments = [
+            "--ui-testing",
+            "--register-pwa-permission-fixture",
+            "--show-pwa-app-center",
+            "--clear-last-session",
+            "--reset-default-startup-app",
+            "--pwa-v2-actions",
+            "--reset-permission-grants"
+        ]
+        app.launch()
+        let locationButton = openFixtureAppAndReachDemoPage()
+
+        locationButton.tap()
+        XCTAssertTrue(element("pwa.permission.prompt").waitForExistence(timeout: 6))
+        app.buttons["始终允许"].tap()
+        allowSystemLocationIfAsked()
+        let result = app.webViews.staticTexts.matching(NSPredicate(format: "label CONTAINS '位置：'")).firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 15), "始终允许后应返回坐标")
+
+        // 冷启动：terminate 后以相同 fixture 参数重启（不走 --reset-permission-grants）
+        app.terminate()
+        app.launchArguments = [
+            "--ui-testing",
+            "--register-pwa-permission-fixture",
+            "--show-pwa-app-center",
+            "--clear-last-session",
+            "--reset-default-startup-app",
+            "--pwa-v2-actions"
+        ]
+        app.launch()
+
+        // 重启后 app 停在首页（PWA 不再自动恢复）：先确认磁贴仍在，再点进去
+        let tile = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(tile.waitForExistence(timeout: 25),
+                      "重启后演示应用磁贴应仍在（fixture 未清空）")
+        tile.tap()
+        let relaunchedButton = app.webViews.buttons["获取当前位置"]
+        XCTAssertTrue(relaunchedButton.waitForExistence(timeout: 15))
+
+        relaunchedButton.tap()
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 3),
+                       "「始终允许」必须活过重启：冷启动后不得再弹授权面板")
+        XCTAssertTrue(result.waitForExistence(timeout: 10), "重启后应直接返回坐标")
+        Thread.sleep(forTimeInterval: 0.4)
+        attach("flow-05-always-grant-survives-relaunch")
+
+        // 权限中心同样仍应列出该授权（账本持久化的第二重证据）
+        backToHomeFromBrowser()
+        openPermissionCenter()
+        XCTAssertTrue(element("pwa-permission.capability.location").waitForExistence(timeout: 4),
+                      "重启后权限中心仍应列出「始终允许」授权")
+        Thread.sleep(forTimeInterval: 0.4)
+        attach("flow-05-center-still-lists-grant-after-relaunch")
     }
 
     /// 4) 授权面板「查看与管理授权」入口 → 跳转该应用权限与能力页，
