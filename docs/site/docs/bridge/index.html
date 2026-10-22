@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Drel Bridge API reference: declared native actions, the six-step authorization chain, and graceful degradation.">
+  <title>Bridge API Reference — Drel</title>
+  <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="canonical" href="https://drel.app/docs/bridge/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Drel">
+  <meta property="og:url" content="https://drel.app/docs/bridge/">
+  <meta property="og:title" content="Bridge API Reference — Drel">
+  <meta property="og:description" content="Drel Bridge API reference: declared native actions, the six-step authorization chain, and graceful degradation.">
+</head>
+<body>
+  <header class="docs-shell nav">
+    <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="/test/">Try it</a>
+      <a href="/self-hosted/">Self-host</a>
+      <a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store</a>
+    </nav>
+  </header>
+
+  <div class="docs-shell">
+    <button class="docs-menu-toggle" type="button" onclick="document.getElementById('docsSidebar').classList.toggle('is-open')" aria-label="Toggle navigation menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Docs Menu</span>
+    </button>
+  </div>
+
+  <div class="docs-container">
+    <aside class="docs-sidebar" id="docsSidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-item">Overview</a>
+        <a href="/docs/app/" class="sidebar-item">Build an App <span class="sidebar-badge">Guide</span></a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Native Capabilities</div>
+        <a href="/docs/bridge/" class="sidebar-item active">Bridge API <span class="sidebar-badge highlight">v2</span></a>
+        <a href="/docs/push/" class="sidebar-item">Push API</a>
+        <a href="/compare/bark/" class="sidebar-item">Bark Migration</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Container &amp; Offline</div>
+        <a href="/docs/container/" class="sidebar-item">Web Container</a>
+        <a href="/docs/offline/" class="sidebar-item">Offline Packages</a>
+        <a href="/docs/versions/" class="sidebar-item">Versions &amp; Contract</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Deployment</div>
+        <a href="/self-hosted/" class="sidebar-item">Self-Host Guide</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Interactive Demos</div>
+        <a href="/test/" class="sidebar-item">All Demos (/test)</a>
+        <a href="/test/actions/" class="sidebar-item">Native Actions</a>
+        <a href="/test/offline/" class="sidebar-item">Strong Offline</a>
+        <a href="/test/offline-network/" class="sidebar-item">Offline + Live Data</a>
+        <a href="/test/template/" class="sidebar-item">App Template</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Agent Tooling</div>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.1</span></a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Drel</a><span>/</span><a href="/docs/">Docs</a><span>/</span><span style="color:var(--ink)">Bridge API</span>
+      </div>
+
+      <section class="docs-hero" style="border-bottom:1px solid var(--line); padding-bottom:32px;">
+        <span class="eyebrow">Reference · native actions</span>
+        <h1>Bridge API Reference</h1>
+        <p>Drel can invoke native actions on your page's behalf — but only what an Ed25519-signed manifest explicitly declares and the user allows. This is not a general, unrestricted JavaScript-to-native bridge.</p>
+      </section>
+
+      <div class="docs-main">
+        <section>
+          <h2>The authorization chain</h2>
+          <p>Every controlled action passes six security checks before any native handler runs. A failure at any step fails closed, never crashes the app.</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Check</th>
+                  <th>Fails when</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>App identity</td><td>The page was opened as an ordinary URL, not from a registered application.</td></tr>
+                <tr><td>2</td><td>Exact declaration</td><td>The signed manifest's <code>capabilities_v2</code> does not declare that action for that origin.</td></tr>
+                <tr><td>3</td><td>Origin match</td><td>The page origin is not in the declared origin list, compared exactly (scheme://host:port).</td></tr>
+                <tr><td>4</td><td>Foreground gesture</td><td>No recent user touch event consumed the call (blocks background automation).</td></tr>
+                <tr><td>5</td><td>Grant ledger</td><td>No stored grant covers this gateway, app, origin, and action tuple.</td></tr>
+                <tr><td>6</td><td>Native prompt</td><td>The user cancels or rejects the native permission sheet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="docs-callout">
+            <strong>Declaration is not consent.</strong> A manifest entry is an allowlist. It never substitutes for the user's decision, and it never widens what a page can reach.
+          </div>
+        </section>
+
+        <section>
+          <h2>Declared actions (Manifest v2)</h2>
+          <p>Seven actions are exposed in Drel 1.5.0. Each must be declared in the signed manifest with a purpose ID, an origin list, and a scope.</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Scope</th>
+                  <th>What it does</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>haptic</code></td><td>appSession</td><td>Brief tactile feedback following a user tap.</td></tr>
+                <tr><td><code>vibrate</code></td><td>appSession</td><td>Brief, bounded vibration.</td></tr>
+                <tr><td><code>share</code></td><td>appSession</td><td>Opens the native iOS share sheet; the user inspects content and picks the destination.</td></tr>
+                <tr><td><code>fullscreen</code></td><td>appSession</td><td>Hides host chrome while keeping a host-owned edge return control visible.</td></tr>
+                <tr><td><code>clipboard</code></td><td>always</td><td>Reads or writes the system clipboard behind a native reason prompt.</td></tr>
+                <tr><td><code>location</code></td><td>always</td><td>Reads the current position behind an explicit permission prompt.</td></tr>
+                <tr><td><code>addToHomeScreen</code></td><td>appSession</td><td>Adds the registered app shortcut to the Drel home screen.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2>Manifest declaration format</h2>
+          <p>Declared in the parent manifest under <code>capabilities_v2</code>:</p>
+          <pre class="docs-code">{
+  "action": "clipboard",
+  "origins": ["https://app.example.com"],
+  "purposeId": "paste-order-number",
+  "purpose": "把订单号粘贴到表单里",
+  "scope": "always"
+}</pre>
+        </section>
+
+        <section>
+          <h2>Not available</h2>
+          <p>Camera scanning, photo library, Bluetooth, microphone, speech synthesis, contacts, motion sensors, file import/export, and generic device control are rejected before dispatch. The Drel host policy blocks them even though the underlying SDK contains handler code for other hosts.</p>
+        </section>
+
+        <section>
+          <h2>Calling an action</h2>
+          <pre class="docs-code">const bridgeAvailable = typeof window.BarkBridge?.call === 'function';
+
+if (bridgeAvailable) {
+  try {
+    const result = await window.BarkBridge.call('clipboard', { action: 'read' });
+    if (result?.success) {
+      input.value = result.data;
+    }
+  } catch (error) {
+    // Fall back to manual paste or browser fallback
+  }
+}</pre>
+          <p>Always write the fallback. A page that breaks when the bridge is missing is not a valid Drel app — it must also work in a plain browser.</p>
+        </section>
+
+        <section>
+          <h2>Runtime detection</h2>
+          <pre class="docs-code">const runtime = window.DrelRuntime;
+const isInstalledOffline = runtime?.isOfflinePackage === true;
+const bridgeVersion = Number(runtime?.bridgeVersion ?? 0);</pre>
+          <p>Feature-detect; do not sniff the user agent string. The app version is not an authorization level.</p>
+        </section>
+
+        <section>
+          <h2>Live interactive demo</h2>
+          <p>The <a href="/test/actions/">Action Demo fixture</a> exercises every declared action, including the authorization prompt and the revocation path.</p>
+        </section>
+
+        <div class="docs-pagination">
+          <a href="/docs/app/" class="pagination-card prev">
+            <span class="pagination-label">Previous</span>
+            <span class="pagination-title">← Build a Drel App</span>
+          </a>
+          <a href="/docs/push/" class="pagination-card next">
+            <span class="pagination-label">Next</span>
+            <span class="pagination-title">Push API Reference →</span>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="docs-shell footer">
+    <div class="footer-inner">
+      <span>© 2026 Drel · Built with WebBridgeKit.</span>
+      <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
+    </div>
+  </footer>
+</body>
+</html>
