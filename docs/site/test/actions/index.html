@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Drel 原生操作演示</title>
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+  <main class="legal-shell">
+    <a href="/" class="brand"><img src="/assets/drel-mark.svg" alt="Drel"><span>Drel</span></a>
+    <section class="legal-card">
+      <p class="eyebrow">PUBLIC TEST FIXTURE</p>
+      <h1>原生操作演示</h1>
+      <p>这个页面验证 Drel 的 Manifest v2 原生操作运行时。触感、震动、分享和沉浸全屏四项能力由网关签名的父清单逐项声明，页面只负责在用户点按后调用。</p>
+
+      <h2>体验步骤</h2>
+      <ol>
+        <li>在 Drel 中打开这个应用（或先把它注册为可信应用）。</li>
+        <li>点按「触感反馈」「短震动」，感受一次原生反馈。</li>
+        <li>点按「系统分享」，会拉起 iOS 系统分享面板，可以直接取消。</li>
+        <li>点按「切换沉浸全屏」，观察导航栏隐藏与屏幕边缘的返回控件。</li>
+        <li>剪贴板与定位需要一次性授权，可在 Drel 的权限中心撤销。</li>
+      </ol>
+
+      <h2>测试材料</h2>
+      <ul>
+        <li><a href="/test/actions/v1/index.html">在线预览</a></li>
+        <li><a href="/test/actions/manifest.webmanifest">Web App Manifest</a></li>
+        <li><a href="/test/actions/gateway-manifest.json">网关父清单（待签名）</a></li>
+      </ul>
+
+      <p>这是一个纯网络应用：它不发布强离线包，所以没有 <code>package.json</code>。声明式操作不构成长期授权，每次分享仍由系统面板决定去向。</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -517,6 +517,45 @@ jobs:
       - name: Run Design System Lint
         run: bash tools/ci-lint.sh
 
+  # ─── Job 8: Repository Conventions ───────────────────────────────
+  # The documentation, changelog, website and repository hygiene rules.
+  # These run on ubuntu because none of them need Xcode; they fail fast and
+  # give a contributor the reason without waiting for a 30-minute build.
+  repo-conventions:
+    name: 📋 Repository Conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Repository hygiene (no large files, no credentials)
+        run: python3 tools/verify-repo-hygiene.py --check-history
+
+      - name: Documentation links resolve
+        run: python3 tools/verify-docs-links.py
+
+      - name: Changelog and release records agree
+        run: python3 tools/verify-release-notes.py
+
+      - name: Build the website
+        run: bash tools/build-drel-site.sh
+
+      - name: Website links, demos and asset digests
+        run: python3 tools/verify-drel-site.py --dir build/drel-site-staging
+
+      - name: Upload site staging output
+        uses: actions/upload-artifact@v4
+        with:
+          name: drel-site-staging
+          path: build/drel-site-staging
+          retention-days: 7
+          if-no-files-found: warn
+
   # ─── Job 6: Release Purity (DEBUG-only code must not ship) ────
   # Builds Release and scans the binary for DEBUG-only markers, plus the
   # architecture-lint Rule 9 (DEBUG-only files must be file-level #if DEBUG).

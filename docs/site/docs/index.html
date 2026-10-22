@@ -1,21 +1,163 @@
 <!doctype html>
-<html lang="en"><head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Drel developer documentation: push, container and offline packages.">
-  <title>Drel developer docs</title><link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css">
-<link rel="canonical" href="https://drel.app/docs/">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Drel">
-<meta property="og:url" content="https://drel.app/docs/">
-<meta property="og:title" content="Drel developer docs">
-<meta property="og:description" content="Drel developer documentation: push, container and offline packages.">
-</head><body>
-  <header class="docs-shell nav"><a class="brand" href="/"><img src="/assets/drel-mark.svg" alt="">Drel</a><nav class="nav-links"><a href="/">Home</a><a href="/self-hosted/">Self-host</a><a href="/skills/drel-app-development/">Skill</a><a class="nav-cta" href="/support/">Support</a></nav></header>
-  <main class="docs-shell"><section class="docs-hero"><span class="eyebrow">Developer documentation</span><h1>Build against a small, explicit contract.</h1><p>Drel is an iPhone push utility and focused web container. These docs distinguish what is available now from future work, so an integration does not depend on browser cache, undocumented fields, or native privileges.</p><nav class="docs-nav"><a aria-current="page" href="/docs/">Overview</a><a href="/docs/push/">Push API</a><a href="/docs/container/">Web container</a><a href="/docs/offline/">Offline packages</a><a href="/docs/versions/">Versions</a></nav></section>
-  <div class="docs-main">
-    <section><h2>Start here</h2><div class="docs-grid"><article class="docs-card"><h3>Send a push</h3><p>Bark-compatible paths and a JSON API create a notification and optional HTTPS destination.</p><a href="/docs/push/">Read Push API →</a></article><article class="docs-card"><h3>Open a web tool</h3><p>Pages run in a Store-safe container with a documented runtime object, not native Bridge access.</p><a href="/docs/container/">Read container behavior →</a></article><article class="docs-card"><h3>Keep an app offline</h3><p>A signed, hash-verified package can make a registered web app launchable without WebKit cache.</p><a href="/docs/offline/">Read offline packages →</a></article><article class="docs-card"><h3>Give an agent the contract</h3><p>The versioned Drel app-development skill contains templates, checks and graceful fallbacks.</p><a href="/skills/drel-app-development/">Read the skill →</a></article></div></section>
-    <section><h2>Security model in one minute</h2><div class="docs-callout"><strong>A push address is a bearer capability.</strong> Keep it out of screenshots, logs, source control and public URLs. The official delivery service processes the request in order to deliver it; it is not an end-to-end encrypted secret channel. Do not put credentials, recovery codes, financial data or private content in a notification title, body, route or URL.</div></section>
-    <section><h2>What Drel does not do</h2><ul><li>A remote page does not receive native Bridge, file, photo-library, clipboard or approval powers merely because it opened in Drel.</li><li>A Web App Manifest alone does not make a page an offline app. Durable offline launch requires a verified package and a user-initiated install.</li><li>A successful API response means the relay accepted the request; it is not a guarantee that a particular device displayed it.</li></ul></section>
-  </div></main>
-  <footer class="docs-shell footer"><div class="footer-inner"><span>© 2026 Drel · Built with WebBridgeKit.</span><div class="footer-links"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/support/">Support</a></div></div></footer>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Drel developer documentation: push API, native Bridge actions, container behavior and strong offline packages.">
+  <title>Developer Documentation — Drel</title>
+  <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="canonical" href="https://drel.app/docs/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Drel">
+  <meta property="og:url" content="https://drel.app/docs/">
+  <meta property="og:title" content="Developer Documentation — Drel">
+  <meta property="og:description" content="Drel developer documentation: push API, native Bridge actions, container behavior and strong offline packages.">
+</head>
+<body>
+  <header class="docs-shell nav">
+    <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="/test/">Try it</a>
+      <a href="/self-hosted/">Self-host</a>
+      <a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store</a>
+    </nav>
+  </header>
+
+  <div class="docs-shell">
+    <button class="docs-menu-toggle" type="button" onclick="document.getElementById('docsSidebar').classList.toggle('is-open')" aria-label="Toggle navigation menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Docs Menu</span>
+    </button>
+  </div>
+
+  <div class="docs-container">
+    <aside class="docs-sidebar" id="docsSidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-item active">Overview</a>
+        <a href="/docs/app/" class="sidebar-item">Build an App <span class="sidebar-badge">Guide</span></a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Native Capabilities</div>
+        <a href="/docs/bridge/" class="sidebar-item">Bridge API <span class="sidebar-badge highlight">v2</span></a>
+        <a href="/docs/push/" class="sidebar-item">Push API</a>
+        <a href="/compare/bark/" class="sidebar-item">Bark Migration</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Container &amp; Offline</div>
+        <a href="/docs/container/" class="sidebar-item">Web Container</a>
+        <a href="/docs/offline/" class="sidebar-item">Offline Packages</a>
+        <a href="/docs/versions/" class="sidebar-item">Versions &amp; Contract</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Deployment</div>
+        <a href="/self-hosted/" class="sidebar-item">Self-Host Guide</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Interactive Demos</div>
+        <a href="/test/" class="sidebar-item">All Demos (/test)</a>
+        <a href="/test/actions/" class="sidebar-item">Native Actions</a>
+        <a href="/test/offline/" class="sidebar-item">Strong Offline</a>
+        <a href="/test/offline-network/" class="sidebar-item">Offline + Live Data</a>
+        <a href="/test/template/" class="sidebar-item">App Template</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Agent Tooling</div>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.1</span></a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Drel</a><span>/</span><span>Docs</span><span>/</span><span style="color:var(--ink)">Overview</span>
+      </div>
+
+      <section class="docs-hero" style="border-bottom:1px solid var(--line); padding-bottom:32px;">
+        <span class="eyebrow">Developer documentation</span>
+        <h1>Build against a small, explicit contract.</h1>
+        <p>Drel is an iPhone push utility and focused web container. These docs distinguish what is available now from future work, so your integration does not depend on WebKit cache, undocumented fields, or ungranted native privileges.</p>
+      </section>
+
+      <div class="docs-main">
+        <section>
+          <h2>Start here</h2>
+          <div class="docs-grid">
+            <article class="docs-card">
+              <h3>Build an app</h3>
+              <p>Four progressive levels: an ordinary web page, an app-center entry, a strong offline package, and declared native actions.</p>
+              <a href="/docs/app/">Read the app guide →</a>
+            </article>
+            <article class="docs-card">
+              <h3>Call native actions</h3>
+              <p>What the Bridge may do, the six checks behind every call, and how to degrade gracefully in ordinary browsers.</p>
+              <a href="/docs/bridge/">Read Bridge API →</a>
+            </article>
+            <article class="docs-card">
+              <h3>Send a push</h3>
+              <p>Bark-compatible URL paths and a structured JSON API to deliver notifications and open exact HTTPS destinations.</p>
+              <a href="/docs/push/">Read Push API →</a>
+            </article>
+            <article class="docs-card">
+              <h3>Open a web tool</h3>
+              <p>Pages run in a Store-safe container with a documented runtime environment object, not raw privileged JavaScript.</p>
+              <a href="/docs/container/">Read container behavior →</a>
+            </article>
+            <article class="docs-card">
+              <h3>Keep an app offline</h3>
+              <p>A signed, hash-verified resource manifest makes an installed web app launchable without WebKit cache.</p>
+              <a href="/docs/offline/">Read offline packages →</a>
+            </article>
+            <article class="docs-card">
+              <h3>Give an agent the contract</h3>
+              <p>The versioned Drel app-development skill contains templates, checks and non-negotiable boundaries.</p>
+              <a href="/skills/drel-app-development/">Read the skill →</a>
+            </article>
+          </div>
+        </section>
+
+        <section>
+          <h2>Your app and the push service are independent</h2>
+          <p>Your app is a web page on any static host. A push service only delivers a wake-up. A gateway and a push relay may share one host, one domain and one certificate, or run entirely apart — see <a href="/self-hosted/">Self-host Drel</a> for both deployment topologies.</p>
+          <div class="docs-callout">
+            <strong>Try the live fixtures.</strong> Four running demos cover <a href="/test/offline/">strong offline packages</a>, <a href="/test/offline-network/">offline fallback</a>, <a href="/test/actions/">declared native actions</a>, and <a href="/test/template/">a reusable app template</a>.
+          </div>
+        </section>
+
+        <section>
+          <h2>Security model in one minute</h2>
+          <div class="docs-callout">
+            <strong>A push address is a bearer capability.</strong> Keep it out of screenshots, logs, source control, and public URLs. The official delivery service processes requests to deliver them; it is not an end-to-end encrypted secret channel. Do not put credentials, recovery codes, or financial secrets in a notification payload.
+          </div>
+        </section>
+
+        <section>
+          <h2>What Drel does not do</h2>
+          <ul>
+            <li>A remote page does not receive native Bridge, camera, file, photo-library, clipboard, or approval powers merely because it opened in Drel.</li>
+            <li>A Web App Manifest alone does not make a page an offline app. Durable offline launch requires a verified package and a user-initiated install.</li>
+            <li>A successful API response means the relay accepted the request for APNs delivery; it is not a guarantee that a particular device displayed it.</li>
+          </ul>
+        </section>
+
+        <div class="docs-pagination">
+          <div></div>
+          <a href="/docs/app/" class="pagination-card next">
+            <span class="pagination-label">Next</span>
+            <span class="pagination-title">Build a Drel App →</span>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="docs-shell footer">
+    <div class="footer-inner">
+      <span>© 2026 Drel · Built with WebBridgeKit.</span>
+      <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
+    </div>
+  </footer>
+</body>
+</html>
