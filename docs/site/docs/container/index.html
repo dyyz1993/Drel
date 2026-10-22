@@ -1,15 +1,109 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Drel web container behavior."><title>Drel web container</title><link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css"><link rel="canonical" href="https://drel.app/docs/container/">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Drel">
-<meta property="og:url" content="https://drel.app/docs/container/">
-<meta property="og:title" content="Drel web container">
-<meta property="og:description" content="Drel web container behavior.">
-</head><body>
-<header class="docs-shell nav"><a class="brand" href="/"><img src="/assets/drel-mark.svg" alt="">Drel</a><nav class="nav-links"><a href="/">Home</a><a href="/self-hosted/">Self-host</a><a href="/skills/drel-app-development/">Skill</a><a class="nav-cta" href="/support/">Support</a></nav></header>
-<main class="docs-shell"><section class="docs-hero"><span class="eyebrow">Reference · Store-safe container</span><h1>Web container behavior</h1><p>Drel opens an exact HTTPS destination in a focused native web container. It gives a page environment information, not device authority.</p><nav class="docs-nav"><a href="/docs/">Overview</a><a href="/docs/push/">Push API</a><a aria-current="page" href="/docs/container/">Web container</a><a href="/docs/offline/">Offline packages</a><a href="/docs/versions/">Versions</a></nav></section><div class="docs-main">
-<section><h2>Navigation and presentation</h2><div class="docs-table"><table><thead><tr><th>Input</th><th>Behavior</th><th>Boundary</th></tr></thead><tbody><tr><td>HTTPS <code>url</code></td><td>Opened after the user taps a notification or a message.</td><td>Use a publicly trusted HTTPS certificate. The Store container does not promise support for HTTP or self-signed TLS.</td></tr><tr><td><code>mode=normal</code></td><td>Standard Drel web view.</td><td>Normal is the safe default for unknown or absent mode.</td></tr><tr><td><code>mode=immersive</code></td><td>Fullscreen-oriented Drel container with an expandable return control.</td><td>The return/refresh control remains available; a webpage cannot suppress it.</td></tr><tr><td><code>mode=modal</code></td><td>Compact modal presentation.</td><td>Presentation is not a permission grant.</td></tr></tbody></table></div><p>Drel preserves the destination URL and its query string. It does not append login credentials, device tokens or a trusted “push source” marker. Do not use URL parameters, referrer values or user-agent text as authorization proof.</p></section>
-<section><h2>Runtime environment</h2><p>At document start, Drel exposes a read-only <code>window.DrelRuntime</code>. Pages must feature-detect it and work as ordinary web pages when it is missing.</p><pre class="docs-code">window.DrelRuntime = {
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Drel web container behavior: presentation modes, window.DrelRuntime, viewport environment, and storage lifecycle.">
+  <title>Web Container Behavior — Drel</title>
+  <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="canonical" href="https://drel.app/docs/container/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Drel">
+  <meta property="og:url" content="https://drel.app/docs/container/">
+  <meta property="og:title" content="Web Container Behavior — Drel">
+  <meta property="og:description" content="Drel web container behavior: presentation modes, window.DrelRuntime, viewport environment, and storage lifecycle.">
+</head>
+<body>
+  <header class="docs-shell nav">
+    <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="/test/">Try it</a>
+      <a href="/self-hosted/">Self-host</a>
+      <a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store</a>
+    </nav>
+  </header>
+
+  <div class="docs-shell">
+    <button class="docs-menu-toggle" type="button" onclick="document.getElementById('docsSidebar').classList.toggle('is-open')" aria-label="Toggle navigation menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Docs Menu</span>
+    </button>
+  </div>
+
+  <div class="docs-container">
+    <aside class="docs-sidebar" id="docsSidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-item">Overview</a>
+        <a href="/docs/app/" class="sidebar-item">Build an App <span class="sidebar-badge">Guide</span></a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Native Capabilities</div>
+        <a href="/docs/bridge/" class="sidebar-item">Bridge API <span class="sidebar-badge highlight">v2</span></a>
+        <a href="/docs/push/" class="sidebar-item">Push API</a>
+        <a href="/compare/bark/" class="sidebar-item">Bark Migration</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Container &amp; Offline</div>
+        <a href="/docs/container/" class="sidebar-item active">Web Container</a>
+        <a href="/docs/offline/" class="sidebar-item">Offline Packages</a>
+        <a href="/docs/versions/" class="sidebar-item">Versions &amp; Contract</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Deployment</div>
+        <a href="/self-hosted/" class="sidebar-item">Self-Host Guide</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Interactive Demos</div>
+        <a href="/test/" class="sidebar-item">All Demos (/test)</a>
+        <a href="/test/actions/" class="sidebar-item">Native Actions</a>
+        <a href="/test/offline/" class="sidebar-item">Strong Offline</a>
+        <a href="/test/offline-network/" class="sidebar-item">Offline + Live Data</a>
+        <a href="/test/template/" class="sidebar-item">App Template</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Agent Tooling</div>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.1</span></a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Drel</a><span>/</span><a href="/docs/">Docs</a><span>/</span><span style="color:var(--ink)">Web Container</span>
+      </div>
+
+      <section class="docs-hero" style="border-bottom:1px solid var(--line); padding-bottom:32px;">
+        <span class="eyebrow">Reference · Store-safe container</span>
+        <h1>Web Container Behavior</h1>
+        <p>Drel opens an exact HTTPS destination in a focused iOS native web container. It gives a page environment awareness, not unprompted device authority.</p>
+      </section>
+
+      <div class="docs-main">
+        <section>
+          <h2>Navigation and presentation</h2>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Input</th><th>Behavior</th><th>Boundary</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>HTTPS <code>url</code></td><td>Opened after the user taps a notification or a message.</td><td>Use a publicly trusted HTTPS certificate. Plain HTTP is rejected in Store builds.</td></tr>
+                <tr><td><code>mode=normal</code></td><td>Standard Drel web container.</td><td>Normal is the safe default for unknown or absent mode.</td></tr>
+                <tr><td><code>mode=immersive</code></td><td>Fullscreen Drel container with an expandable edge return control.</td><td>The return/refresh control remains available; a webpage cannot suppress it.</td></tr>
+                <tr><td><code>mode=modal</code></td><td>Compact modal presentation.</td><td>Presentation is not a permission grant.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Drel preserves the destination URL and its query string. It does not append login credentials, device tokens or a trusted “push source” marker. Do not use URL parameters or referrer values as authorization proof.</p>
+        </section>
+
+        <section>
+          <h2>Runtime environment</h2>
+          <p>At document start, Drel exposes a read-only <code>window.DrelRuntime</code> object. Pages must feature-detect it and continue to work as ordinary web pages when it is missing.</p>
+          <pre class="docs-code">window.DrelRuntime = {
   runtime: "web" | "offline-package",
   isOfflinePackage: true | false,
   presentation: "normal" | "immersive" | "modal",
@@ -18,7 +112,46 @@
   containerVersion: 1,
   offlinePackageVersion: 1,
   bridgeVersion: 0
-}</pre><p>The user agent also includes a versioned Drel product token with app/build, screen baseline, pixel ratio and container/offline/bridge versions. <code>screen</code> is a hardware baseline, while <code>viewport</code>, CSS safe-area variables and <code>window.visualViewport</code> reflect the current layout. They can change with rotation or presentation; do not infer a notch, entitlement, identity or permission from them.</p></section>
-<section><h2>Web compatibility and storage</h2><div class="docs-callout"><strong>Bridge is not available in the Store container.</strong> <code>bridgeVersion: 0</code> means remote pages receive no native command surface. Standard browser APIs remain subject to iOS, WKWebView and the user’s permission settings, so feature-detect before depending on an API.</div><ul><li>Origin storage such as cookies, IndexedDB and localStorage may be available as normal web storage, but it is not a durable account or authorization guarantee. Users, iOS or an app uninstall can clear it.</li><li>Do not rely on popups, downloads, camera, photo library, external-app handoff or background execution without testing the exact iOS release and providing a normal web fallback.</li><li>Resetting a Drel push address protects the notification capability. It must not be treated as a way to erase a website session or any web-origin data.</li></ul></section>
-<section><h2>Push context and lifecycle</h2><p>A notification can select a destination and presentation; it cannot silently approve a request, install an app, modify an offline package, or execute a sensitive native action. The page receives its own URL and normal browser lifecycle events. Build integrations so refresh, relaunch, unavailable network and a plain mobile browser all have a safe path.</p></section>
-</div></main><footer class="docs-shell footer"><div class="footer-inner"><span>© 2026 Drel · Built with WebBridgeKit.</span><div class="footer-links"><a href="/docs/">Docs</a><a href="/privacy/">Privacy</a><a href="/support/">Support</a></div></div></footer></body></html>
+}</pre>
+          <p>The user agent also includes a versioned Drel product token. <code>screen</code> is a hardware baseline, while <code>viewport</code>, CSS safe-area variables and <code>window.visualViewport</code> reflect the current layout.</p>
+        </section>
+
+        <section>
+          <h2>Web compatibility and storage</h2>
+          <div class="docs-callout">
+            <strong>Store container isolation.</strong> Remote web pages receive no unprompted native command surface. Standard browser APIs remain subject to iOS, WKWebView and the user’s permission settings, so feature-detect before depending on an API.
+          </div>
+          <ul>
+            <li>Origin storage such as cookies, IndexedDB and localStorage is available as normal web storage, but is not a permanent backup guarantee. Users, iOS or an app uninstall can clear it.</li>
+            <li>Do not rely on popups, arbitrary downloads, background execution or camera access without testing the exact iOS release and providing a normal web fallback.</li>
+            <li>Resetting a Drel push address protects the notification capability. It does not erase a website session or any web-origin data.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Push context and lifecycle</h2>
+          <p>A notification can select a destination and presentation; it cannot silently approve a request, install an app, modify an offline package, or execute a sensitive native action. The page receives its own URL and normal browser lifecycle events.</p>
+        </section>
+
+        <div class="docs-pagination">
+          <a href="/docs/push/" class="pagination-card prev">
+            <span class="pagination-label">Previous</span>
+            <span class="pagination-title">← Push API Reference</span>
+          </a>
+          <a href="/docs/offline/" class="pagination-card next">
+            <span class="pagination-label">Next</span>
+            <span class="pagination-title">Offline Packages Guide →</span>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="docs-shell footer">
+    <div class="footer-inner">
+      <span>© 2026 Drel · Built with WebBridgeKit.</span>
+      <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
+    </div>
+  </footer>
+</body>
+</html>
