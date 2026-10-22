@@ -83,6 +83,23 @@ final class PWAPermissionCenterViewController: UIViewController {
         // 其 viewWillAppear 会按自身配置恢复隐藏。
         navigationController?.setNavigationBarHidden(false, animated: false)
 
+        // 从授权面板快捷入口进来时是模态全屏呈现（push 不可用），此时本页是
+        // 导航栈根页面，没有返回按钮——用户被困住出不去（2026-10-22 实测）。
+        // 没有可返回的上级时，补一个左上角「关闭」。
+        if presentingViewController != nil,
+           navigationController?.viewControllers.first == self,
+           navigationItem.leftBarButtonItem == nil {
+            let close = UIBarButtonItem(
+                title: "关闭",
+                style: .plain,
+                target: self,
+                action: #selector(closeTapped)
+            )
+            close.accessibilityIdentifier = "pwa-permission.close"
+            navigationItem.leftBarButtonItem = close
+            navigationItem.hidesBackButton = true
+        }
+
         // Keep the runtime's gateway identity in sync with the active gateway
         // so grants never carry across a gateway switch.
         if let active = gatewayRegistry.activeGateway() {
@@ -432,6 +449,14 @@ final class PWAPermissionCenterViewController: UIViewController {
     }
 
     // MARK: - Actions
+
+    @objc private func closeTapped() {
+        if let nav = navigationController, nav.presentingViewController != nil {
+            nav.dismiss(animated: true)
+        } else {
+            dismiss(animated: true)
+        }
+    }
 
     @objc private func revokeTapped(_ sender: UIButton) {
         guard let rawValue = sender.accessibilityValue,

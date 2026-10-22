@@ -326,11 +326,17 @@ final class PWAPermissionFlowTests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.4)
         attach("flow-04-prompt-entry-opens-fullscreen-center")
 
-        let backButton = app.navigationBars.buttons.firstMatch
-        if backButton.waitForExistence(timeout: 3) {
-            backButton.tap()
-            _ = element("pwaHome.app.com.webbridgekit.fixture.permissions").waitForExistence(timeout: 5)
-        }
-        _ = locationButton
+        // 模态全屏呈现时本页是导航根页面：必须有左上角关闭按钮，否则用户
+        // 被困住出不去（2026-10-22 实测反馈）
+        let closeButton = element("pwa-permission.close")
+        XCTAssertTrue(closeButton.waitForExistence(timeout: 4),
+                      "模态呈现的权限与能力页必须有左上角关闭按钮")
+        closeButton.tap()
+        // 关闭后回到调用方（演示页的定位按钮重新可见）
+        XCTAssertTrue(app.webViews.buttons["获取当前位置"].waitForExistence(timeout: 8)
+                      || element("pwaHome.app.com.webbridgekit.fixture.permissions").waitForExistence(timeout: 8),
+                      "关闭后应回到调用方")
+        Thread.sleep(forTimeInterval: 0.3)
+        attach("flow-04-closed-back-to-caller")
     }
 }
