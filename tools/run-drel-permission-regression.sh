@@ -40,6 +40,7 @@ TESTS=(
   "DrelUITests/PWAPermissionFlowTests/test03AlwaysScopeFastPathAndCenterRevoke"
   "DrelUITests/PWAPermissionFlowTests/test04PromptEntryOpensFullscreenPermissionCenter"
   "DrelUITests/PWAPermissionFlowTests/test05AlwaysGrantSurvivesAppRelaunch"
+  "DrelUITests/ClipboardReopenTests"
   "DrelUITests/PWAPermissionTests"
 )
 ONLY_TESTING=()
