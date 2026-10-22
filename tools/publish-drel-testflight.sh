@@ -99,30 +99,34 @@ if [[ "$SKIP_UPLOAD" == "1" ]]; then
 fi
 
 say "上传 TestFlight（altool）"
-# set -u 下 altool 的非零退出会让未捕获的重定向行中断脚本；显式接住退出码
-UPLOAD_JSON="$ROOT/build/upload-$BUILD.json"
-set +e
+# set -u 下这里曾报 "UPLOAD_JSON: unbound variable"（103/104 两次实测），
+# 即便上传本身已成功。用字面量路径 + ${VAR:-default} 兜底，杜绝未绑定变量。
+UPLOAD_TMP="/tmp/drel-upload-$BUILD-$$.json"
+set +eu
 xcrun altool --upload-app --type ios --file "$IPA" \
-  --apiKey "$KEY_ID" --apiIssuer "$KEY_ISSUER" \
-  --output-format json >"$UPLOAD_JSON" 2>&1
+  --apiKey "${KEY_ID:-}" --apiIssuer "${KEY_ISSUER:-}" \
+  --output-format json >"$UPLOAD_TMP" 2>&1
 UPLOAD_RC=$?
-set -e
-if [[ $UPLOAD_RC -eq 0 ]] && grep -q "UPLOAD SUCCEEDED" "$UPLOAD_JSON"; then
-  ok "上传成功（详见 $UPLOAD_JSON）"
-elif grep -q "already been used" "$UPLOAD_JSON" || grep -q "must be higher than the previously uploaded" "$UPLOAD_JSON"; then
+set -eu
+if [[ $UPLOAD_RC -eq 0 ]] && grep -q "UPLOAD SUCCEEDED" "$UPLOAD_TMP"; then
+  cp "$UPLOAD_TMP" "$ROOT/build/upload-$BUILD.json"
+  ok "上传成功（详见 build/upload-$BUILD.json）"
+elif grep -q "already been used" "$UPLOAD_TMP" || grep -q "must be higher than the previously uploaded" "$UPLOAD_TMP"; then
   # 同一 build 号已上传过（脚本中断后重跑等场景）：Apple 侧已有该版本，
   # 直接进入轮询，不要当成失败。
-  ok "该 build 号已上传过（$UPLOAD_JSON），继续轮询处理状态"
+  cp "$UPLOAD_TMP" "$ROOT/build/upload-$BUILD.json"
+  ok "该 build 号已上传过，继续轮询处理状态"
 else
-  cat "$UPLOAD_JSON"
+  cat "$UPLOAD_TMP"
   bad "上传失败"
 fi
 
 say "轮询 Apple 处理状态"
 for i in $(seq 1 30); do
   sleep 20
+  # 注意：先取引号内完整值再清理，直接 grep -oE '[A-Z_]+' 会只拿到首字母
   STATE=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD&fields[builds]=version,processingState" 2>/dev/null \
-    | grep -oE '"processingState": *"[A-Z_]+"' | grep -oE '[A-Z_]+' | head -1)
+    | grep -oE '"processingState": *"[^"]+"' | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
   echo "  [$((i*20))s] processingState=$STATE"
   if [[ "$STATE" == "VALID" ]]; then
     BUILD_ID=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" 2>/dev/null \
