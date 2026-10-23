@@ -294,6 +294,38 @@ def check_package_integrity(site: Site, failures: list[str], notes: list[str]) -
     return count
 
 
+def check_diagrams(site: Site, failures: list[str], notes: list[str]) -> int:
+    """Every generated diagram must be referenced by a page, and every
+    referenced diagram must exist."""
+    diagram_root = site.root / "assets" / "diagrams"
+    if not diagram_root.is_dir():
+        return 0
+
+    available = {p.name for p in diagram_root.glob("*.svg")}
+    referenced: set[str] = set()
+    checked = 0
+
+    for html_path in iter_html(site.root):
+        source = relative_to_root(html_path, site.root)
+        text = html_path.read_text(encoding="utf-8", errors="replace")
+        for match in re.finditer(r'src="([^"]*diagrams/[^"]+)"', text):
+            target = match.group(1)
+            name = posixpath.basename(target)
+            referenced.add(name)
+            checked += 1
+            if not (site.root / "assets" / "diagrams" / name).is_file():
+                failures.append(
+                    f"[diagram] {source} references {target} but the file is missing"
+                )
+
+    for name in sorted(available - referenced):
+        failures.append(
+            f"[diagram] assets/diagrams/{name} is never referenced by any page"
+        )
+
+    return checked
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dir", default="build/drel-site-staging")
@@ -314,6 +346,7 @@ def main() -> int:
     sitemap = check_sitemap(site, failures, notes)
     header_rules = check_headers_rules(site, failures, notes)
     package_files = check_package_integrity(site, failures, notes)
+    diagrams = check_diagrams(site, failures, notes)
 
     print(f"Site root: {root}")
     print(f"Links checked:       {links}")
@@ -321,6 +354,7 @@ def main() -> int:
     print(f"Sitemap entries:     {sitemap}")
     print(f"Header rules checked:{header_rules:>4}")
     print(f"Package files hashed:{package_files:>4}")
+    print(f"Diagram references:  {diagrams:>4}")
 
     if failures:
         print()

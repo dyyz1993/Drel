@@ -66,7 +66,7 @@
       </div>
       <div class="sidebar-group">
         <div class="sidebar-group-title">Agent Tooling</div>
-        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.1</span></a>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.2</span></a>
       </div>
     </aside>
 
@@ -79,6 +79,14 @@
         <span class="eyebrow">Guide · four levels</span>
         <h1>Build a Drel App</h1>
         <p>A Drel app is not a proprietary format: standard browsers must always be able to load it. Start with the smallest level that solves your problem and add the next one only when you need it.</p>
+        <div class="skill-install" aria-labelledby="skill-app-title">
+          <div>
+            <span id="skill-app-title">Develop with AI · Teach your agent the Drel app contract</span>
+            <code>npx skills add dyyz1993/Drel --skill drel-app-development</code>
+          </div>
+          <button class="copy-command" type="button" data-copy-command="npx skills add dyyz1993/Drel --skill drel-app-development" aria-label="Copy skill command">Copy command</button>
+          <span class="copy-status" aria-live="polite"></span>
+        </div>
       </section>
 
       <div class="docs-main">
@@ -122,6 +130,121 @@ body {
   "appId": "com.example.orders",
   "route": "/app/orders/1024"
 }'</pre>
+        </section>
+
+        <section>
+          <h2>How a manifest becomes trusted</h2>
+          <p>A manifest is not trusted because it says so. It is trusted because it verifies against a public key the user confirmed.</p>
+          <figure class="docs-figure">
+            <img src="/assets/diagrams/signing-chain.svg" alt="Gateway signing and trust chain: you publish the manifest and the resource manifest; the gateway signs the canonical JSON with Ed25519; the phone verifies the signature and the public key id; the phone then pins the resource digest and each file digest.">
+            <figcaption><strong>One key, one job.</strong> The private key never leaves the gateway. The phone holds only the public key and the key id, and it drops the old grants when either changes. A remote update cannot swap the app identity, because the identity is bound to the confirmed origin.</figcaption>
+          </figure>
+        </section>
+
+        <section>
+          <h2>Which fields are standard, and which are Drel's</h2>
+          <p>Two different objects are involved, and mixing them up is the most common mistake.</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Object</th><th>Standard?</th><th>Who signs it</th><th>Purpose</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>manifest.webmanifest</code></td>
+                  <td><span class="field-origin standard">W3C standard</span></td>
+                  <td>Nobody — you publish it</td>
+                  <td>Name, icons, start URL, scope, display mode. Any browser and PWA host can read it.</td>
+                </tr>
+                <tr>
+                  <td>Parent gateway manifest</td>
+                  <td><span class="field-origin drel">Drel</span></td>
+                  <td>The gateway, with Ed25519</td>
+                  <td>App identity, allowed origins, routes, native action declarations, offline binding.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="docs-callout">
+            <strong>The parent manifest is not a Web App Manifest.</strong> It is a Drel-specific, signed document. The phone trusts it; it never trusts a self-signed page.
+          </div>
+
+          <h3>Standard Web App Manifest fields you can rely on</h3>
+          <div class="field-ref">
+            <div class="field-row">
+              <div class="field-name"><code>id</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">A stable identity for the web app. Drel binds it to the trusted origin — a remote update cannot silently replace a local app's identity.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>name</code>, <code>short_name</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">Title and short title for the app card. When <code>name</code> is absent, Drel falls back to the page title or a user-chosen label.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>icons</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">Icons for the app card. After an offline install only a verified in-package icon is used; network-only previews may fall back to the favicon. <em>An app icon never replaces Drel’s own iOS icon.</em></div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>start_url</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">The default screen after the user confirms. Must stay inside the confirmed origin and scope, and must not carry credentials or one-time tokens.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>scope</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">Which navigations still count as this app. Navigation outside the scope opens as an ordinary page and does not inherit the app identity.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>display</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">A presentation preference such as <code>standalone</code>. It is a hint, not a command — Drel keeps its back, exit, and security controls.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>theme_color</code>, <code>background_color</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">Visual hints for the card, launch transition, and container theme.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>shortcuts</code>, <code>screenshots</code>, <code>orientation</code><br><span class="field-origin standard">W3C</span></div>
+              <div class="field-desc">Accepted as compatibility data. Drel does not yet turn them into native actions, notification buttons, or permission entries.</div>
+            </div>
+          </div>
+
+          <h3>Fields Drel adds</h3>
+          <div class="field-ref">
+            <div class="field-row">
+              <div class="field-name"><code>appId</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The stable app identity used in the signed parent manifest. A page cannot change it by editing its own Web App Manifest.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>allowedOrigins</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The exact origins this app may use. Compared as <code>scheme://host:port</code> — never as a wildcard domain.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>routes</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The pages a push may open. A route outside this list is rejected.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>capabilities_v2</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">Per-action native declarations. See the <a href="/docs/bridge/">Bridge API reference</a> for the exact shape.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>cache</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The offline strategy: <code>networkOnly</code> or <code>manifest</code>, plus the version, persistence, and resource manifest binding.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>webManifest</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The exact URL and SHA-256 of the standard manifest, so the phone can prove the file it fetched is the one that was signed.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>signature</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The Ed25519 signature and key id applied by the gateway. The phone verifies it before trusting anything.</div>
+            </div>
+          </div>
+
+          <h3>One Drel-only extension inside the standard manifest</h3>
+          <div class="field-ref">
+            <div class="field-row">
+              <div class="field-name"><code>drel_offline</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">A prefixed block carrying the offline version, the resource manifest URL, and its SHA-256. The standard manifest cannot express "list every offline file and verify each one", so this block binds the resource set without polluting the standard fields.</div>
+            </div>
+          </div>
+          <p>Because the block is prefixed and handled separately, the same file still works as an ordinary PWA manifest in any other browser or host.</p>
         </section>
 
         <section>
@@ -187,5 +310,6 @@ body {
       <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
     </div>
   </footer>
+  <script src="/assets/site.js"></script>
 </body>
 </html>

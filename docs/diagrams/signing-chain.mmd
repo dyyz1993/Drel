@@ -1,0 +1,48 @@
+%% Drel gateway signing and trust chain
+%% Source of truth: docs/diagrams/signing-chain.mmd
+flowchart TB
+    subgraph publish["1 · You publish"]
+        manifest["manifest.webmanifest<br/><i>standard PWA manifest</i>"]
+        resource["package.json<br/><i>resource manifest</i>"]
+    end
+
+    subgraph sign["2 · The gateway signs"]
+        canonical["canonical JSON<br/>sorted keys"]
+        edkey["GATEWAY_PRIVATE_KEY<br/>Base64URL 32-byte Ed25519 seed"]
+    end
+
+    subgraph verify["3 · The phone verifies"]
+        sigcheck["verify the Ed25519 signature<br/>against the public key id"]
+        origin["verify the origin<br/>and the scope"]
+    end
+
+    subgraph pin["4 · The phone pins"]
+        resdigest["resource manifest digest"]
+        filedigest["per-file SHA-256"]
+    end
+
+    manifest --> canonical
+    resource --> canonical
+    edkey --> canonical
+    canonical --> sigcheck
+    sigcheck --> origin
+    origin --> resdigest
+    resdigest --> filedigest
+
+    subgraph reject["Rejected when"]
+        r1["the signature does not verify against the configured public key"]
+        r2["the Web App Manifest URL or its SHA-256 does not match the signed binding"]
+        r3["the start URL or an icon points outside the confirmed origin and scope"]
+        r4["the route is not listed in the signed manifest"]
+        r5["the app identity would change across a remote update"]
+    end
+
+    classDef pub fill:#eef3ff,stroke:#2878f4,stroke-width:1.5px
+    classDef sgn fill:#f4efff,stroke:#8b5cf6,stroke-width:1.5px
+    classDef ver fill:#e9f7f0,stroke:#1a9d5c,stroke-width:1.5px
+    classDef bad fill:#fdf1f1,stroke:#dc4444,stroke-width:1.5px
+
+    class manifest,resource pub
+    class canonical,edkey sgn
+    class sigcheck,origin,resdigest,filedigest ver
+    class reject,r1,r2,r3,r4,r5 bad
