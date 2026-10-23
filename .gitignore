@@ -195,3 +195,5 @@ tools/__pycache__/
 
 # Cloudflare local runtime state
 .wrangler/
+build/cf-secrets/
+Server/native/drel-selfhosted
