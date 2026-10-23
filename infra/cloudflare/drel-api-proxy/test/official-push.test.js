@@ -361,3 +361,23 @@ test("register accepts the official app's {deviceToken, key} field names", async
   const stored = await registry.fetch(new Request("https://registry/device?key=key-official"));
   assert.equal((await stored.json()).deviceToken, "tok-official");
 });
+
+test("register rejects device keys that cannot travel in URL paths", async () => {
+  const env = testEnv();
+  for (const badKey of [
+    "yfkp7esct2xead7d\u001F994acad",   // control separator (the legacy case)
+    "has space",                        // whitespace
+    "with/slash",                       // path separator
+    "a",                                // too short
+  ]) {
+    const response = await handleOfficialPush(
+      new Request("https://edge/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ deviceToken: "tok", key: badKey }),
+      }),
+      env
+    );
+    assert.equal(response.status, 400, `key ${JSON.stringify(badKey)} must be rejected`);
+  }
+});
