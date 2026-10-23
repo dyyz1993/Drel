@@ -73,6 +73,27 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Fixed
 
+- The in-app test send, address copy and ringtone try actions follow the
+  selected push channel instead of always hitting the official server. —
+  Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md](docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md)
+- A test-send response that is HTTP 200 but not the push JSON is reported
+  as a failure instead of "sent", so a misrouted gateway can no longer mask
+  itself as success. — Scope: `App` — Verified: `manual` — Evidence:
+  [docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md](docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md)
+- Bark path pushes (`GET /<key>/<title>/<body>`) deliver instead of falling
+  into the push-discovery document on the official edge. — Scope: `Push` —
+  Verified: `server-test` — Evidence:
+  [docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md](docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md)
+- The notifications tab unread badge counts only the channel the inbox is
+  viewing, while the app icon keeps the global count; both refresh the
+  moment the channel switches. — Scope: `App` — Verified: `physical-device`
+  — Evidence:
+  [docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md](docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md)
+- The self-hosted Go relay serves a one-time QR pairing page at
+  `/self-hosted/pair`, so a deployment pairs with one scan instead of a
+  manual API call. — Scope: `Server` — Verified: `server-test` — Evidence:
+  [docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md](docs/testing/results/drel-1-5-0-108-channel-fixes/verification.md)
 - "Always allow" grants now survive an app relaunch. — Scope: `App` —
   Verified: `simulator` — Evidence:
   [docs/testing/results/drel-permission-flow-101/verification.md](docs/testing/results/drel-permission-flow-101/verification.md)
