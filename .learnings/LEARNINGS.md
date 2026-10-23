@@ -366,3 +366,40 @@ App 的**精确 URL**看响应体是不是推送 JSON，再查 APNs 层。
 - Validation: verified; Last-Validated: 2026-10-23; Evidence: wrangler deploy 95bd68f0 后 `GET /yfkp…/测试通知/你好…` → {"code":200,"accepted":1} + /api/v1/messages 历史记录 18:39:43
 - Disposition: retain; Application: applied
 - See Also: L-20261023-05（同为"发送成功却收不到"，但根因在 WAF/注册层）
+
+## L-20261024-01 公开地址漏端口导致配对「未连接服务器」；证书误判要先验证再归因
+
+**Area**: server + deployment
+**Status**: resolved
+**Recurrence-Count**: 1
+**First-Seen**: 2026-10-24
+**Last-Seen**: 2026-10-24
+
+**Insight**: QR 配对页上线后用户扫码报「未连接服务器」。根因：shanbox 的
+hypercast nginx 只在 **8443** 监听，而 supervisord 里给 drel-gateway 配的
+`DREL_SELF_HOSTED_PUBLIC_BASE_URL` / `GATEWAY_PUBLIC_BASE_URL` 漏了
+`:8443` → 二维码、描述符、pushURL 全部指向无人监听的 443。同时纠正一处
+误判：先前模拟器 Safari 打不开 relay 被归因为「不信任自签证书」，实际
+`*.shanbox.19930810.xyz` 是 Let's Encrypt 正式证书（`curl -v` 无 `-k` 即
+verify ok），当时空白页同样是缺端口。
+
+**Why**: (1) 公开 URL 是从 env 单点派生的（QR/描述符/discovery/sourceChannel
+全跟着它走），配错一处全链路错；(2) 「连接失败」先测端口再猜证书——
+`curl -v` 的 verify 结果一行就能定性证书问题，不能凭"内部服务=自签"的
+直觉归因。
+
+**How to apply**: (1) 部署后必须用**带端口的真实 URL** 核对
+`/.well-known/drel-push.json` 的 `publicBaseURL`、`/api/v1/gateway` 的
+`baseURL`、配对页二维码编码值三者一致；(2) shanbox 全家服务都在 8443，
+任何写公开地址的地方都要带端口（AGENTS 环境表全用 :8443 是线索）；
+(3) supervisord 活配置在主 conf 内联段，改 conf.d 无效（复发自 L-05 期间
+的同类坑）；(4) TLS 归因前先 `curl -v`（不带 -k）看 verify 是否 ok。
+
+**Context Maintenance**
+- Decay-Type: practice
+- Decay-Rate: durable
+- Authority: 443 无监听实测（两次 curl 空响应）+ LE 证书 verify ok 实测;Owner: Drel 私有部署
+- Revalidation: 若 shanbox 增加 443 监听再评估
+- Validation: verified; Last-Validated: 2026-10-24; Evidence: 修正后 QR/描述符/gateway baseURL 均含 :8443（在线 grep 实证）
+- Disposition: retain; Application: applied
+- See Also: L-20261023-05（supervisord 主 conf 内联段陷阱）
