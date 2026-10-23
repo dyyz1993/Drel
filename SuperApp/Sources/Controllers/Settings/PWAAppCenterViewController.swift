@@ -937,12 +937,14 @@ final class PWAAppCenterViewController: UIViewController {
 
                 // Bark 兼容路由恒定返回 HTTP 200，投递结论只在 JSON body 里
                 // （code≠200 或 accepted=0 都代表 APNs 没有接受该条通知）。
-                // 只看 HTTP 状态码会把投递失败误报成「测试推送已发送」。
+                // 一个 200 但不是推送 JSON 的响应（如介绍页/HTML）同样代表
+                // 请求没有命中推送路由——把这种情况当成功会掩盖路由故障
+                // （2026-10-23 边缘 discovery 分支序 bug 即被此误报遮蔽）。
                 if let data,
-                   let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    let code = body["code"] as? Int
+                   let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let code = body["code"] as? Int {
                     let accepted = body["accepted"] as? Int
-                    let deliveryFailed = (code.map { $0 != 200 } ?? false) || accepted == 0
+                    let deliveryFailed = code != 200 || accepted == 0
                     if deliveryFailed {
                         let detail = (body["message"] as? String).flatMap { $0.isEmpty ? nil : $0 }
                         self.showMessage(
@@ -951,6 +953,14 @@ final class PWAAppCenterViewController: UIViewController {
                         )
                         return
                     }
+                } else {
+                    // 200 但不是推送 JSON：请求没有命中推送路由（网关回退页、
+                    // 代理错误页等）。报失败而不是成功，避免掩盖路由故障。
+                    self.showMessage(
+                        title: L10n.tr("official.push.send.failure_title"),
+                        message: L10n.tr("official.push.send.failure_message")
+                    )
+                    return
                 }
 
                 HUDService.shared.showSuccess(withStatus: L10n.tr("official.push.send.success"))
