@@ -1,0 +1,37 @@
+%% Drel deployment topologies
+%% Source of truth: docs/diagrams/deployment-topology.mmd
+flowchart TB
+    subgraph together["A · One host, one domain, one certificate"]
+        direction TB
+        a1["Nginx / Caddy<br/>TLS · one hostname"]
+        a2["WebBridgeServer<br/>gateway routes · push routes"]
+        a3["Node admin console<br/>/admin-push · device list"]
+        a4["Apple APNs<br/>HTTP/2 · provider JWT"]
+        a5["Your web app<br/>Cloudflare Pages · Vercel · Nginx · anywhere"]
+        a1 --> a2
+        a2 --> a4
+        a3 -.-> a1
+    end
+
+    subgraph split["B · Separated, one job each"]
+        direction TB
+        b1["Static gateway<br/>signed JSON · Nginx or Pages"]
+        b2["Go push relay<br/>single binary · systemd or Docker"]
+        b3["Cloudflare Tunnel<br/>no inbound port · outbound only"]
+        b4["Apple APNs<br/>HTTP/2"]
+        b5["Your web app<br/>unchanged - it never talks to either of them"]
+        b1 --> b3
+        b2 --> b4
+    end
+
+    classDef edge fill:#eef3ff,stroke:#2878f4,stroke-width:1.5px
+    classDef gw fill:#f4efff,stroke:#8b5cf6,stroke-width:1.5px
+    classDef relay fill:#fdf5e6,stroke:#d97706,stroke-width:1.5px
+    classDef apple fill:#fdf5e6,stroke:#d97706,stroke-width:1.5px
+    classDef admin fill:#eef3ff,stroke:#2878f4,stroke-width:1.5px
+
+    class a1,a5,b3,b5 edge
+    class a2,b1 gw
+    class a4,b2,b4 relay
+    class a3 admin
+    class a4,b4 apple

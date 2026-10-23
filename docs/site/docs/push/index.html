@@ -66,7 +66,7 @@
       </div>
       <div class="sidebar-group">
         <div class="sidebar-group-title">Agent Tooling</div>
-        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.1</span></a>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.2</span></a>
       </div>
     </aside>
 
@@ -85,6 +85,34 @@
         <section>
           <h2>Moving from Bark</h2>
           <p>Drel provides drop-in compatibility for Bark client requests. Read the <a href="/compare/bark/">Bark compatibility and migration guide</a> or the <a href="/zh/compare/bark/" lang="zh-CN">中文迁移指南</a> before adapting existing CI or automation scripts.</p>
+        </section>
+
+        <section>
+          <h2>How a push reaches the phone</h2>
+          <p>One HTTP request, and the relay handles the rest. Nothing in the chain needs an SDK on your side.</p>
+          <figure class="docs-figure">
+            <img src="/assets/diagrams/push-sequence.svg" alt="Push delivery sequence: your script sends an HTTP request to the relay; the relay looks up the device token and signs a provider JWT; APNs delivers over HTTP/2; the notification service extension decrypts the envelope and the app records the message in the Inbox.">
+            <figcaption><strong>Two things worth knowing.</strong> A <code>200</code> from the relay means Apple accepted the request, not that a person saw it. And in encrypted mode the relay only ever carries an opaque envelope plus delivery metadata — never your message content.</figcaption>
+          </figure>
+        </section>
+
+        <section>
+          <h2>Which app version gives you which capability</h2>
+          <p>The push contract is versioned with the app. A field only exists once the receiving app ships the version that supports it.</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Drel app</th><th>Container</th><th>Offline</th><th>Native actions</th><th>Push fields</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1.4.x</td><td><code>containerVersion: 1</code></td><td><code>offlinePackageVersion: 1</code></td><td>—</td><td>Bark-compatible paths, <code>url</code>, <code>mode</code>, <code>appId</code> + <code>route</code></td></tr>
+                <tr><td>1.5.x</td><td><code>containerVersion: 1</code></td><td><code>offlinePackageVersion: 1</code></td><td>Manifest v2, 7 actions</td><td>Adds <code>display</code>, <code>statePath</code>, <code>actionState</code>, <code>requestId</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="docs-callout">
+            <strong>Check at runtime, not at build time.</strong> Read <code>window.DrelRuntime</code> and feature-detect each field. A newer server may accept a field an older installed app cannot render.
+          </div>
         </section>
 
         <section>
@@ -121,29 +149,169 @@
         </section>
 
         <section>
-          <h2>Stable fields</h2>
+          <h2>What a push address looks like</h2>
+          <p>Every Drel installation has one personal push address. It is a URL that contains the device key, and it works against the official relay and any self-hosted relay that speaks the same contract.</p>
           <div class="docs-table">
             <table>
               <thead>
-                <tr>
-                  <th>Field</th>
-                  <th>Purpose</th>
-                  <th>Notes</th>
-                </tr>
+                <tr><th>Address</th><th>Used against</th><th>What to send</th></tr>
               </thead>
               <tbody>
-                <tr><td><code>title</code>, <code>body</code>, <code>subtitle</code></td><td>Notification text</td><td>Required title/body for normal direct messages. Keep all content non-sensitive.</td></tr>
-                <tr><td><code>url</code></td><td>HTTPS destination</td><td>Opens in Drel after an explicit notification tap. Must be a trusted HTTPS URL.</td></tr>
-                <tr><td><code>mode</code> / <code>display</code></td><td>Presentation</td><td><code>normal</code>, <code>modal</code>, and <code>immersive</code> are supported. Aliases <code>full</code> and <code>fullscreen</code> map to immersive.</td></tr>
-                <tr><td><code>appId</code>, <code>route</code>, <code>params</code></td><td>Registered web app launch</td><td>Use JSON POST when nested <code>params</code> are needed. Route must match the signed manifest.</td></tr>
-                <tr><td><code>group</code> / <code>threadId</code>, <code>badge</code>, <code>sound</code></td><td>Organization and sound</td><td>iOS notification settings and system delivery policies remain authoritative.</td></tr>
-                <tr><td><code>icon</code>, <code>image</code></td><td>In-app image metadata</td><td>An icon never replaces Drel’s iOS App Icon. Images must use HTTPS.</td></tr>
-                <tr><td><code>markdown</code>, <code>contentType</code></td><td>Rich inbox content</td><td>Use the JSON endpoint for explicit typed message contracts.</td></tr>
-                <tr><td><code>copy</code>, <code>autoCopy</code>, <code>isArchive</code></td><td>Inbox behaviors</td><td>Use only where clear to the user; do not use a push to trigger sensitive changes.</td></tr>
+                <tr>
+                  <td><code>https://api.drel.app/&lt;key&gt;</code></td>
+                  <td>The official relay</td>
+                  <td>Append the title and body as path segments, and any field as a query parameter.</td>
+                </tr>
+                <tr>
+                  <td><code>https://push.example.com/&lt;key&gt;</code></td>
+                  <td>Your own relay</td>
+                  <td>Exactly the same shape. The address already names the server, so the request goes straight there.</td>
+                </tr>
               </tbody>
             </table>
           </div>
-          <p>Fields outside this table may exist for internal or experimental compatibility. Do not build production integrations around undocumented fields.</p>
+          <p>The two forms are interchangeable — the official Swift relay and the self-hosted Go relay both accept the same path shape, so a script can be pointed at either without changing its form.</p>
+          <div class="docs-callout">
+            <strong>A push address is a secret.</strong> Anyone holding it can alert that phone. Keep it out of source control, screenshots, and public URLs — and reset it from Drel if it ever leaks.
+          </div>
+          <h3>Calling a self-hosted relay from a browser</h3>
+          <p>A script can call any relay without trouble. A <em>web page</em> is different: the browser enforces cross-origin rules, so the relay has to allow the page's origin.</p>
+          <p>The Swift relay reads an allowlist from <code>CORS_ALLOWED_ORIGINS</code> (comma-separated). Add the origin of the page that calls it — for example <code>https://drel.app</code>:</p>
+          <pre class="docs-code">CORS_ALLOWED_ORIGINS=https://drel.app,https://your-app.example</pre>
+          <p>If the allowlist does not cover the caller, the browser blocks the request before it leaves the page. Use the generated curl command instead — it has no such restriction.</p>
+        </section>
+
+        <section id="send-a-test-push-now">
+          <h2>Send a test push now</h2>
+          <p>Paste the push address copied from Drel, pick what to send, and try it. The official address and a self-hosted address have the same shape, so the same box covers both — the request leaves your browser and goes straight to the server in that address, and nothing is stored on this page.</p>
+          <div class="playground" data-playground data-endpoint="https://api.drel.app/push" data-official="https://api.drel.app"></div>
+        </section>
+
+        <section>
+          <h2>Field reference</h2>
+          <p>Every field below is labelled with where it comes from, so you know which ones you may safely rely on.</p>
+
+          <h3>Identity and content</h3>
+          <div class="field-ref">
+            <div class="field-row">
+              <div class="field-name"><code>deviceKey</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The personal push address generated on your phone. It is a bearer capability: anyone holding it can alert that phone. <em>In the Bark path form the key is the first path segment instead.</em></div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>title</code><br><span class="field-origin standard">Bark / APNs</span></div>
+              <div class="field-desc">Notification title. Required for normal direct messages.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>body</code><br><span class="field-origin standard">Bark / APNs</span></div>
+              <div class="field-desc">Notification body text. Required for normal direct messages.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>subtitle</code><br><span class="field-origin standard">Bark / APNs</span></div>
+              <div class="field-desc">Secondary line shown under the title. Optional.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>category</code><br><span class="field-origin standard">APNs</span></div>
+              <div class="field-desc">Icon and label grouping: <code>otp</code>, <code>chat</code>, <code>approval</code>, <code>task</code>, <code>security</code>.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>contentType</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">How the Inbox renders the message: <code>plain</code>, <code>markdown</code>, <code>image</code>, <code>qr</code>, <code>approval</code>, <code>otp</code>, <code>chat</code>.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>markdown</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">Markdown content for the native detail view. In Bark query form, <code>markdown=1</code> means the body itself is Markdown.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>verificationCode</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">Renders a code card with a copy action. Pair it with <code>contentType: "otp"</code> and <code>expiresAt</code>.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>qrPayload</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The host generates the QR code from this payload. No remote image is required.</div>
+            </div>
+          </div>
+
+          <h3>Destination and routing</h3>
+          <div class="field-ref">
+            <div class="field-row">
+              <div class="field-name"><code>url</code><br><span class="field-origin standard">Bark</span></div>
+              <div class="field-desc">An exact HTTPS destination opened after the user taps. The query string is preserved. <em>It does not carry credentials and is never treated as authorization.</em></div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>appId</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The registered web app to open. The app must exist in the trusted manifest of the gateway the phone trusts. <code>appid</code> is accepted as a compatibility alias.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>route</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">The screen inside the app. It must be listed in the signed manifest's <code>routes</code>; anything else is rejected.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>params</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">Key/value data handed to the target page. Use the JSON endpoint when the values are nested. <em>Navigation data only — never authority.</em></div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>statePath</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">A path the target app should query for the current task state. The host never substitutes business credentials for the app's own approval flow.</div>
+            </div>
+          </div>
+
+          <h3>Presentation</h3>
+          <div class="field-ref">
+            <div class="field-row">
+              <div class="field-name"><code>display</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">How the destination opens: <code>sheet</code>, <code>full</code>, <code>inline</code>. The native build supports <code>sheet</code> and <code>full</code>; <code>inline</code> currently falls back to <code>sheet</code>.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>mode</code><br><span class="field-origin compat">Bark compat</span></div>
+              <div class="field-desc">Legacy alias: <code>normal</code>, <code>modal</code>, <code>immersive</code>. <code>full</code> and <code>fullscreen</code> map to immersive. <em>Prefer <code>display</code> for new integrations.</em></div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>image</code>, <code>icon</code><br><span class="field-origin standard">Bark / APNs</span></div>
+              <div class="field-desc">HTTPS media or sender image. An icon never replaces Drel’s own iOS App Icon.</div>
+            </div>
+          </div>
+
+          <h3>Sound, grouping, and lifecycle</h3>
+          <div class="field-ref">
+            <div class="field-row">
+              <div class="field-name"><code>sound</code><br><span class="field-origin standard">APNs</span></div>
+              <div class="field-desc">Named notification sound. iOS notification settings and system policy remain authoritative — a named sound can still be suppressed by the user’s settings.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>badge</code><br><span class="field-origin standard">APNs</span></div>
+              <div class="field-desc">The numeric badge on the Drel icon.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>group</code>, <code>threadId</code><br><span class="field-origin standard">APNs</span></div>
+              <div class="field-desc">Inbox grouping and the APNs notification thread. Grouping identical notifications requires the same group and thread.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>level</code><br><span class="field-origin standard">APNs</span></div>
+              <div class="field-desc">APNs delivery level: <code>passive</code>, <code>active</code>, <code>timeSensitive</code>, <code>critical</code>. <em>Critical alerts require a special entitlement and are not generally available.</em></div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>id</code>, <code>revision</code>, <code>delete</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">Update or withdraw a message. <code>revision</code> is monotonic — the client ignores older states. <code>delete: true</code> withdraws the message with the same <code>id</code>.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>expiresAt</code>, <code>ttl</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">Absolute expiry or a relative number of seconds.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>actionState</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">Approval task state: <code>pending</code>, <code>approved</code>, <code>rejected</code>, <code>cancelled</code>, <code>expired</code>. Only <code>pending</code> enters the pending list.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>requestId</code><br><span class="field-origin drel">Drel</span></div>
+              <div class="field-desc">A shared identifier between the notification and the app’s own business request, so the page can correlate them.</div>
+            </div>
+            <div class="field-row">
+              <div class="field-name"><code>copy</code>, <code>autoCopy</code>, <code>isArchive</code><br><span class="field-origin compat">Bark compat</span></div>
+              <div class="field-desc">Inbox behaviors. Use them only where the result is clear to the user; never use a push to perform a sensitive change.</div>
+            </div>
+          </div>
+
+          <p>Fields outside this reference may exist for internal or experimental compatibility. Do not build production integrations around undocumented fields.</p>
         </section>
 
         <section>
@@ -179,5 +347,6 @@
       <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
     </div>
   </footer>
+  <script src="/assets/site.js"></script>
 </body>
 </html>

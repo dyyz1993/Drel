@@ -1,0 +1,20 @@
+%% Drel push delivery sequence
+%% Source of truth: docs/diagrams/push-sequence.mmd
+sequenceDiagram
+    autonumber
+    participant S as Your script
+    participant R as Relay
+    participant A as Apple APNs
+    participant I as Drel on iPhone
+    participant N as Notification service ext.
+
+    S->>R: GET /<key>/<title>/<body>?url=...
+    R->>R: look up the device token in the registry
+    R->>R: sign the provider JWT (ES256)
+    R->>A: POST over HTTP/2<br/>apns-topic · apns-push-type
+    A-->>I: deliver
+    Note right of A: 200 means accepted,<br/>not displayed
+    I->>N: hand over the payload
+    N->>N: decrypt if the envelope is encrypted
+    N-->>I: the decrypted payload
+    I->>I: record it in the Inbox
