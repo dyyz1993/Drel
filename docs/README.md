@@ -10,7 +10,11 @@ Drel 的文档按"读者要做什么"组织，而不是按代码目录组织。�
 |---|---|
 | 发送一条推送 | [官网 Push API](https://drel.app/docs/push/) |
 | 从 Bark 迁移 | [Bark 兼容与迁移指南](https://drel.app/compare/bark/) · [中文版](https://drel.app/zh/compare/bark/) |
-| 部署自己的推送服务 | [部署手册](guides/deployment.md) |
+| 私有化部署（推送 / 网关 / 两者） | [部署手册](guides/deployment.md) · [官网选项页](https://drel.app/self-hosted/) |
+| 准备一次部署（生成密钥 + 配置文件） | `bash tools/prepare-drel-deployment.sh <gateway\|relay\|both> --domain <host>` |
+| 部署到自己的服务器（打包二进制 + 反代配置） | `bash tools/build-drel-selfhosted-package.sh --arch arm64 --domain <host>` |
+| 三个后端怎么共存、怎么切流 | [服务端部署方案](guides/server-deployment.md) |
+| 验证任意后端与官方实现兼容 | `bash tools/verify-drel-backend-contract.sh --base <url> --admin-key <key>` |
 | 了解版本兼容性 | [官网 Versions](https://drel.app/docs/versions/) · [CHANGELOG](../CHANGELOG.md) |
 
 ---
@@ -74,6 +78,18 @@ Drel 的文档按"读者要做什么"组织，而不是按代码目录组织。�
 
 ---
 
+## 面向开发者的入口顺序
+
+首页的用户路线以 **skill 为主轴**：安装 → 交给 Agent → 自己试 → 私有化部署。
+文档承担快速查阅、在线 playground 调试和私有化部署的逐步操作。
+
+| 想要 | 走哪条路 |
+|---|---|
+| 让 AI 帮我做 | `npx skills add dyyz1993/Drel --skill drel-app-development` |
+| 自己发一条试试 | 官网 `/docs/push/` 的 playground |
+| 查参数契约 | 官网 `/docs/push/`（每个字段标注来源与版本） |
+| 私有化部署 | 仓库 `docs/guides/deployment.md`，先跑 `tools/prepare-drel-deployment.sh` |
+
 ## 体验站点
 
 线上可动手体验的演示（构建与预览见 [docs/site/README.md](site/README.md)）：
@@ -85,6 +101,21 @@ Drel 的文档按"读者要做什么"组织，而不是按代码目录组织。�
 | `/test/actions/` | Manifest v2 声明式原生操作（触感/震动/分享/全屏） |
 | `/test/template/` | 可复用的应用骨架与打包模板 |
 | `/launch/` | 桌面入口：添加到主屏幕并交接到 Drel |
+
+## 架构图
+
+官网文档内嵌 6 张图。源文件是 `docs/diagrams/*.mmd`（Mermaid 文本，可 review、可 diff），由 `tools/build-drel-diagrams.sh` 渲染成 SVG：
+
+| 图 | 说明 | 位置 |
+|---|---|---|
+| `system-architecture.svg` | 三个部件的关系：应用 / 网关 / 推送服务 | `/docs/` |
+| `push-sequence.svg` | 一条推送从脚本到手机的完整时序 | `/docs/push/` |
+| `signing-chain.svg` | 清单如何被签名、验证与固定 | `/docs/app/` |
+| `offline-install.svg` | 离线包的下载、逐文件校验与原子激活 | `/docs/offline/` |
+| `deployment-topology.svg` | 一体化部署与解耦独立部署的对比 | `/self-hosted/` |
+| `key-trust-sequence.svg` | 密钥与信任时序：每个私钥住在哪一端 | `/self-hosted/` |
+
+图中的每条关系都对照过实现（例如 APNs 只走 HTTP/2：Swift relay 用 `curl --http2`，Go relay 用 `ForceAttemptHTTP2`；离线安装在 staging 目录逐文件校验后才原子激活）。改动实现后编辑对应的 `.mmd` 源文件，再运行 `bash tools/build-drel-diagrams.sh`；CI 会用 `--check` 拦住忘了重新渲染的提交。
 
 ---
 
