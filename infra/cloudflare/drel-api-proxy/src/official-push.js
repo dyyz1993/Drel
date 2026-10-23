@@ -332,8 +332,6 @@ export async function handleOfficialPush(request, env) {
     });
   }
 
-  if (path === "/api/v1/messages" && path === url.pathname) return null;
-
   if (path.startsWith("/api/v1/messages/") && request.method === "GET") {
     const key = path.slice("/api/v1/messages/".length);
     const stub = registryStub(env);
@@ -342,6 +340,29 @@ export async function handleOfficialPush(request, env) {
       `https://registry/messages?key=${encodeURIComponent(key)}&since=${encodeURIComponent(url.searchParams.get("since") ?? "0")}`
     );
     return new Response(response.body, { status: response.status, headers: { "content-type": "application/json" } });
+  }
+
+  if (path === "/api/v1/admin/import-registrations" && request.method === "POST") {
+    if (!adminAuthorized(request, env)) {
+      return failure(401, "Invalid or missing API key");
+    }
+    const stub = registryStub(env);
+    if (!stub) return failure(503, "registry unavailable");
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return failure(400, "invalid JSON");
+    }
+    const upstream = await stub.fetch("https://registry/devices", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: { "content-type": "application/json" },
+    });
   }
 
   if (path === "/register" && request.method === "POST") {
@@ -447,8 +468,26 @@ function isReservedPath(path) {
     path.startsWith("/unstable") ||
     path.startsWith("/assets/") ||
     path.startsWith("/test_resources/") ||
-    path.startsWith("/cdn-cgi/")
+    path.startsWith("/cdn-cgi/") ||
+    // The WebSocket/SSE relay, the message console and meta files belong to
+    // the upstream; a bare key can never collide with them.
+    path === "/ws" ||
+    path.startsWith("/ws/") ||
+    path.startsWith("/message") ||
+    path.startsWith("/packages") ||
+    path === "/favicon.ico" ||
+    path === "/robots.txt" ||
+    path === "/sitemap.xml"
   );
+}
+
+function adminAuthorized(request, env) {
+  if (!env.ADMIN_API_KEY) return true;
+  const header = request.headers.get("authorization") || "";
+  if (header.startsWith("Bearer ")) {
+    return header.slice("Bearer ".length) === env.ADMIN_API_KEY;
+  }
+  return request.headers.get("x-admin-key") === env.ADMIN_API_KEY;
 }
 
 async function deliverPushRequest(env, input, origin) {
