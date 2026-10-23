@@ -140,7 +140,7 @@ async function signingKey(env) {
   return key;
 }
 
-async function apnsJWT(env) {
+export async function apnsJWT(env) {
   const key = await signingKey(env);
   const now = Math.floor(Date.now() / 1000);
   // Apple's provider tokens are valid for at most one hour. Refresh before

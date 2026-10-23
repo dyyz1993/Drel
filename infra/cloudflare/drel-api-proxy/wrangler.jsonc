@@ -23,6 +23,10 @@
       {
         "name": "GATEWAY_MANIFEST_REGISTRY",
         "class_name": "GatewayManifestRegistry"
+      },
+      {
+        "name": "OFFICIAL_PUSH_REGISTRY",
+        "class_name": "OfficialPushRegistry"
       }
     ]
   },
@@ -34,6 +38,10 @@
     {
       "tag": "v2-html-app-gateway",
       "new_sqlite_classes": ["GatewayManifestRegistry"]
+    },
+    {
+      "tag": "v3-official-push",
+      "new_sqlite_classes": ["OfficialPushRegistry"]
     }
   ],
   "observability": {
