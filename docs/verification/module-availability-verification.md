@@ -585,6 +585,63 @@ xcrun simctl openurl 79EA5C9F-C501-47FD-8D1B-2DE497F5CDD0 \
 
 ## Current Availability Verdict
 
+## Push Relay `/ws/stream` Retry Storm Evidence (2026-10-23)
+
+The optional SSE push relay was hammering a server that has no SSE route.
+Confirmed and fixed on 2026-10-23.
+
+**Root cause (verified, not inferred):**
+
+```bash
+# The upstream the app actually reaches has no SSE endpoint; the
+# Bark-compatible route parses /ws/stream as key="ws" title="stream".
+curl -sS https://api.drel.app/ws/stream
+# -> {"error":{"message":"No devices registered for key: ws"}}  (HTTP 404)
+
+# The client reset its attempt counter inside connect(), so the cap in
+# scheduleReconnect() never applied and a 404 was retried every ~3 seconds.
+```
+
+**Before (shanbox nginx access log, cumulative):**
+
+```bash
+grep -c "ws/stream" /var/log/nginx/access.log          # 362,520
+grep "ws/stream" /var/log/nginx/access.log | grep -c Drel/  # 40,460 app hits
+# App-side cadence proves the hot loop: five 404s in ~20 seconds.
+```
+
+**After (same simulator install, same server):**
+
+```bash
+# 1 request in 75s+ (and still 1 after ~2.5 min) instead of ~25 at 3s cadence.
+grep "ws/stream" /var/log/nginx/access.log | grep Drel/65
+# 10.99.0.1 - - [23/Oct/2026:13:07:33 +0800] "GET /ws/stream HTTP/1.1" 404 57 ...
+```
+
+| Check | Command | Result |
+|---|---|---|
+| Retry policy unit tests | `xcodebuild test -only-testing:DrelTests` | 8 passed, 0 failed (`PushRelayRetryPolicyTests` 6/6) |
+| Debug simulator build | `xcodebuild build-for-testing ... -scheme Drel` | BUILD SUCCEEDED |
+| Release simulator build | `xcodebuild build -configuration Drel15Release ... CODE_SIGNING_ALLOWED=NO` | BUILD SUCCEEDED |
+| Shipped in Release artifact | `strings -a <dSYM>/DWARF/Drel \| grep PushRelayRetryPolicy` | symbols present |
+| Unsupported endpoint parked | shanbox log count after relaunch | 1 request in 75s (was ~1 per 3s) |
+| Working SSE server unaffected | local `Server/node/server.js` `/ws/stream` | HTTP 200 + `data: {"type":"connected",...}` |
+| Lint | `swiftlint --quiet` on changed files | clean |
+| Deliverable boundaries | `bash tools/verify-deliverable-boundaries.sh` | 7 passed, 0 failed |
+
+**Important correction to the earlier hypothesis:** polling is **not** a working
+fallback on the current official server. shanbox does not set
+`MESSAGE_HISTORY_ENABLED`, so `GET /api/v1/messages/<key>` returns
+`{"messages":[]}` (HTTP 200) and recovers nothing. Background push capture in
+the shipped app comes from the Notification Service Extension writing the
+App Group `pending_messages/` plist, imported by `PendingMessageImporter` on
+foreground. The relay is an enhancement, so parking it costs no delivery.
+
+**Not covered here (still requires the Go/Swift server decision):** adding a
+real `/ws/stream` SSE route is a separate server-side change. Per
+`L-20261023-03` the server is unifying on the pure Go binary, so a stream route
+belongs there rather than in the Swift Hummingbird service.
+
 No confirmed unavailable non-push in-app navigation entry is currently listed after this pass.
 
 The items not marked fully available are real-device/system-level flows, Push/Bark APNs delivery, and phone-specific network behavior:
