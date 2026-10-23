@@ -19,6 +19,10 @@
       {
         "name": "MANAGED_PUSH_REGISTRY",
         "class_name": "ManagedPushRegistry"
+      },
+      {
+        "name": "GATEWAY_MANIFEST_REGISTRY",
+        "class_name": "GatewayManifestRegistry"
       }
     ]
   },
@@ -26,6 +30,10 @@
     {
       "tag": "v1-managed-encrypted-push",
       "new_sqlite_classes": ["ManagedPushRegistry"]
+    },
+    {
+      "tag": "v2-html-app-gateway",
+      "new_sqlite_classes": ["GatewayManifestRegistry"]
     }
   ],
   "observability": {
