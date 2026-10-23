@@ -366,8 +366,6 @@ export async function handleOfficialPush(request, env) {
   }
 
   if (path === "/register" && request.method === "POST") {
-    const stub = registryStub(env);
-    if (!stub) return failure(503, "registry unavailable");
     let body;
     try {
       body = await request.json();
@@ -381,6 +379,21 @@ export async function handleOfficialPush(request, env) {
     if (!deviceKey || !deviceToken) {
       return failure(400, "a device key and a device token are required");
     }
+    // The key travels in URL paths on the Bark-compatible surface, so it must
+    // be plain URL-safe characters. Control characters or separators here
+    // would be percent-encoded and then blocked by the Cloudflare WAF before
+    // the request ever reaches the Worker — reject them at registration,
+    // before touching the registry.
+    if (!/^[A-Za-z0-9_-]{6,128}$/.test(deviceKey)) {
+      return failure(
+        400,
+        "the device key must be 6-128 characters of A-Z, a-z, 0-9, _ or - "
+          + "(no spaces, control characters or separators). Reset the push "
+          + "address in Drel to get a new one."
+      );
+    }
+    const stub = registryStub(env);
+    if (!stub) return failure(503, "registry unavailable");
     await stub.fetch("https://registry/device", {
       method: "PUT",
       headers: { "content-type": "application/json" },

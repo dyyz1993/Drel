@@ -893,6 +893,13 @@ func (s *server) register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "invalid or expired pairing registration")
 		return
 	}
+	// The device key travels in URL paths on the Bark-compatible surface, so
+	// it must stay URL-safe. Control characters here would be
+	// percent-encoded and then blocked by fronting WAFs.
+	if !validDeviceKey(input.DeviceKey) {
+		writeError(w, 400, "device key must be 6-128 URL-safe characters")
+		return
+	}
 	if err := s.store.register(registration{
 		DeviceToken: input.DeviceToken, DeviceKey: input.DeviceKey,
 		EncryptionPublicKey: input.EncryptionPublicKey, Platform: input.Platform,
@@ -1071,6 +1078,19 @@ func newMessageID() string {
 func validKey(value string) bool {
 	raw, err := base64.RawURLEncoding.DecodeString(value)
 	return err == nil && len(raw) == 32
+}
+func validDeviceKey(value string) bool {
+	if len(value) < 6 || len(value) > 128 {
+		return false
+	}
+	for _, r := range value {
+		switch {
+		case r >= 'A' && r <= 'Z', r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '_', r == '-':
+		default:
+			return false
+		}
+	}
+	return true
 }
 func validEnvelope(value string) (envelope, bool) {
 	raw, err := base64.RawURLEncoding.DecodeString(value)
