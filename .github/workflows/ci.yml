@@ -542,6 +542,9 @@ jobs:
       - name: Changelog and release records agree
         run: python3 tools/verify-release-notes.py
 
+      - name: Diagram sources are rendered (Mermaid)
+        run: bash tools/build-drel-diagrams.sh --check
+
       - name: Build the website
         run: bash tools/build-drel-site.sh
 
