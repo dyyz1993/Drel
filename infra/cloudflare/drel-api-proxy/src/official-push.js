@@ -374,10 +374,12 @@ export async function handleOfficialPush(request, env) {
     } catch {
       return failure(400, "invalid JSON");
     }
-    const deviceKey = body.deviceKey ?? body.device_key;
+    // The official app registers with {deviceToken, key}; the managed and
+    // self-hosted surfaces use deviceKey. Accept every documented spelling.
+    const deviceKey = body.deviceKey ?? body.device_key ?? body.key;
     const deviceToken = body.deviceToken ?? body.device_token;
     if (!deviceKey || !deviceToken) {
-      return failure(400, "deviceKey and deviceToken are required");
+      return failure(400, "a device key and a device token are required");
     }
     await stub.fetch("https://registry/device", {
       method: "PUT",
@@ -413,8 +415,8 @@ export async function handleOfficialPush(request, env) {
       method: "DELETE",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        deviceKey: body.deviceKey ?? body.key ?? "",
-        deviceToken: body.deviceToken ?? "",
+        deviceKey: body.deviceKey ?? body.device_key ?? body.key ?? "",
+        deviceToken: body.deviceToken ?? body.device_token ?? "",
       }),
     });
     const result = await response.json();
