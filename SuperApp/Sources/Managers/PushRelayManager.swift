@@ -90,33 +90,54 @@ struct SSEPushPayload {
 final class PushRelayManager: NSObject, URLSessionDataDelegate {
     static let shared = PushRelayManager()
 
+    private static let defaultBaseURL = "https://api.drel.app"
+
     private var session: URLSession?
     private var dataTask: URLSessionDataTask?
     private var reconnectTimer: Timer?
     private var isConnected = false
     private var reconnectAttempts: Int = 0
-    private let maxReconnectAttempts: Int = 10
     private var buffer = ""
+    /// Base URL of the stream currently in flight, used to attribute a
+    /// response to the host that produced it.
+    private var currentBaseURL: String?
 
-    private let baseURL: String = {
-        ServerConfigManager.shared.getActiveBaseURL()
-            ?? "https://api.drel.app"
-    }()
+    /// Base URL whose server answered the stream route with a "this endpoint
+    /// does not exist" status. The relay is an enhancement (APNs plus the
+    /// Notification Service Extension already record pushes), so an
+    /// unsupported endpoint stops the relay instead of being polled forever.
+    /// Stored per host so switching gateway re-arms the relay.
+    private var unsupportedBaseURL: String?
+
+    /// Read per connect so switching gateway while the app runs takes effect.
+    private var baseURL: String {
+        ServerConfigManager.shared.getActiveBaseURL() ?? Self.defaultBaseURL
+    }
 
     private override init() { super.init() }
 
     func connect() {
+        // Relay state is main-confined: the URLSession delegate queue and the
+        // reconnect timer both run on main. AppDelegate launches `connect()`
+        // from a utility queue, so normalize onto main before touching it.
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in self?.connect() }
+            return
+        }
+        let activeBaseURL = baseURL
+        guard unsupportedBaseURL != activeBaseURL else { return }
         guard !isConnected else { return }
-        guard let url = URL(string: baseURL + "/ws/stream") else { return }
+        guard let url = URL(string: activeBaseURL + "/ws/stream") else { return }
         var request = URLRequest(url: url)
         request.timeoutInterval = TimeInterval(INT_MAX)
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        buffer = ""
         session = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue.main)
         dataTask = session?.dataTask(with: request)
         dataTask?.resume()
         isConnected = true
-        reconnectAttempts = 0
+        currentBaseURL = activeBaseURL
         #if !DREL_CONTAINER_ONLY
         print("[PushRelay] SSE connecting: \(url)")
         #endif
@@ -135,8 +156,30 @@ final class PushRelayManager: NSObject, URLSessionDataDelegate {
     // MARK: - URLSessionDataDelegate
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+        switch PushRelayRetryPolicy.outcome(statusCode: statusCode) {
+        case .connected:
+            // Only a real 2xx stream resets the backoff. Resetting in
+            // `connect()` instead (the previous behaviour) made the attempt
+            // counter unreachable, so the relay retried a 404 every 3 seconds.
+            reconnectAttempts = 0
+        case .unsupported:
+            // Attribute the rejection to the host we actually asked. Leave
+            // the marker nil if that is unknown, so the relay falls back to
+            // plain backoff instead of parking on the wrong host.
+            unsupportedBaseURL = currentBaseURL
+            // Do not stream the error body; completing the task immediately
+            // is what parks the relay instead of re-downloading a 404.
+            completionHandler(.cancel)
+            #if !DREL_CONTAINER_ONLY
+            print("[PushRelay] SSE response, status: \(statusCode) (unsupported)")
+            #endif
+            return
+        case .transient:
+            break
+        }
         #if !DREL_CONTAINER_ONLY
-        print("[PushRelay] SSE connected, status: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+        print("[PushRelay] SSE response, status: \(statusCode)")
         #endif
         completionHandler(.allow)
     }
@@ -288,21 +331,70 @@ final class PushRelayManager: NSObject, URLSessionDataDelegate {
     // MARK: - Reconnect
 
     private func scheduleReconnect() {
-        guard reconnectAttempts < maxReconnectAttempts else {
+        isConnected = false
+        guard unsupportedBaseURL != currentBaseURL else {
+            // The server has no stream route (or rejected this one
+            // permanently). Stop for this launch; polling it produced
+            // hundreds of thousands of 404s in the access log.
             #if !DREL_CONTAINER_ONLY
-            print("[PushRelay] Max reconnect reached")
+            print("[PushRelay] SSE endpoint unsupported; relay disabled")
             #endif
             disconnect(); return
         }
-        isConnected = false
+        // Transient failures keep retrying at the capped interval so a server
+        // restart does not silently disable the relay until the next launch.
+        // The cap keeps that to a few requests per hour instead of a hot loop.
         reconnectAttempts += 1
-        let delay = min(3.0 * Double(reconnectAttempts), 30.0)
+        let delay = PushRelayRetryPolicy.delay(forAttempt: reconnectAttempts)
         reconnectTimer?.invalidate()
         reconnectTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
-            self?.disconnect(); self?.connect()
+            guard let self else { return }
+            self.dataTask?.cancel(); self.dataTask = nil
+            self.session?.invalidateAndCancel(); self.session = nil
+            self.connect()
         }
         #if !DREL_CONTAINER_ONLY
         print("[PushRelay] Reconnecting in \(delay)s (attempt \(reconnectAttempts))")
         #endif
+    }
+}
+
+/// Retry classification for the optional `/ws/stream` SSE relay.
+///
+/// The relay is an enhancement, not a delivery path: APNs plus the
+/// Notification Service Extension already record background pushes into the
+/// Inbox, and foreground pushes present through `willPresent`. A server that
+/// has no SSE route must therefore be treated as unsupported and never
+/// polled again. Before this policy existed a 404 was retried every ~3
+/// seconds forever (the attempt cap was unreachable because `connect()`
+/// reset the counter), which filled the server access log and kept the radio
+/// awake while the app was open.
+enum PushRelayRetryPolicy {
+    enum Outcome: Equatable {
+        /// The stream opened; reset the backoff.
+        case connected
+        /// The endpoint does not exist on this server; stop retrying.
+        case unsupported
+        /// A temporary failure worth retrying with backoff.
+        case transient
+    }
+
+    /// Delay before the first transient retry.
+    static let baseDelay: TimeInterval = 5
+    /// Ceiling for the exponential backoff.
+    static let maxDelay: TimeInterval = 300
+
+    static func outcome(statusCode: Int) -> Outcome {
+        switch statusCode {
+        case 200..<300: return .connected
+        case 408, 425, 429, 500..<600: return .transient
+        default: return .unsupported
+        }
+    }
+
+    /// Exponential backoff, capped. `attempt` is 1-based.
+    static func delay(forAttempt attempt: Int) -> TimeInterval {
+        guard attempt > 1 else { return baseDelay }
+        return min(baseDelay * pow(2.0, Double(attempt - 1)), maxDelay)
     }
 }

@@ -1,6 +1,6 @@
 ---
 name: drel-app-development
-description: Build a web app that runs in Drel — an iOS container for HTML apps and a Bark-compatible push client. Use when a developer wants to ship a web app inside Drel, make it work offline, route a push into a specific screen, or call a declared native action. Covers the app manifest, the signed gateway manifest, strong offline packages, push routes, and graceful fallback when the native bridge is absent.
+description: Build a web app that runs in Drel — an iOS container for HTML apps and a Bark-compatible push client — and self-host Drel's own services. Use when a developer wants to ship a web app inside Drel, make it work offline, route a push into a specific screen, call a declared native action, or run a private push relay, a private gateway, or both on their own infrastructure. Covers the app manifest, the signed gateway manifest, strong offline packages, push routes, graceful fallback when the native bridge is absent, and the three self-hosting options.
 ---
 
 # Drel App Development
@@ -13,7 +13,7 @@ metadata only for the opt-in, verified offline-installation path.
 
 | Item | Current public contract |
 | --- | --- |
-| Skill | `1.1.0` |
+| Skill | `1.2.0` |
 | Drel app | `1.5.x` |
 | Offline package | `1` |
 | Container protocol | `1` |
@@ -33,6 +33,9 @@ metadata only for the opt-in, verified offline-installation path.
   message. Read [push and testing](references/push-and-testing.md).
 - **A native action** — declare it in the signed manifest, then call it behind
   a fallback. See the action contract below.
+- **A self-hosted deployment** — the user wants to run the push relay, the
+  gateway, or both on their own infrastructure. Read
+  [self-hosting](references/self-hosting.md) and pick the option first.
 
 ## The app is independent of the push service
 
@@ -48,6 +51,35 @@ developer:
   run entirely apart**. Both shapes are supported.
 
 Never tell a developer they need a push server to ship an app.
+
+## When the user asks about private deployment
+
+Self-hosting is a separate decision from writing the app, and it splits into
+three options. **Ask which one they mean before producing any commands** —
+the wrong option wastes an hour and produces a broken deployment.
+
+| They want | Option | Deploy |
+| --- | --- | --- |
+| Their own push address, hosted apps still fine | **A** | Go relay only |
+| A private app market: identity, offline packages, native actions | **B** | Swift server only |
+| Both, off the hosted services entirely | **C** | Swift server on one host, or Go relay plus Swift server split |
+
+Two facts decide the architecture and are worth stating up front:
+
+1. **Only the Swift server can be a gateway.** The Go relay has no
+   `/api/v1/html-apps` and no `/api/v1/gateway` — it is push only.
+2. **The Swift server serves both roles from one process.** Option C on a
+   single host is a single container.
+
+The application itself is never part of a self-hosting deployment. It is a web
+page on any static host, and a private deployment never requires a change to
+it.
+
+Read [self-hosting](references/self-hosting.md) for the commands, the
+environment variables, the pairing flow, and the APNs authority boundary. Do
+not improvise the deployment steps — in particular, do not imply that a stock
+Drel install can hand its APNs key to someone else's deployment, because it
+cannot, and a relay without a valid signer must fail closed.
 
 ## Non-negotiable boundaries
 
