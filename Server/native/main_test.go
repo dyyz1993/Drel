@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -97,8 +99,28 @@ func newEndToEndServer(t *testing.T) (*server, *capturedAPNS) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := config{PublicURL: "https://push.example.test", APNSKeyID: "KEY", APNSTeamID: "TEAM", APNSTopic: "com.webbridgekit.superapp", APNSEnv: "production"}
-	return &server{cfg: c, store: st, apns: newAPNSWithClient(c, key, apnsStub.Client(), apnsStub.URL)}, captured
+	seed := make([]byte, 32)
+	for i := range seed {
+		seed[i] = byte(i + 1)
+	}
+	gwKey := base64.RawURLEncoding.EncodeToString(seed)
+	c := config{
+		PublicURL:         "https://push.example.test",
+		APNSKeyID:         "KEY",
+		APNSTeamID:        "TEAM",
+		APNSTopic:         "com.webbridgekit.superapp",
+		APNSEnv:           "production",
+		GatewayID:         "gw-test",
+		GatewayName:       "Test Gateway",
+		GatewayKeyID:      "gw-key-1",
+		GatewayPrivateKey: gwKey,
+		AdminAPIKey:       "test-secret-key",
+	}
+	gw, err := newGatewayStore(t.TempDir(), c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &server{cfg: c, store: st, apns: newAPNSWithClient(c, key, apnsStub.Client(), apnsStub.URL), gateway: gw}, captured
 }
 
 func jsonRequest(t *testing.T, h http.Handler, method, path string, body any) *httptest.ResponseRecorder {
@@ -430,5 +452,290 @@ func TestDirectPushRejectsSenderSuppliedSourceChannel(t *testing.T) {
 	})
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("sender-controlled source label should be rejected, got %d %s", response.Code, response.Body.String())
+	}
+}
+
+// newGatewayTestServer returns a server that has a signing key but no APNs
+// credential, which is the configuration an option-B gateway deployment uses.
+// The returned dataDir is the directory the gateway store persists into.
+func newGatewayTestServer(t *testing.T) (*server, *gatewayStore, string) {
+	t.Helper()
+	seed := make([]byte, 32)
+	for i := range seed {
+		seed[i] = byte(i + 7)
+	}
+	dataDir := t.TempDir()
+	c := config{
+		PublicURL:         "https://hub.example.test",
+		GatewayID:         "gw-go-test",
+		GatewayName:       "Go Gateway Test",
+		GatewayPublicURL:  "https://hub.example.test",
+		GatewayKeyID:      "gw-key-go",
+		GatewayPrivateKey: base64.RawURLEncoding.EncodeToString(seed),
+		AdminAPIKey:       "test-admin-key",
+	}
+	gw, err := newGatewayStore(dataDir, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &server{cfg: c, gateway: gw}, gw, dataDir
+}
+
+func TestGatewayConfigReturnsPublicKeyAndContract(t *testing.T) {
+	s, _, _ := newGatewayTestServer(t)
+	h := s.handler()
+
+	response := jsonRequest(t, h, http.MethodGet, "/api/v1/gateway", nil)
+	if response.Code != http.StatusOK {
+		t.Fatalf("gateway config returned %d: %s", response.Code, response.Body.String())
+	}
+	var cfg map[string]any
+	if err := json.NewDecoder(response.Body).Decode(&cfg); err != nil {
+		t.Fatal(err)
+	}
+	if cfg["id"] != "gw-go-test" || cfg["name"] != "Go Gateway Test" {
+		t.Fatalf("gateway identity mismatch: %#v", cfg)
+	}
+	if cfg["healthPath"] != "/health" || cfg["manifestPath"] != "/api/v1/html-apps" {
+		t.Fatalf("gateway path contract mismatch: %#v", cfg)
+	}
+	if cfg["publicKeyID"] != "gw-key-go" {
+		t.Fatalf("publicKeyID mismatch: %#v", cfg)
+	}
+	pubValue, _ := cfg["publicKey"].(string)
+	if pubValue == "" {
+		t.Fatal("publicKey must be present")
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(pubValue)
+	if err != nil || len(raw) != ed25519.PublicKeySize {
+		t.Fatalf("publicKey must decode to %d bytes: %v", ed25519.PublicKeySize, err)
+	}
+}
+
+func TestGatewayConfigFailsClosedWithoutSigningKey(t *testing.T) {
+	c := config{PublicURL: "https://hub.example.test"}
+	gw, err := newGatewayStore(t.TempDir(), c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &server{cfg: c, gateway: gw}
+	response := jsonRequest(t, s.handler(), http.MethodGet, "/api/v1/gateway", nil)
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("gateway without a signing key must fail closed with 503, got %d", response.Code)
+	}
+}
+
+func TestGatewayManifestSaveSignsAndVerifies(t *testing.T) {
+	s, gw, dataDir := newGatewayTestServer(t)
+	h := s.handler()
+
+	manifest := map[string]any{
+		"schemaVersion":  "1",
+		"appId":          "com.example.orders",
+		"name":           "Order Assistant",
+		"startURL":       "https://app.example.com/app/index.html",
+		"allowedOrigins": []string{"https://app.example.com"},
+		"capabilities":   []string{},
+		"routes":         []string{"/app/index.html"},
+		"cache": map[string]any{
+			"strategy": "networkOnly", "version": "1", "persistent": false,
+		},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/html-apps", func() io.Reader {
+		encoded, _ := json.Marshal(manifest)
+		return bytes.NewReader(encoded)
+	}())
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("Authorization", "Bearer test-admin-key")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("save manifest returned %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var saved map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&saved); err != nil {
+		t.Fatal(err)
+	}
+	sig, ok := saved["signature"].(map[string]any)
+	if !ok {
+		t.Fatalf("saved manifest carries no signature: %#v", saved)
+	}
+	if sig["algorithm"] != "ed25519" || sig["keyId"] != "gw-key-go" {
+		t.Fatalf("signature metadata mismatch: %#v", sig)
+	}
+	sigBytes, err := base64.RawURLEncoding.DecodeString(sig["value"].(string))
+	if err != nil {
+		t.Fatalf("signature value is not Base64URL: %v", err)
+	}
+
+	// Verify the signature the way the phone does: rebuild the unsigned
+	// payload with sorted keys and check it against the public key.
+	unsigned := make(map[string]any, len(saved))
+	for k, v := range saved {
+		if k != "signature" {
+			unsigned[k] = v
+		}
+	}
+	canonical, err := json.Marshal(unsigned)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ed25519.Verify(gw.signer.publicKey, canonical, sigBytes) {
+		t.Fatal("the saved signature does not verify against the gateway public key")
+	}
+
+	// The list and the single fetch must return the same signed document.
+	listResponse := jsonRequest(t, h, http.MethodGet, "/api/v1/html-apps", nil)
+	if listResponse.Code != http.StatusOK {
+		t.Fatalf("list returned %d", listResponse.Code)
+	}
+	var list struct {
+		Manifests []map[string]any `json:"manifests"`
+	}
+	if err := json.NewDecoder(listResponse.Body).Decode(&list); err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Manifests) != 1 || list.Manifests[0]["appId"] != "com.example.orders" {
+		t.Fatalf("list does not contain the saved app: %#v", list.Manifests)
+	}
+	detail := jsonRequest(t, h, http.MethodGet, "/api/v1/html-apps/com.example.orders", nil)
+	if detail.Code != http.StatusOK {
+		t.Fatalf("detail returned %d", detail.Code)
+	}
+
+	// The persisted file must round-trip into a fresh store over the same
+	// data directory.
+	reloaded, err := newGatewayStore(dataDir, s.cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := reloaded.manifests["com.example.orders"]; !ok {
+		t.Fatal("the manifest was not persisted to html-apps.json")
+	}
+}
+
+func TestGatewaySaveRequiresTheAdminKey(t *testing.T) {
+	s, _, _ := newGatewayTestServer(t)
+	h := s.handler()
+
+	manifest := map[string]any{
+		"schemaVersion": "1", "appId": "com.example.auth", "name": "Auth",
+		"startURL": "https://app.example.com/", "allowedOrigins": []string{"https://app.example.com"},
+		"capabilities": []string{}, "routes": []string{"/"},
+		"cache": map[string]any{"strategy": "networkOnly", "version": "1", "persistent": false},
+	}
+
+	// No Authorization header.
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/html-apps", func() io.Reader {
+		encoded, _ := json.Marshal(manifest)
+		return bytes.NewReader(encoded)
+	}())
+	req.Header.Set("content-type", "application/json")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("save without the admin key must be 401, got %d", rec.Code)
+	}
+
+	// Wrong key.
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/html-apps", func() io.Reader {
+		encoded, _ := json.Marshal(manifest)
+		return bytes.NewReader(encoded)
+	}())
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("Authorization", "Bearer wrong-key")
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("save with the wrong admin key must be 401, got %d", rec.Code)
+	}
+
+	// Delete also requires the key.
+	del := httptest.NewRequest(http.MethodDelete, "/api/v1/html-apps/com.example.auth", nil)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, del)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("delete without the admin key must be 401, got %d", rec.Code)
+	}
+}
+
+func TestGatewayRejectsIncompleteManifests(t *testing.T) {
+	s, _, _ := newGatewayTestServer(t)
+	h := s.handler()
+
+	for name, body := range map[string]map[string]any{
+		"missing-appId":   {"schemaVersion": "1", "name": "X", "startURL": "https://x.example.com/"},
+		"missing-name":    {"schemaVersion": "1", "appId": "x.y", "startURL": "https://x.example.com/"},
+		"missing-startURL": {"schemaVersion": "1", "appId": "x.y", "name": "X"},
+	} {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/html-apps", func() io.Reader {
+			encoded, _ := json.Marshal(body)
+			return bytes.NewReader(encoded)
+		}())
+		req.Header.Set("content-type", "application/json")
+		req.Header.Set("Authorization", "Bearer test-admin-key")
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s must be rejected with 400, got %d: %s", name, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+func TestGatewayDeleteRemovesTheManifest(t *testing.T) {
+	s, _, _ := newGatewayTestServer(t)
+	h := s.handler()
+
+	manifest := map[string]any{
+		"schemaVersion": "1", "appId": "com.example.gone", "name": "Gone",
+		"startURL": "https://app.example.com/", "allowedOrigins": []string{"https://app.example.com"},
+		"capabilities": []string{}, "routes": []string{"/"},
+		"cache": map[string]any{"strategy": "networkOnly", "version": "1", "persistent": false},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/html-apps", func() io.Reader {
+		encoded, _ := json.Marshal(manifest)
+		return bytes.NewReader(encoded)
+	}())
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("Authorization", "Bearer test-admin-key")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("save returned %d: %s", rec.Code, rec.Body.String())
+	}
+
+	del := httptest.NewRequest(http.MethodDelete, "/api/v1/html-apps/com.example.gone", nil)
+	del.Header.Set("Authorization", "Bearer test-admin-key")
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, del)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete returned %d", rec.Code)
+	}
+
+	detail := jsonRequest(t, h, http.MethodGet, "/api/v1/html-apps/com.example.gone", nil)
+	if detail.Code != http.StatusNotFound {
+		t.Fatalf("deleted manifest must 404, got %d", detail.Code)
+	}
+}
+
+func TestHealthReportsVersionAndReadiness(t *testing.T) {
+	s, _, _ := newGatewayTestServer(t)
+	response := jsonRequest(t, s.handler(), http.MethodGet, "/health", nil)
+	if response.Code != http.StatusOK {
+		t.Fatalf("health returned %d", response.Code)
+	}
+	var health map[string]any
+	if err := json.NewDecoder(response.Body).Decode(&health); err != nil {
+		t.Fatal(err)
+	}
+	if health["status"] != "ok" {
+		t.Fatalf("health status mismatch: %#v", health)
+	}
+	if _, ok := health["version"].(string); !ok || health["version"] == "" {
+		t.Fatalf("health must expose the server version: %#v", health)
+	}
+	if _, ok := health["apnsReady"].(bool); !ok {
+		t.Fatalf("health must expose apnsReady: %#v", health)
 	}
 }
