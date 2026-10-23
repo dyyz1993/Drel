@@ -90,6 +90,6 @@
   Content-Type: text/markdown; charset=utf-8
   Cache-Control: public, max-age=300, must-revalidate
 
-/skills/drel-app-development/drel-app-development-1.1.0.zip
+/skills/drel-app-development/drel-app-development-1.2.0.zip
   Content-Type: application/zip
   Cache-Control: public, max-age=31536000, immutable

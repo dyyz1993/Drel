@@ -24,7 +24,7 @@
   </header>
   <main class="shell section">
     <div class="section-head">
-      <div><span class="eyebrow">Agent skill · v1.1.0</span><h1>Drel app development</h1></div>
+      <div><span class="eyebrow">Agent skill · v1.2.0</span><h1>Drel app development</h1></div>
       <p class="section-copy">Give an agent the current contract for Drel web apps, strong offline packages and push routes—without accidentally assuming a native Bridge.</p>
     </div>
     <div class="feature-grid">
@@ -34,17 +34,47 @@
     </div>
     <section class="code-section" aria-labelledby="install-title">
       <div class="shell code-layout">
-        <div><span class="eyebrow">Install</span><h2 id="install-title">Add it to your agent.</h2><p>The command below uses the legacy public WebBridgeKit repository for skill distribution. Drel and WebBridgeKit-Framework development have moved to separate private repositories; this command does not install their current source. Use the versioned ZIP for a manual import.</p></div>
-        <div class="terminal"><div class="terminal-bar"><i class="terminal-dot"></i><i class="terminal-dot"></i><i class="terminal-dot"></i>&nbsp; terminal</div><pre><span class="comment"># Install only this Drel skill</span>
-npx skills add dyyz1993/WebBridgeKit --skill drel-app-development</pre></div>
+        <div>
+          <span class="eyebrow">Install</span>
+          <h2 id="install-title">Add it to your agent.</h2>
+          <p>Install the official Drel application development skill from the open-source Drel repository. It gives your AI agent the complete contract for Web App Manifests, strong offline packages, and Manifest v2 native actions.</p>
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar"><i class="terminal-dot"></i><i class="terminal-dot"></i><i class="terminal-dot"></i>&nbsp; terminal</div>
+          <pre><span class="comment"># Install the official Drel skill</span>
+npx skills add dyyz1993/Drel --skill drel-app-development</pre>
+        </div>
       </div>
     </section>
     <div class="actions">
-      <a class="button primary" href="/skills/drel-app-development/drel-app-development-1.1.0.zip">Download skill ZIP <span aria-hidden="true">↓</span></a>
+      <a class="button primary" href="/skills/drel-app-development/drel-app-development-1.2.0.zip">Download skill ZIP <span aria-hidden="true">↓</span></a>
       <a class="button secondary" href="/skills/drel-app-development/SKILL.md">Open SKILL.md</a>
       <a class="button secondary" href="https://github.com/dyyz1993/WebBridgeKit/tree/master/skills/drel-app-development">Legacy public skill source</a>
     </div>
     <section class="principle"><div class="principle-card"><span class="eyebrow">Scope</span><h2>Offline is an installation contract, not a cache promise.</h2><p>Static files are verified and installed locally only after a user action. APIs and live data continue to use the network, with an explicit offline fallback.</p></div></section>
+
+    <section class="shell section" id="covers">
+      <div class="section-head">
+        <h2>What it<br>covers.</h2>
+        <p class="section-copy">Two halves: writing the app, and running the services yourself.</p>
+      </div>
+      <div class="feature-grid demo-grid">
+        <article class="feature">
+          <div class="feature-icon">01</div>
+          <h3>Build a Drel app</h3>
+          <p>Web App Manifest, the signed gateway manifest, strong offline packages, push routes, and the seven declared native actions with their fallback contract.</p>
+        </article>
+        <article class="feature">
+          <div class="feature-icon">02</div>
+          <h3>Self-host the services</h3>
+          <p>Three deployment options with the exact commands: a private push relay, a private gateway, or both on one host or split across two.</p>
+        </article>
+      </div>
+      <div class="actions" style="margin-top:34px">
+        <a class="button primary" href="/self-hosted/">Choose a deployment option →</a>
+        <a class="button secondary" href="/docs/app/">Read the app guide</a>
+      </div>
+    </section>
   </main>
   <footer class="shell footer"><div class="footer-inner"><span>© 2026 Drel · Built with WebBridgeKit.</span><div class="footer-links"><a href="/support/">Support</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer>
 </body>

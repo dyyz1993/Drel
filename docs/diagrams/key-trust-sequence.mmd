@@ -1,0 +1,63 @@
+%% Drel key and trust sequence
+%% Source of truth: docs/diagrams/key-trust-sequence.mmd
+%% Rendered to docs/site/assets/diagrams/key-trust-sequence.svg
+%%
+%% Every key placement below was read from the implementation:
+%%   - the device key and the X25519 identity are minted ON THE PHONE
+%%     (PushNotificationManager calls randomSelfHostedDeviceKey() and
+%%     SelfHostedPushCrypto.currentOrCreateIdentity());
+%%   - the pairing ticket is issued BY THE RELAY, single use, short expiry
+%%     (SelfHostedPushPairingStore.issue() / consume(pairingToken));
+%%   - the relay stores the APNs token, the device key and the device's
+%%     PUBLIC encryption key - never the private half;
+%%   - the APNs .p8 stays on the operator's relay, which signs the
+%%     provider JWT locally and posts over HTTP/2;
+%%   - the gateway's Ed25519 private key stays on the operator's gateway;
+%%     the phone holds only the public key and the key id.
+sequenceDiagram
+    autonumber
+    participant P as Your phone
+    participant O as Official relay
+    participant R as Your relay
+    participant A as Apple APNs
+
+    rect rgb(246, 247, 251)
+        note over P: Phase 1 - the phone mints its own keys
+        P->>P: generate the device key (random, per installation)
+        P->>P: generate the X25519 identity (curve25519 key pair)
+        Note over P: the X25519 private key stays in the phone keychain
+    end
+
+    rect rgb(238, 243, 255)
+        note over P,R: Phase 2 - pairing with a relay
+        P->>R: POST /self-hosted/pairings - ask for a ticket
+        R-->>P: single-use pairing ticket, short expiry
+        Note over R: the ticket cannot be replayed against another phone
+        P->>R: POST /self-hosted/register<br/>token + deviceKey + PUBLIC key
+        Note over R: stores the APNs token, the device key<br/>and the public key only
+    end
+
+    rect rgb(253, 245, 230)
+        note over O,A: Phase 3 - sending a push - the same steps on either relay
+        alt hosted relay (no self-hosting)
+            O->>O: the sender posts GET /<key>/<title>/<body>
+            Note over O: the managed signer forwards only an opaque envelope
+            O->>A: POST over HTTP/2 with apns-topic
+        else your own relay
+            R->>R: the sender posts GET /<key>/<title>/<body>
+            R->>R: sign the provider JWT locally (ES256)
+            Note over R: the APNs .p8 never leaves this host
+            R->>A: POST over HTTP/2 with apns-topic
+        end
+        A-->>P: deliver
+        P->>P: decrypt if the envelope is encrypted
+    end
+
+    rect rgb(244, 239, 255)
+        note over P,R: Phase 4 - the gateway, if you deploy one
+        R-->>P: GET /api/v1/html-apps - the signed manifest
+        P->>P: verify with the Ed25519 public key
+        Note over R: the Ed25519 private key stays on the gateway
+    end
+
+    note over P,A: What never crosses the wire:<br/>X25519 private key - stays in the phone keychain<br/>APNs .p8 private key - stays on your relay<br/>Ed25519 private key - stays on your gateway<br/>pairing ticket - single use and short lived

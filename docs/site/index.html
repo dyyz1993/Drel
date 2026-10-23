@@ -20,7 +20,7 @@
   <header class="shell nav">
     <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
     <nav class="nav-links" aria-label="Primary navigation">
-      <a href="#how">How it works</a>
+      <a href="#path">Start here</a><a href="#how">How it works</a>
       <a href="/docs/">Docs</a>
       <a href="/docs/bridge/">Bridge</a>
       <a href="/docs/app/">Build</a>
@@ -41,10 +41,10 @@
         <p class="lead">Drel gives developers one dependable place for notifications. Send a push, tap it, and open its exact HTTPS destination inside a focused native container.</p>
         <section class="skill-install" aria-labelledby="skill-install-title">
           <div>
-            <span id="skill-install-title">Build Drel apps · legacy public skill distribution</span>
-            <code>npx skills add dyyz1993/WebBridgeKit --skill drel-app-development</code>
+            <span id="skill-install-title">Build Drel apps · Official Agent Skill v1.2</span>
+            <code>npx skills add dyyz1993/Drel --skill drel-app-development</code>
           </div>
-          <button class="copy-command" type="button" data-copy-command="npx skills add dyyz1993/WebBridgeKit --skill drel-app-development" aria-describedby="skill-copy-status">Copy skill command</button>
+          <button class="copy-command" type="button" data-copy-command="npx skills add dyyz1993/Drel --skill drel-app-development" aria-describedby="skill-copy-status">Copy skill command</button>
           <span id="skill-copy-status" class="copy-status" aria-live="polite"></span>
         </section>
         <div class="actions">
@@ -69,6 +69,42 @@
         <span>Built with WebBridgeKit</span>
       </div>
     </div>
+
+    <section class="shell section" id="path">
+      <div class="section-head">
+        <h2>Start here.<br>Four steps.</h2>
+        <p class="section-copy">One command hands your agent the whole contract. The docs stay here for quick lookup, debugging, and the private-deployment walkthrough.</p>
+      </div>
+      <div class="journey">
+        <div class="journey-step">
+          <span class="journey-num">01</span>
+          <h3>Install Drel</h3>
+          <p>Get it from the App Store and enable notifications once. Drel shows you a personal push address.</p>
+          <a href="https://apps.apple.com/cn/app/drel/id6802806992">Get the app →</a>
+          <span class="journey-next">→</span>
+        </div>
+        <div class="journey-step">
+          <span class="journey-num">02</span>
+          <h3>Hand it to your agent</h3>
+          <p>One command installs the skill. Your AI then knows the whole contract — build an app, send a push, or deploy it privately.</p>
+          <a href="/skills/drel-app-development/">Get the skill command →</a>
+          <span class="journey-next">→</span>
+        </div>
+        <div class="journey-step">
+          <span class="journey-num">03</span>
+          <h3>Try it yourself</h3>
+          <p>Not using an agent? Paste your address into the playground, pick a template, send. The docs are the reference.</p>
+          <a href="/docs/push/#send-a-test-push-now">Open the playground →</a>
+          <span class="journey-next">→</span>
+        </div>
+        <div class="journey-step">
+          <span class="journey-num">04</span>
+          <h3>Run it yourself</h3>
+          <p>Want it private? Self-host the push relay, the gateway, or both — three options, pick one.</p>
+          <a href="/self-hosted/">Choose an option →</a>
+        </div>
+      </div>
+    </section>
 
     <section class="shell section" id="how">
       <div class="section-head">
@@ -164,28 +200,6 @@ curl <span class="token">https://api.drel.app/</span>\
       <div class="footer-links"><a href="/docs/">Docs</a><a href="/self-hosted/">Self-host</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div>
     </div>
   </footer>
-  <script>
-    document.querySelectorAll("[data-copy-command]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const command = button.dataset.copyCommand;
-        const status = document.getElementById("skill-copy-status");
-        try {
-          await navigator.clipboard.writeText(command);
-          status.textContent = "Copied — paste this into your agent terminal.";
-        } catch {
-          const field = document.createElement("textarea");
-          field.value = command;
-          field.setAttribute("readonly", "");
-          field.style.position = "fixed";
-          field.style.opacity = "0";
-          document.body.appendChild(field);
-          field.select();
-          document.execCommand("copy");
-          field.remove();
-          status.textContent = "Copied — paste this into your agent terminal.";
-        }
-      });
-    });
-  </script>
+  <script src="/assets/site.js"></script>
 </body>
 </html>

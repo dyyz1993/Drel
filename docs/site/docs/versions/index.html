@@ -1,14 +1,203 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Drel compatibility versions."><title>Drel versions</title><link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css"><link rel="canonical" href="https://drel.app/docs/versions/">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Drel">
-<meta property="og:url" content="https://drel.app/docs/versions/">
-<meta property="og:title" content="Drel versions">
-<meta property="og:description" content="Drel compatibility versions.">
-</head><body>
-<header class="docs-shell nav"><a class="brand" href="/"><img src="/assets/drel-mark.svg" alt="">Drel</a><nav class="nav-links"><a href="/">Home</a><a href="/self-hosted/">Self-host</a><a href="/skills/drel-app-development/">Skill</a><a class="nav-cta" href="/support/">Support</a></nav></header>
-<main class="docs-shell"><section class="docs-hero"><span class="eyebrow">Compatibility</span><h1>Versions and change policy</h1><p>Read versions from <code>window.DrelRuntime</code> at runtime and feature-detect individual fields. Never assume that a future Drel release grants a remote page new native powers.</p><nav class="docs-nav"><a href="/docs/">Overview</a><a href="/docs/push/">Push API</a><a href="/docs/container/">Web container</a><a href="/docs/offline/">Offline packages</a><a aria-current="page" href="/docs/versions/">Versions</a></nav></section><div class="docs-main">
-<section><h2>Current public contract</h2><div class="docs-table"><table><thead><tr><th>Surface</th><th>Version</th><th>Meaning</th></tr></thead><tbody><tr><td>Drel app</td><td>1.4.x</td><td>Push, HTTPS container, registered web apps and offline-package v1.</td></tr><tr><td>Container protocol</td><td><code>containerVersion: 1</code></td><td>Versioned UA token and <code>DrelRuntime</code> environment object.</td></tr><tr><td>Offline package protocol</td><td><code>offlinePackageVersion: 1</code></td><td>Hash-verified, atomically activated package support.</td></tr><tr><td>Native Bridge</td><td><code>bridgeVersion: 0</code></td><td>No remote-page native Bridge is available in the Store container.</td></tr></tbody></table></div></section>
-<section><h2>Compatibility rules</h2><ul><li>Minor app updates can add optional fields. Integrations must ignore unknown fields and tolerate missing optional fields.</li><li>A documented stable field is not silently redefined. If a breaking change is necessary, it receives a new versioned contract or a deprecation period.</li><li>Undocumented endpoints, aliases and experimental fields have no compatibility promise.</li><li>The app version is not an authorization level. A page must still feature-detect, validate its own data and use ordinary web fallbacks.</li></ul></section>
-<section><h2>Self-hosting status</h2><p>Self-hosting documentation is separate because a stock Drel install and a deployment with an authorized APNs signer have different responsibilities. Read <a href="/self-hosted/">Self-host Drel Push</a> before deploying. Never paste a private APNs signing key into a webpage, repository, chat, device QR code or public configuration.</p></section>
-</div></main><footer class="docs-shell footer"><div class="footer-inner"><span>© 2026 Drel · Built with WebBridgeKit.</span><div class="footer-links"><a href="/docs/">Docs</a><a href="/privacy/">Privacy</a><a href="/support/">Support</a></div></div></footer></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Drel compatibility versions, contract lifecycle, and change policy.">
+  <title>Versions and Contract Policy — Drel</title>
+  <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="canonical" href="https://drel.app/docs/versions/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Drel">
+  <meta property="og:url" content="https://drel.app/docs/versions/">
+  <meta property="og:title" content="Versions and Contract Policy — Drel">
+  <meta property="og:description" content="Drel compatibility versions, contract lifecycle, and change policy.">
+</head>
+<body>
+  <header class="docs-shell nav">
+    <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="/test/">Try it</a>
+      <a href="/self-hosted/">Self-host</a>
+      <a class="nav-cta" href="https://apps.apple.com/cn/app/drel/id6802806992">App Store</a>
+    </nav>
+  </header>
+
+  <div class="docs-shell">
+    <button class="docs-menu-toggle" type="button" onclick="document.getElementById('docsSidebar').classList.toggle('is-open')" aria-label="Toggle navigation menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Docs Menu</span>
+    </button>
+  </div>
+
+  <div class="docs-container">
+    <aside class="docs-sidebar" id="docsSidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-item">Overview</a>
+        <a href="/docs/app/" class="sidebar-item">Build an App <span class="sidebar-badge">Guide</span></a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Native Capabilities</div>
+        <a href="/docs/bridge/" class="sidebar-item">Bridge API <span class="sidebar-badge highlight">v2</span></a>
+        <a href="/docs/push/" class="sidebar-item">Push API</a>
+        <a href="/compare/bark/" class="sidebar-item">Bark Migration</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Container &amp; Offline</div>
+        <a href="/docs/container/" class="sidebar-item">Web Container</a>
+        <a href="/docs/offline/" class="sidebar-item">Offline Packages</a>
+        <a href="/docs/versions/" class="sidebar-item active">Versions &amp; Contract</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Deployment</div>
+        <a href="/self-hosted/" class="sidebar-item">Self-Host Guide</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Interactive Demos</div>
+        <a href="/test/" class="sidebar-item">All Demos (/test)</a>
+        <a href="/test/actions/" class="sidebar-item">Native Actions</a>
+        <a href="/test/offline/" class="sidebar-item">Strong Offline</a>
+        <a href="/test/offline-network/" class="sidebar-item">Offline + Live Data</a>
+        <a href="/test/template/" class="sidebar-item">App Template</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Agent Tooling</div>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.2</span></a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Drel</a><span>/</span><a href="/docs/">Docs</a><span>/</span><span style="color:var(--ink)">Versions &amp; Contract</span>
+      </div>
+
+      <section class="docs-hero" style="border-bottom:1px solid var(--line); padding-bottom:32px;">
+        <span class="eyebrow">Compatibility</span>
+        <h1>Versions and Contract Policy</h1>
+        <p>Read versions from <code>window.DrelRuntime</code> at runtime and feature-detect individual fields. Never assume a future Drel release grants a remote page new native powers.</p>
+      </section>
+
+      <div class="docs-main">
+        <section>
+          <h2>Current public contract</h2>
+          <p>Each surface carries its own version number. They move independently, so read them separately at runtime.</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Surface</th><th>Version</th><th>Read it from</th><th>Meaning</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Drel app</td>
+                  <td>1.5.x</td>
+                  <td>App Store version / <code>CFBundleShortVersionString</code></td>
+                  <td>Push, HTTPS container, registered apps, and the Manifest v2 action runtime.</td>
+                </tr>
+                <tr>
+                  <td>Container protocol</td>
+                  <td><code>containerVersion: 1</code></td>
+                  <td><code>window.DrelRuntime.containerVersion</code></td>
+                  <td>Versioned UA product token and the <code>DrelRuntime</code> environment object.</td>
+                </tr>
+                <tr>
+                  <td>Offline package protocol</td>
+                  <td><code>offlinePackageVersion: 1</code></td>
+                  <td><code>window.DrelRuntime.offlinePackageVersion</code></td>
+                  <td>Hash-verified, atomically activated package support.</td>
+                </tr>
+                <tr>
+                  <td>Native actions</td>
+                  <td><code>bridgeVersion: 2</code></td>
+                  <td><code>window.DrelRuntime.bridgeVersion</code></td>
+                  <td>Manifest v2 declared actions. <code>1</code> is the legacy bridge surface; <code>0</code> means no native surface at all.</td>
+                </tr>
+                <tr>
+                  <td>Agent skill</td>
+                  <td>1.1</td>
+                  <td>The skill's own version</td>
+                  <td>The version of the contract bundle handed to an AI agent.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="docs-callout">
+            <strong>Version 0 is not "old", it is "closed".</strong> A <code>bridgeVersion</code> of <code>0</code> means the container exposes no native command surface. The Store build reached <code>2</code> in Drel 1.5.0; earlier 1.4.x builds expose <code>0</code>.
+          </div>
+        </section>
+
+        <section>
+          <h2>App version to capability map</h2>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Drel app</th><th>containerVersion</th><th>offlinePackageVersion</th><th>bridgeVersion</th><th>You get</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1.4.x</td>
+                  <td>1</td>
+                  <td>1</td>
+                  <td>0</td>
+                  <td>Push, HTTPS container, registered apps, strong offline packages, deep links. No native action surface.</td>
+                </tr>
+                <tr>
+                  <td>1.5.x</td>
+                  <td>1</td>
+                  <td>1</td>
+                  <td>2</td>
+                  <td>Everything in 1.4.x, plus declared native actions, the permission center, and the grant ledger.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>How to read the version at runtime</h3>
+          <pre class="docs-code">const runtime = window.DrelRuntime;
+
+const hasContainer   = Number(runtime?.containerVersion ?? 0) >= 1;
+const hasOffline     = Number(runtime?.offlinePackageVersion ?? 0) >= 1;
+const hasNativeOps   = Number(runtime?.bridgeVersion ?? 0) >= 2;
+const isOfflinePkg   = runtime?.isOfflinePackage === true;</pre>
+          <p>Feature-detect each capability separately. A page must keep working in a plain browser, so treat every one of these as an enhancement rather than a requirement.</p>
+        </section>
+
+        <section>
+          <h2>Compatibility rules</h2>
+          <ul>
+            <li>Minor app updates may add optional fields. Integrations must ignore unknown fields and tolerate missing optional fields.</li>
+            <li>A documented stable field is not silently redefined. If a breaking change is necessary, it receives a new versioned contract or a formal deprecation period.</li>
+            <li>Undocumented endpoints, aliases, and experimental fields have no compatibility promise.</li>
+            <li>The app marketing version is not an authorization level. A page must still feature-detect, validate data, and use ordinary web fallbacks.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Self-hosting status</h2>
+          <p>Self-hosting documentation is separate because a stock Drel install and a deployment with an authorized APNs signer have different responsibilities. Read the <a href="/self-hosted/">Self-host Drel Guide</a> before planning deployment. Never paste a private APNs signing key into a public repository or client QR code.</p>
+        </section>
+
+        <div class="docs-pagination">
+          <a href="/docs/offline/" class="pagination-card prev">
+            <span class="pagination-label">Previous</span>
+            <span class="pagination-title">← Offline Packages</span>
+          </a>
+          <a href="/docs/" class="pagination-card next">
+            <span class="pagination-label">Back to Top</span>
+            <span class="pagination-title">Overview →</span>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="docs-shell footer">
+    <div class="footer-inner">
+      <span>© 2026 Drel · Built with WebBridgeKit.</span>
+      <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
+    </div>
+  </footer>
+</body>
+</html>
