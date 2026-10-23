@@ -88,6 +88,18 @@ class InboxViewModel: ViewModel {
             UserDefaults.standard.removeObject(forKey: "inbox.pinnedGroups")
             UserDefaults.standard.removeObject(forKey: "inbox.pinnedMessages")
         }
+
+        super.init()
+
+        // The inbox is channel-scoped; a channel switch on the home screen
+        // must re-scope the visible list and the unread count immediately,
+        // not on the next engine mutation.
+        NotificationCenter.default.rx.notification(DrelPushChannelStore.didChangeNotification)
+            .subscribe(onNext: { [weak self] _ in
+                self?.applyFilters()
+                self?.reloadDataRelay.accept(())
+            })
+            .disposed(by: rx)
     }
 
     var messageGroupsValue: [MessageGroup] {
@@ -384,10 +396,8 @@ class InboxViewModel: ViewModel {
             }
 
             let loadedMessages = messages
-            let unreadCount = await MessageEngine.shared.getUnreadCount()
             await MainActor.run {
                 self.messagesRelay.accept(loadedMessages)
-                self.unreadCountRelay.accept(unreadCount > 0 ? unreadCount : loadedMessages.filter { !$0.isRead }.count)
                 self.applyFilters()
                 self.reloadDataRelay.accept(())
             }
@@ -395,17 +405,12 @@ class InboxViewModel: ViewModel {
     }
 
     private func applyFilters() {
-        var messages = messagesRelay.value
-
-        let activeChannelID = UserDefaults.standard.string(forKey: "drel.push-channel.selected.v1")
-            ?? DrelPushChannelStore.officialChannelID
-        if activeChannelID == DrelPushChannelStore.officialChannelID {
-            // Untagged records predate the self-hosted source contract and
-            // remain official history rather than silently disappearing.
-            messages = messages.filter { !$0.payload.channel.hasPrefix("drel.selfhosted.") }
-        } else {
-            messages = messages.filter { $0.payload.channel == activeChannelID }
-        }
+        // Channel scoping comes first and drives the unread count too, so
+        // the「全部已读」button and every badge surface count exactly what
+        // the visible inbox can show (legacy untagged records stay in the
+        // official view inside messagesForActiveChannel).
+        var messages = DrelPushChannelStore.shared.messagesForActiveChannel(messagesRelay.value)
+        unreadCountRelay.accept(messages.filter { !$0.isRead }.count)
 
         switch currentFilter {
         case .all:

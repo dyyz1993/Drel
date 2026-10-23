@@ -60,22 +60,38 @@ class TabBarController: UITabBarController {
                 self?.handlePushJump(notification)
             })
             .disposed(by: disposeBag)
+
+        // A channel switch re-scopes the inbox view; the tab badge must
+        // follow in the same beat instead of waiting for the next engine
+        // mutation.
+        NotificationCenter.default.rx.notification(DrelPushChannelStore.didChangeNotification)
+            .subscribe(onNext: { [weak self] _ in
+                Task { await self?.syncUnreadBadges() }
+            })
+            .disposed(by: disposeBag)
     }
 
-    /// Unread count drives every badge surface: the notifications tab item
-    /// and the app icon. Bark deliberately never tracks the icon badge (it
-    /// only clears it with -1 on foreground); WebBridgeKit owns an inbox,
-    /// so the icon badge mirrors the inbox unread count instead.
+    /// Two badge surfaces with two scopes: the notifications tab item shows
+    /// the unread count of the channel the inbox is currently viewing, and
+    /// the app icon mirrors the global unread count across channels. Bark
+    /// deliberately never tracks the icon badge (it only clears it with -1
+    /// on foreground); WebBridgeKit owns an inbox, so the icon badge
+    /// mirrors the inbox unread count instead.
     private func syncUnreadBadges() async {
-        let count = await MessageEngine.shared.getUnreadCount()
+        let all = await MessageEngine.shared.getMessages()
+        let channelCount = DrelPushChannelStore.shared
+            .messagesForActiveChannel(all)
+            .filter { !$0.isRead }
+            .count
+        let globalCount = await MessageEngine.shared.getUnreadCount()
         await MainActor.run { [weak self] in
             guard let self = self,
                   let items = self.tabBar.items,
                   let messageIndex = AppTab.allCases.firstIndex(of: .notifications),
                   items.indices.contains(messageIndex) else { return }
-            items[messageIndex].badgeValue = count > 0 ? "\(count)" : nil
+            items[messageIndex].badgeValue = channelCount > 0 ? "\(channelCount)" : nil
         }
-        await DefaultBadgeManager().setBadge(count)
+        await DefaultBadgeManager().setBadge(globalCount)
     }
 
     private func handlePushJump(_ notification: Notification) {
