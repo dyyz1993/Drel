@@ -9,8 +9,13 @@ const HOP_BY_HOP_REQUEST_HEADERS = [
 ];
 
 import { ManagedPushRegistry, handleManagedPush } from "./managed-push.js";
+import {
+  GatewayManifestRegistry,
+  gatewaySignerIsReady,
+  gatewayPublicKey,
+} from "./gateway.js";
 
-export { ManagedPushRegistry };
+export { ManagedPushRegistry, GatewayManifestRegistry };
 
 function upstreamURL(requestURL, origin) {
   const inbound = new URL(requestURL);
@@ -51,6 +56,12 @@ export default {
     const managedResponse = await handleManagedPush(request, env);
     if (managedResponse) return managedResponse;
 
+    // The gateway routes are served at the edge when a signing key is
+    // configured; otherwise the request falls through to the upstream so a
+    // deployment without a key keeps working exactly as before.
+    const gatewayResponse = await handleGateway(request, env);
+    if (gatewayResponse) return gatewayResponse;
+
     const publicURL = new URL(request.url);
     let upstream;
     try {
@@ -89,3 +100,41 @@ export default {
     }
   }
 };
+
+/**
+ * Serve the gateway routes from the edge.
+ *
+ * Returns null when the route is not a gateway route, so the caller can fall
+ * through to the upstream proxy.
+ */
+async function handleGateway(request, env) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  if (path === "/api/v1/gateway" && request.method === "GET") {
+    if (!gatewaySignerIsReady(env)) return null;
+    const baseURL = env.GATEWAY_PUBLIC_BASE_URL || new URL(request.url).origin;
+    return Response.json({
+      id: env.GATEWAY_ID || "drel-gateway",
+      name: env.GATEWAY_NAME || "Drel Gateway",
+      baseURL,
+      healthPath: "/health",
+      manifestPath: "/api/v1/html-apps",
+      publicKeyID: env.GATEWAY_KEY_ID,
+      publicKey: await gatewayPublicKey(env),
+    });
+  }
+
+  if (path === "/api/v1/html-apps" || path.startsWith("/api/v1/html-apps/")) {
+    if (!gatewaySignerIsReady(env)) return null;
+    const namespace = env.GATEWAY_MANIFEST_REGISTRY;
+    if (!namespace) return null;
+    // A Durable Object namespace is addressed by a DurableObjectId, not by a
+    // plain string.
+    const id = namespace.idFromName("html-app-gateway-v1");
+    return namespace.get(id).fetch(request);
+  }
+
+  return null;
+}
+
