@@ -14,8 +14,14 @@ import {
   gatewaySignerIsReady,
   gatewayPublicKey,
 } from "./gateway.js";
+import {
+  OfficialPushRegistry,
+  handleOfficialPush,
+  pushAtEdgeEnabled,
+  edgeSignerReady,
+} from "./official-push.js";
 
-export { ManagedPushRegistry, GatewayManifestRegistry };
+export { ManagedPushRegistry, GatewayManifestRegistry, OfficialPushRegistry };
 
 function upstreamURL(requestURL, origin) {
   const inbound = new URL(requestURL);
@@ -61,6 +67,15 @@ export default {
     // deployment without a key keeps working exactly as before.
     const gatewayResponse = await handleGateway(request, env);
     if (gatewayResponse) return gatewayResponse;
+
+    // The official push surface moves to the edge only when DREL_PUSH_AT_EDGE
+    // is exactly "1". With the flag off (or without the APNs credential) every
+    // request keeps flowing to the upstream proxy, which makes the rollout —
+    // and the rollback — a one-variable change.
+    if (pushAtEdgeEnabled(env)) {
+      const edgeResponse = await handleOfficialPush(request, env);
+      if (edgeResponse) return edgeResponse;
+    }
 
     const publicURL = new URL(request.url);
     let upstream;
