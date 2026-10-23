@@ -137,6 +137,9 @@ iOSInjectionProject/
 *_SUMMARY.md
 *_REPORT.md
 *_GUIDE.md
+# Repository documentation is not AI scratch output: keep the real guides.
+!docs/CONTRIBUTING_GUIDE.md
+!docs/DEVELOPMENT_AND_COLLABORATION_GUIDE.md
 *_CHECKLIST.md
 *_QUICKSTART.md
 *_REFERENCE.md
@@ -189,3 +192,6 @@ tools/__pycache__/
 # App Store Connect API keys must never enter the repo (they live in ~/.appstoreconnect/)
 *.p8
 *.mobileprovision
+
+# Cloudflare local runtime state
+.wrangler/
