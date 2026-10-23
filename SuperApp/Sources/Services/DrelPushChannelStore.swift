@@ -1,4 +1,5 @@
 import Foundation
+import WebBridgeKit
 
 /// The active address is a presentation choice, not a delivery switch. Both
 /// official and self-hosted registrations stay alive while the user switches
@@ -68,6 +69,20 @@ final class DrelPushChannelStore {
 
     func isActiveSelfHosted(officialPushURL: String) -> Bool {
         activeChannel(officialPushURL: officialPushURL).kind == .selfHosted
+    }
+
+    /// Messages the currently selected channel should show. The official
+    /// view keeps untagged legacy records (they predate the self-hosted
+    /// source contract); a self-hosted view shows only that relay's
+    /// messages. Shared by the inbox list and the notifications tab badge
+    /// so the badge never counts messages the active view hides.
+    func messagesForActiveChannel(_ messages: [StoredMessage]) -> [StoredMessage] {
+        guard let selected = UserDefaults.standard.string(forKey: selectedChannelKey),
+              selected != Self.officialChannelID
+        else {
+            return messages.filter { !$0.payload.channel.hasPrefix("drel.selfhosted.") }
+        }
+        return messages.filter { $0.payload.channel == selected }
     }
 
     private func selfHostedChannelID(for configuration: SelfHostedPushConfiguration) -> String {
