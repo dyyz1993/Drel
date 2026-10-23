@@ -175,6 +175,15 @@ const isOfflinePkg   = runtime?.isOfflinePackage === true;</pre>
         </section>
 
         <section>
+          <h2>How a release ships</h2>
+          <p>Every build you can install passed the same gates. Local checks archive their evidence whether they pass or fail; publishing requires a recorded human approval, not the absence of an objection. The edge worker deploys automatically through CI, while TestFlight, this site, and self-hosted servers publish manually — and every layer keeps a rollback path.</p>
+          <figure class="docs-figure">
+            <img src="/assets/diagrams/release-flow.svg" alt="Drel release sequence: local gates archive evidence whether they pass or fail; a tag and a test report follow; an approval recorded in the report unlocks publishing; the Cloudflare worker deploys automatically through CI while TestFlight, the site, and self-hosted servers publish manually; each layer keeps a rollback path.">
+            <figcaption><strong>Approval is recorded, not assumed.</strong> A rejected build keeps its evidence, so the next round debugs from the archived report instead of re-running everything. TestFlight history builds stay installable, and the worker rolls back with one command — code only, never your registered data.</figcaption>
+          </figure>
+        </section>
+
+        <section>
           <h2>Self-hosting status</h2>
           <p>Self-hosting documentation is separate because a stock Drel install and a deployment with an authorized APNs signer have different responsibilities. Read the <a href="/self-hosted/">Self-host Drel Guide</a> before planning deployment. Never paste a private APNs signing key into a public repository or client QR code.</p>
         </section>
