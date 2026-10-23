@@ -1,0 +1,19 @@
+%% Drel strong offline package installation
+%% Source of truth: docs/diagrams/offline-install.mmd
+sequenceDiagram
+    autonumber
+    participant H as Static host
+    participant G as Gateway
+    participant P as Phone
+
+    P->>H: fetch the resource manifest (package.json)
+    P->>G: check the manifest digest against the signed binding
+    G-->>P: the digest is bound to the signed manifest
+    P->>H: download each file (index.html · assets · fonts)
+    P->>P: check the size and the SHA-256 of every file
+    P->>P: write into a staging directory
+    P->>P: activate atomically
+
+    note over P: The previous complete version stays launchable<br/>until the new one verifies completely.<br/>A partially downloaded package is never the app.
+
+    note over H,P: The package lives in Application Support, not in the Caches<br/>directory the system may purge.<br/>Versioned asset URLs are immutable - never mutate a file at a published URL.<br/>The user downloads, updates and deletes the package explicitly.<br/>A push can open a registered app but never install or upgrade one.

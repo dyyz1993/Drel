@@ -14,4 +14,6 @@ bash "$ROOT/tools/build-drel-action-demo-site.sh" "$STAGE"
 # Landing pages and the /test/ index. Must run last so it also covers the
 # directories the demo builders create.
 bash "$ROOT/tools/build-drel-demo-pages.sh" "$STAGE"
+# Diagrams are rendered from the Mermaid sources under docs/diagrams/.
+bash "$ROOT/tools/build-drel-diagrams.sh"
 echo "Complete website: $STAGE"

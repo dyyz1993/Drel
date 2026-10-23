@@ -1,0 +1,46 @@
+%% Drel system architecture
+%% Source of truth: docs/diagrams/system-architecture.mmd
+%% Rendered to docs/site/assets/diagrams/system-architecture.svg
+%% Relationships were read from the implementation, not assumed.
+flowchart LR
+    subgraph phone["Your iPhone · Drel app"]
+        direction TB
+        container["Web container<br/>WKWebView · window.DrelRuntime"]
+        appcenter["App center<br/>signed manifests · strong offline packages"]
+        actions["Native actions<br/>Manifest v2 · 6-step check chain"]
+        nse["Notification service extension<br/>decrypts envelopes"]
+    end
+
+    webapp["Your web app<br/>React / Vue / HTML<br/>any static host"]
+
+    subgraph optional["Optional services"]
+        direction TB
+        gateway["Gateway<br/>/health · /api/v1/gateway<br/>/api/v1/html-apps<br/>Ed25519 signs app manifests"]
+        relay["Push relay<br/>Bark-compatible paths · POST /push<br/>device registry"]
+    end
+
+    apns["Apple APNs<br/>HTTP/2 only<br/>provider JWT (ES256)"]
+    trust["Phone-side trust<br/>verify signature · verify origin<br/>grant ledger"]
+
+    webapp <-->|loads| container
+    gateway -->|installs| appcenter
+    trust -.->|verifies the signature| container
+    actions -.-> trust
+    relay -->|sends| apns
+    apns -.->|notification wakes the app| nse
+    nse --> container
+    apns -.-> container
+
+    classDef phoneBox fill:#f6f7fb,stroke:#d7dbe8,stroke-width:1px
+    classDef webBox fill:#eef3ff,stroke:#2878f4,stroke-width:1.5px
+    classDef gatewayBox fill:#f4efff,stroke:#8b5cf6,stroke-width:1.5px
+    classDef relayBox fill:#fdf5e6,stroke:#d97706,stroke-width:1.5px
+    classDef appleBox fill:#fdf5e6,stroke:#d97706,stroke-width:1.5px
+    classDef trustBox fill:#e9f7f0,stroke:#1a9d5c,stroke-width:1.5px
+
+    class container,appcenter,actions,nse phoneBox
+    class webapp webBox
+    class gateway gatewayBox
+    class relay relayBox
+    class apns appleBox
+    class trust trustBox

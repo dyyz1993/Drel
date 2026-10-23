@@ -3,132 +3,351 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Deploy Drel's optional direct APNs relay on infrastructure you control.">
-  <meta name="theme-color" content="#f7f8fc">
-  <title>Self-host Drel — direct APNs, your infrastructure</title>
+  <meta name="description" content="Choose a Drel self-hosting option: a private push relay, a private gateway, or both on your own infrastructure.">
+  <title>Self-host Drel — Choose Your Option</title>
   <link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
-<link rel="canonical" href="https://drel.app/self-hosted/">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Drel">
-<meta property="og:url" content="https://drel.app/self-hosted/">
-<meta property="og:title" content="Self-host Drel — direct APNs, your infrastructure">
-<meta property="og:description" content="Deploy Drel&#x27;s optional direct APNs relay on infrastructure you control.">
+  <link rel="canonical" href="https://drel.app/self-hosted/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Drel">
+  <meta property="og:url" content="https://drel.app/self-hosted/">
+  <meta property="og:title" content="Self-host Drel — Choose Your Option">
+  <meta property="og:description" content="Choose a Drel self-hosting option: a private push relay, a private gateway, or both on your own infrastructure.">
 </head>
 <body>
-  <header class="shell nav">
+  <header class="docs-shell nav">
     <a class="brand" href="/" aria-label="Drel home"><img src="/assets/drel-mark.svg" alt="">Drel</a>
-    <nav class="nav-links" aria-label="Primary navigation">
-      <a href="/#how">How it works</a>
-      <a href="/support/">Support</a>
-      <a href="/privacy/">Privacy</a>
-      <a class="nav-cta" href="#start">Self-host guide</a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="/docs/">Docs</a>
+      <a href="/docs/app/">Build</a>
+      <a href="/docs/bridge/">Bridge</a>
+      <a href="/test/">Try it</a>
+      <a href="/self-hosted/" aria-current="page">Self-host</a>
+      <a class="nav-cta" href="/support/">Support</a>
     </nav>
   </header>
-  <main>
-    <section class="shell guide-hero">
-      <div>
-        <span class="eyebrow">Optional · direct APNs relay</span>
-        <h1>Run Drel<br><span class="gradient-word">on your side.</span></h1>
-        <p class="lead">Drel can pair with an authorized relay and send to APNs. This page makes the trust boundary explicit: the stock Drel App cannot safely hand its APNs signing key to every deployment.</p>
-        <div class="actions"><a class="button primary" href="#start">Start the guide <span aria-hidden="true">→</span></a><a class="button secondary" href="#boundaries">Read the boundaries</a></div>
+
+  <div class="docs-shell">
+    <button class="docs-menu-toggle" type="button" onclick="document.getElementById('docsSidebar').classList.toggle('is-open')" aria-label="Toggle navigation menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Docs Menu</span>
+    </button>
+  </div>
+
+  <div class="docs-container">
+    <aside class="docs-sidebar" id="docsSidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-item">Overview</a>
+        <a href="/docs/app/" class="sidebar-item">Build an App <span class="sidebar-badge">Guide</span></a>
       </div>
-      <aside class="trust-card" aria-label="Self-hosted delivery path">
-        <span class="trust-label">AUTHORIZED DELIVERY PATH</span>
-        <ol class="trust-path">
-          <li><b>01</b><span>Your sender<br><small>script · automation · service</small></span></li>
-          <li><b>02</b><span>Authorized relay<br><small>your own signed App, or Drel managed signer</small></span></li>
-          <li><b>03</b><span>APNs<br><small>Apple delivery network</small></span></li>
-          <li><b>04</b><span>Your iPhone<br><small>Drel receives the alert</small></span></li>
-        </ol>
-      </aside>
-    </section>
-
-    <section class="shell guide-section" id="start">
-      <div class="guide-heading"><span class="eyebrow">What a new user needs</span><h2>Three basics.<br>One hard boundary.</h2></div>
-      <div class="requirements-grid">
-        <article><strong>01</strong><h3>A small Linux server</h3><p>It needs outbound HTTPS. A Cloudflare Tunnel is supported, so you do not need to expose port 443.</p></article>
-        <article><strong>02</strong><h3>Your HTTPS hostname</h3><p>For example <code>push.example.com</code>. The Drel app validates this address before it pairs.</p></article>
-        <article><strong>03</strong><h3>Drel on an iPhone</h3><p>Install Drel, then connect once through Settings → Self-hosted Push. Every iPhone receives a different address.</p></article>
-        <article><strong>04</strong><h3>Delivery authority</h3><p>Direct APNs needs a private signer authorized for the App's topic. A stock Drel installation cannot create that key on a user's Apple team.</p></article>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Native Capabilities</div>
+        <a href="/docs/bridge/" class="sidebar-item">Bridge API <span class="sidebar-badge highlight">v2</span></a>
+        <a href="/docs/push/" class="sidebar-item">Push API</a>
+        <a href="/compare/bark/" class="sidebar-item">Bark Migration</a>
       </div>
-      <p class="guide-note"><b>Current release state:</b> the relay protocol is being verified, but Drel will not publish its APNs private key. <code>push.drel.app</code> intentionally reports that APNs is not ready and refuses pairing. It never pretends to deliver a push it cannot send.</p>
-    </section>
-
-    <section class="guide-code-section">
-      <div class="shell guide-code-layout">
-        <div><span class="eyebrow">1 / deploy</span><h2>Keep the service<br>behind your hostname.</h2><p>The binary binds only to localhost. A Cloudflare Tunnel provides the public HTTPS address without opening an inbound firewall port. It still needs legitimate APNs signing authority before it can pair a phone.</p></div>
-        <pre class="terminal guide-terminal"><span class="comment"># advanced deployment: install an authorized relay</span>
-sudo install -m 0755 drel-selfhosted /usr/local/bin/
-sudo install -m 0644 drel-selfhosted.service /etc/systemd/system/
-
-<span class="comment"># add your public hostname, then start</span>
-sudo systemctl enable --now drel-selfhosted
-curl https://push.example.com/health
-
-<span class="comment"># expected only when delivery credentials are ready</span>
-<span class="value">{ "status": "ok", "apnsReady": true }</span></pre>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Container & Offline</div>
+        <a href="/docs/container/" class="sidebar-item">Web Container</a>
+        <a href="/docs/offline/" class="sidebar-item">Offline Packages</a>
+        <a href="/docs/versions/" class="sidebar-item">Versions & Contract</a>
       </div>
-    </section>
-
-    <section class="shell guide-section pairing-section">
-      <div class="guide-heading"><span class="eyebrow">2 / pair once</span><h2>Connect the<br>iPhone.</h2></div>
-      <div class="pairing-steps">
-        <div><span>1</span><p>Open <b>Drel → Settings → Self-hosted Push</b>.</p></div>
-        <div><span>2</span><p>Scan the deployment QR code, or paste <code>https://push.example.com</code>.</p></div>
-        <div><span>3</span><p>Drel checks the server health, creates an installation-only key, and registers its APNs token with <em>your</em> server.</p></div>
-        <div><span>4</span><p>Copy the generated push URL to the sender you trust. It is a capability: anyone holding it can alert this phone.</p></div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Deployment</div>
+        <a href="/self-hosted/" class="sidebar-item active">Self-Host Guide</a>
       </div>
-    </section>
-
-    <section class="shell guide-section send-section">
-      <div class="guide-heading"><span class="eyebrow">3 / send</span><h2>Choose the privacy<br>mode you need.</h2></div>
-      <div class="mode-grid">
-        <article class="mode-card primary-mode">
-          <span class="mode-tag">ADVANCED · OWN SIGNED APP</span><h3>Direct push</h3>
-          <p>A server with a valid private signer for its own Drel bundle receives the title, body, and optional URL, then sends it straight to APNs. This is the familiar Bark-style workflow.</p>
-          <pre><span class="comment"># use the address shown by Drel</span>
-curl -G "https://push.example.com/DEVICE_KEY/Build%20ready/Inspect%20the%20result" \
-  --data-urlencode "url=https://drel.app/"</pre>
-          <p class="mode-foot">Use it only when you own the corresponding Apple App ID, signing team, and Drel build. The server operator can read this request, so it is not zero-knowledge.</p>
-        </article>
-        <article class="mode-card">
-          <span class="mode-tag">PLANNED · STOCK DREL APP</span><h3>Encrypted push</h3>
-          <p>The sender fetches the iPhone's public key, encrypts before upload, and posts an opaque envelope. A Drel-managed APNs signer can deliver it without reading business content, but it still receives delivery metadata.</p>
-          <pre><span class="comment"># reference sender bundled with Drel</span>
-node drel-encrypt-and-push.mjs \
-  https://push.example.com DEVICE_KEY \
-  "Build ready" "Code 482901" \
-  https://drel.app/</pre>
-          <p class="mode-foot">This is the feasible privacy path for the stock App; it is not shipped yet. It avoids publishing a reusable APNs private key; read the trust boundaries below before planning a deployment.</p>
-        </article>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Interactive Demos</div>
+        <a href="/test/" class="sidebar-item">All Demos (/test)</a>
+        <a href="/test/actions/" class="sidebar-item">Native Actions</a>
+        <a href="/test/offline/" class="sidebar-item">Strong Offline</a>
+        <a href="/test/offline-network/" class="sidebar-item">Offline + Live Data</a>
+        <a href="/test/template/" class="sidebar-item">App Template</a>
       </div>
-    </section>
-
-    <section class="shell guide-section reset-section">
-      <div class="guide-heading"><span class="eyebrow">4 / rotate or leave</span><h2>A leaked address<br>is recoverable.</h2></div>
-      <div class="reset-grid">
-        <article><h3>Reset address</h3><p>In Drel, choose <b>Reset push address</b>. Drel removes the old registration, discards its local encryption identity, pairs again, and shows a new device address. Update trusted senders.</p></article>
-        <article><h3>Remove server</h3><p>Choose <b>Remove self-hosted server</b> to delete the local configuration and private encryption material. Drel asks the server to unregister the exact token/address pair first.</p></article>
-        <article><h3>Rotate APNs material</h3><p>Never distribute a Drel APNs private key. An advanced developer rotates their own topic-specific key; the stock Drel App uses a managed signer instead.</p></article>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Agent Tooling</div>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.2</span></a>
       </div>
-    </section>
+    </aside>
 
-    <section class="shell boundary-section" id="boundaries">
-      <span class="eyebrow">Trust boundaries</span><h2>What each key can — and cannot — do.</h2>
-      <div class="boundary-table" role="region" aria-label="Drel self-hosted trust boundaries" tabindex="0">
-        <table>
-          <thead><tr><th>Material</th><th>What it allows</th><th>What it does not allow</th><th>Recovery</th></tr></thead>
-          <tbody>
-            <tr><td>Device push address</td><td>Send an alert to that paired Drel installation.</td><td>Read message history, fetch an APNs token, or access the phone.</td><td>Reset the address in Drel.</td></tr>
-            <tr><td>Topic-specific APNs signer</td><td>Authenticate notification delivery for one bundle/topic.</td><td>Read notifications, access Apple accounts, or address arbitrary apps.</td><td>Keep private; its owning App team revokes and rotates it.</td></tr>
-            <tr><td>iPhone private key</td><td>Decrypt optional encrypted envelopes on that installation.</td><td>Send APNs notifications or be exported by the server.</td><td>Remove or reset the server connection.</td></tr>
-          </tbody>
-        </table>
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Drel</a><span>/</span><a href="/docs/">Docs</a><span>/</span><span style="color:var(--ink)">Self-host</span>
       </div>
-      <p class="guide-note">An APNs signer is still a private signing key. Topic restriction limits its blast radius, but a holder can forge alerts to known device tokens. Drel does not publish it. The stock App's privacy route must use sender-side encryption plus a managed signer; a truly independent direct relay requires the operator's own signed Drel bundle and App topic.</p>
-    </section>
-  </main>
-  <footer class="shell footer"><div class="footer-inner"><span>© 2026 Drel · Built with WebBridgeKit.</span><div class="footer-links"><a href="/">Home</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer>
+
+      <section class="docs-hero" style="border-bottom:1px solid var(--line); padding-bottom:32px;">
+        <span class="eyebrow">Deployment · three options</span>
+        <h1>Run Drel on your side.</h1>
+        <p>Pick the option that matches what you want to control. The three are independent — you can start with one and add another later, and your web app never changes.</p>
+      </section>
+
+      <div class="docs-main">
+        <section>
+          <h2>Choose your option</h2>
+          <div class="option-grid">
+            <article class="option-card">
+              <span class="option-tag">Option A</span>
+              <h3>Only the push relay</h3>
+              <p class="option-desc">Your own push address on your own hostname. Hosted apps and everything else keep working.</p>
+              <ul class="option-list">
+                <li>One Go binary, or one Docker image</li>
+                <li>Needs an APNs signer authorized for your topic</li>
+                <li>About 15 minutes</li>
+              </ul>
+              <a class="button secondary" href="#option-a">Read option A →</a>
+            </article>
+            <article class="option-card">
+              <span class="option-tag">Option B</span>
+              <h3>Only the gateway</h3>
+              <p class="option-desc">A private app market: app identity, strong offline packages, and the native actions you declare.</p>
+              <ul class="option-list">
+                <li>One Docker container (Swift server)</li>
+                <li>Needs an Ed25519 signing key</li>
+                <li>About 30 minutes</li>
+              </ul>
+              <a class="button secondary" href="#option-b">Read option B →</a>
+            </article>
+            <article class="option-card option-card-primary">
+              <span class="option-tag">Option C</span>
+              <h3>Both of them</h3>
+              <p class="option-desc">Fully off the hosted services: your own push and your own app market, on one host or split across two.</p>
+              <ul class="option-list">
+                <li>One host, or two independent deployments</li>
+                <li>Needs both an APNs signer and an Ed25519 key</li>
+                <li>About an hour</li>
+              </ul>
+              <a class="button secondary" href="#option-c">Read option C →</a>
+            </article>
+          </div>
+          <div class="docs-callout" style="margin-top:20px">
+            <strong>Which one?</strong> Ask two questions. Do you want to control <em>which apps can be installed on your phone</em>? That means option B. Do you want to control <em>where your notifications come from</em>? That means option A. Both means option C.
+          </div>
+        </section>
+
+        <section>
+          <h2>What you deploy it with</h2>
+          <p>Pick the runtime that matches your machine. The contract is identical either way, so you can move between them later.</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Shape</th><th>Stack</th><th>Best for</th><th>Needs a server?</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Go binary</strong> + systemd</td>
+                  <td>Go 1.23, static, 6 MB, push + gateway</td>
+                  <td>Any machine — recommended for new deployments</td>
+                  <td>Yes, one</td>
+                </tr>
+                <tr>
+                  <td><strong>Go binary</strong> + Docker</td>
+                  <td>Same binary, scratch image</td>
+                  <td>You want Compose but no dependencies</td>
+                  <td>Yes, one</td>
+                </tr>
+                <tr>
+                  <td><strong>Swift container</strong> + Caddy</td>
+                  <td>Swift 6 / Hummingbird</td>
+                  <td>Gateway, or both on one host — automatic TLS</td>
+                  <td>Yes, one</td>
+                </tr>
+                <tr>
+                  <td><strong>Swift container</strong> + Nginx</td>
+                  <td>Same image</td>
+                  <td>The host already runs Nginx</td>
+                  <td>Yes, one</td>
+                </tr>
+                <tr>
+                  <td><strong>Cloudflare Worker</strong></td>
+                  <td>Workers + Durable Objects</td>
+                  <td>Push only — no server at all</td>
+                  <td>Only for the gateway</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="docs-callout">
+            <strong>One 6 MB Go binary covers every option.</strong> Since 2026-10-23 the Go binary serves the gateway routes too — <code>/api/v1/gateway</code> and <code>/api/v1/html-apps</code> are built in, and its Ed25519 signatures are byte-compatible with the Swift implementation (independently verified with OpenSSL). The Swift container remains for existing deployments; new ones should pick Go. A Cloudflare Worker can still host the push half — see <code>infra/cloudflare/drel-api-proxy/</code>.
+          </div>
+          <pre class="docs-code"># Prepare everything in one step: the signing key, the env file,
+# the exact start command and the verification command
+bash tools/prepare-drel-deployment.sh both --domain push.example.com</pre>
+        </section>
+
+        <section>
+          <h2>Where every key lives</h2>
+          <p>Self-hosting raises the question of which secret sits on which side. The short answer: <strong>every private key is generated once and stays where it was created</strong>. Nothing in the handshake below sends a private key over the wire.</p>
+          <figure class="docs-figure">
+            <img src="/assets/diagrams/key-trust-sequence.svg" alt="Drel key and trust sequence. Phase 1: the phone generates its device key and its X25519 encryption key pair, and keeps the private half. Phase 2: the phone asks the relay for a single-use pairing ticket, then registers its APNs token, device key and public encryption key. Phase 3: the sender posts to the address, the relay signs a provider JWT locally with its APNs .p8 key, and Apple APNs delivers over HTTP/2. Phase 4: the gateway serves the signed manifest and the phone verifies it with the Ed25519 public key.">
+            <figcaption><b>The four secrets, and where each one stays.</b> The X25519 private key never leaves the phone keychain. The APNs <code>.p8</code> never leaves your relay. The Ed25519 private key never leaves your gateway. The pairing ticket is single use and short lived. The relay stores only your <em>public</em> encryption key.</figcaption>
+          </figure>
+        </section>
+
+        <section>
+          <h2>Two facts that decide the architecture</h2>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Fact</th><th>Consequence</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Only the Swift server can act as a gateway</td>
+                  <td>The Go relay has no <code>/api/v1/html-apps</code> and no <code>/api/v1/gateway</code>. Option B and the gateway half of option C need the Swift server.</td>
+                </tr>
+                <tr>
+                  <td>The Swift server serves both roles from one process</td>
+                  <td>Option C on a single host is a single container, not two. Split it only when different teams own the two jobs.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <figure class="docs-figure">
+            <img src="/assets/diagrams/deployment-topology.svg" alt="Two deployment topologies. A: one host with Nginx, the WebBridgeServer, the admin console and APNs, sharing a single domain and certificate. B: separated, with a static gateway behind a Cloudflare Tunnel on one side and a Go push relay on the other.">
+            <figcaption><b>Both shapes speak the same contract.</b> Your web app never talks to either of them, so a deployment can move from one shape to the other without touching the app.</figcaption>
+          </figure>
+        </section>
+
+        <section id="option-a">
+          <h2>Option A · Push relay only</h2>
+          <p>You get an address like <code>https://push.example.com/<your-key></code> that works in any Bark-compatible script. Hosted apps, the hosted gateway and the official push service stay as they are.</p>
+          <pre class="docs-code"># Build the static Linux binary on a development machine
+bash tools/build-drel-selfhosted-native.sh
+scp Server/native/dist/drel-selfhosted root@server:/usr/local/bin/
+scp Server/native/drel-selfhosted.service root@server:/etc/systemd/system/
+
+# /etc/drel-selfhosted/drel-selfhosted.env
+DREL_LISTEN_ADDR=127.0.0.1:8080
+DREL_SELF_HOSTED_PUBLIC_BASE_URL=https://push.example.com
+DREL_DATA_DIR=/var/lib/drel-selfhosted
+APNS_ENVIRONMENT=production
+APNS_TOPIC=com.webbridgekit.superapp
+APNS_KEY_ID=your-key-id
+APNS_TEAM_ID=your-team-id
+APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_your-key-id.p8
+
+systemctl daemon-reload && systemctl enable --now drel-selfhosted
+curl https://push.example.com/health   # apnsReady must be true</pre>
+          <div class="docs-callout">
+            <strong>Prefer a Cloudflare Tunnel.</strong> The service listens on <code>127.0.0.1</code> only, so you never open port 443 or 8080 to the internet. If the host already runs Nginx, use <code>Server/nginx/drel-self-hosted.conf.template</code> instead.
+          </div>
+          <div class="docs-callout">
+            <strong>The APNs authority boundary.</strong> Direct APNs delivery needs a signer authorized for the app's topic. A stock Drel build cannot use a key from a different Apple team — so a fully independent relay requires your own signed Drel build and your own topic-specific <code>.p8</code>. Without a valid key the relay reports <code>apnsReady: false</code> and refuses pairing, which is the correct behaviour.
+          </div>
+        </section>
+
+        <section id="option-b">
+          <h2>Option B · Gateway only</h2>
+          <p>You keep using any compatible push relay, but you control app identity, strong offline packages and native action declarations. The phone then trusts only the manifests you signed.</p>
+          <pre class="docs-code"># Generate the signing key
+openssl genpkey -algorithm ed25519 -out gateway-ed25519.pem
+openssl pkey -in gateway-ed25519.pem -outform DER 2>/dev/null \
+  | tail -c 32 | base64 | tr '+/' '-_' | tr -d '='
+# -> GATEWAY_PRIVATE_KEY
+
+# Server/.env
+ADMIN_API_KEY=<custom admin key>
+GATEWAY_ID=example-gateway
+GATEWAY_NAME=Example Team Gateway
+GATEWAY_PUBLIC_BASE_URL=https://hub.example.com
+GATEWAY_KEY_ID=gw-2026-10-23
+GATEWAY_PRIVATE_KEY=<generated>
+
+cd Server && docker compose -f docker-compose.self-hosted.yml up -d
+
+curl https://hub.example.com/api/v1/gateway
+# -> { "publicKeyId": "gw-2026-10-23", "publicKey": "..." }</pre>
+          <p>Register an app, then import the gateway on the phone. The client verifies the health endpoint, the response origin, every manifest, the origin restrictions, the key id and the signature — and saves nothing until you confirm.</p>
+        </section>
+
+        <section id="option-c">
+          <h2>Option C · Both</h2>
+          <h3>C1 · One host</h3>
+          <p>Because the Swift server registers the gateway routes and the push routes together, this is one container with one hostname.</p>
+          <pre class="docs-code"># Server/.env — gateway settings plus APNs settings
+ADMIN_API_KEY=<management key>
+GATEWAY_KEY_ID=gw-2026-10-23
+GATEWAY_PRIVATE_KEY=<generated>
+GATEWAY_PUBLIC_BASE_URL=https://hub.example.com
+
+APNS_KEY_ID=your-key-id
+APNS_TEAM_ID=your-team-id
+APNS_KEY_PATH=/run/secrets/drel/AuthKey_your-key-id.p8
+APNS_TOPIC=com.webbridgekit.superapp
+APNS_ENVIRONMENT=production
+
+cd Server && docker compose -f docker-compose.self-hosted.yml up -d</pre>
+          <p>That one hostname then serves the push address, the app manifests and the health check. The optional Node admin console adds a graphical push console at <code>/admin-push</code> with a device list.</p>
+
+          <h3>C2 · Split hosts</h3>
+          <p>Run the Swift server for the gateway on one host and the Go relay for push on another. The phone imports each address separately, so an outage in one does not affect the other. Use this when different teams own the two jobs.</p>
+        </section>
+
+        <section>
+          <h2>Pair the phone</h2>
+          <p>For each deployment, open <b>Drel → Settings</b> and import the address. The client validates it and shows a report before anything is saved.</p>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>What you deployed</th><th>Where to import it</th><th>What you get</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Option A</td><td>Settings → Self-hosted push</td><td>A push address on your own hostname</td></tr>
+                <tr><td>Option B</td><td>Settings → Gateway</td><td>Your own signed app list</td></tr>
+                <tr><td>Option C</td><td>Both screens</td><td>Two independent trust relationships</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="docs-callout">
+            <strong>Changing a gateway drops the old grants.</strong> Switching the origin or the public key identity clears the capability grants of the apps verified under the previous gateway, so a permission never follows to a new identity.
+          </div>
+        </section>
+
+        <section>
+          <h2>Let an agent do it</h2>
+          <p>The Drel skill includes the full deployment procedure — the environment variables, the compose files, the pairing flow and the safety boundaries.</p>
+          <pre class="docs-code">npx skills add dyyz1993/Drel --skill drel-app-development</pre>
+          <p>Then tell the agent which option you want, for example <em>“help me deploy option C on one host”</em>. Read the <a href="/skills/drel-app-development/">skill page</a> for the manual import path.</p>
+        </section>
+
+        <section>
+          <h2>Safety boundaries</h2>
+          <div class="docs-table">
+            <table>
+              <thead>
+                <tr><th>Material</th><th>Allows</th><th>Does not allow</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Device push address</td><td>Alert that one Drel installation</td><td>Read message history, fetch an APNs token, or reach the phone</td></tr>
+                <tr><td>Topic-scoped APNs signer</td><td>Authenticate delivery for one bundle</td><td>Read notifications or address arbitrary apps</td></tr>
+                <tr><td>iPhone private key</td><td>Decrypt encrypted envelopes on that device</td><td>Send APNs notifications or be exported by the server</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Never publish the APNs <code>.p8</code>. A gateway configuration carries public endpoints and a public key only — never an APNs token, device key, API secret, admin token or password.</p>
+        </section>
+
+        <div class="docs-pagination">
+          <a href="/docs/" class="pagination-card prev">
+            <span class="pagination-label">Previous</span>
+            <span class="pagination-title">← Overview</span>
+          </a>
+          <a href="/skills/drel-app-development/" class="pagination-card next">
+            <span class="pagination-label">Next</span>
+            <span class="pagination-title">Agent Skill →</span>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="docs-shell footer">
+    <div class="footer-inner">
+      <span>© 2026 Drel · Built with WebBridgeKit.</span>
+      <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
+    </div>
+  </footer>
 </body>
 </html>

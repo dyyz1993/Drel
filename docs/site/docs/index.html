@@ -66,7 +66,7 @@
       </div>
       <div class="sidebar-group">
         <div class="sidebar-group-title">Agent Tooling</div>
-        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.1</span></a>
+        <a href="/skills/drel-app-development/" class="sidebar-item">Drel Skill <span class="sidebar-badge">v1.2</span></a>
       </div>
     </aside>
 
@@ -79,9 +79,23 @@
         <span class="eyebrow">Developer documentation</span>
         <h1>Build against a small, explicit contract.</h1>
         <p>Drel is an iPhone push utility and focused web container. These docs distinguish what is available now from future work, so your integration does not depend on WebKit cache, undocumented fields, or ungranted native privileges.</p>
+        <div class="skill-install" aria-labelledby="skill-docs-title">
+          <div>
+            <span id="skill-docs-title">Teach your AI agent the Drel development contract · Skill v1.2</span>
+            <code>npx skills add dyyz1993/Drel --skill drel-app-development</code>
+          </div>
+          <button class="copy-command" type="button" data-copy-command="npx skills add dyyz1993/Drel --skill drel-app-development" aria-label="Copy skill command">Copy command</button>
+          <span class="copy-status" aria-live="polite"></span>
+        </div>
       </section>
 
       <div class="docs-main">
+        <section>
+          <h2>Send a test push</h2>
+          <p>Paste the push address copied from Drel, pick what to send, and try it. The official address and a self-hosted address have the same shape, so the same box covers both — the request leaves your browser and goes straight to the server in that address, and nothing is stored on this page.</p>
+          <div class="playground" data-playground data-endpoint="https://api.drel.app/push" data-official="https://api.drel.app"></div>
+        </section>
+
         <section>
           <h2>Start here</h2>
           <div class="docs-grid">
@@ -111,11 +125,25 @@
               <a href="/docs/offline/">Read offline packages →</a>
             </article>
             <article class="docs-card">
+              <h3>Run it yourself</h3>
+              <p>Self-host the push relay, the gateway, or both on your own infrastructure. Three options, pick one.</p>
+              <a href="/self-hosted/">Choose an option →</a>
+            </article>
+            <article class="docs-card">
               <h3>Give an agent the contract</h3>
               <p>The versioned Drel app-development skill contains templates, checks and non-negotiable boundaries.</p>
               <a href="/skills/drel-app-development/">Read the skill →</a>
             </article>
           </div>
+        </section>
+
+        <section>
+          <h2>How the pieces fit together</h2>
+          <p>Your app, the gateway and the push relay are three separate things. The app never depends on either of the other two — the gateway only provides app identity, and the relay only delivers a wake-up.</p>
+          <figure class="docs-figure">
+            <img src="/assets/diagrams/system-architecture.svg" alt="Drel system architecture: your web app loads in the phone's web container; the optional gateway signs app manifests; the optional push relay forwards to Apple APNs, which wakes the app.">
+            <figcaption><strong>Read it as three independent parts.</strong> Your web app is a plain page on any static host. The gateway is optional and only supplies signed app identity. The push relay is optional and only carries a message. Either of the latter two can be self-hosted, and the two can share a host or run apart.</figcaption>
+          </figure>
         </section>
 
         <section>
@@ -159,5 +187,6 @@
       <div class="footer-links"><a href="/docs/">Docs</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></div>
     </div>
   </footer>
+  <script src="/assets/site.js"></script>
 </body>
 </html>
