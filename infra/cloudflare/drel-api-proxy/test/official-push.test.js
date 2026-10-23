@@ -169,13 +169,16 @@ test("a push to a registered key delivers to APNs and records history", async ()
   // the registry instance regardless of scheme/host. The production runtime
   // converts string inputs into Request objects, so the mock does too.
   const inner = registry.fetch.bind(registry);
-  registry.fetch = (input, init) => {
+  registry.fetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
     const url = new URL(request.url);
+    // Small JSON bodies only in these tests; buffering avoids undici's
+    // duplex requirement when re-wrapping a streamed request body.
+    const body = request.body ? await request.text() : undefined;
     return inner(new Request(`https://registry${url.pathname}${url.search}`, {
       method: request.method,
       headers: request.headers,
-      body: request.body,
+      body,
     }));
   };
   void env;
@@ -270,4 +273,64 @@ test("the registry stores device lookups and bounded history", async () => {
   const historyKey = "messages:k1";
   assert.equal(map.get(historyKey).length, 200);
   assert.equal(map.get(historyKey)[0].id, "m5");
+});
+
+test("reserved paths never parse as push keys", async () => {
+  const env = testEnv();
+  for (const path of ["/ws/stream", "/ws/push", "/message/1", "/favicon.ico", "/robots.txt", "/api/v1/approvals/x"]) {
+    const response = await handleOfficialPush(
+      new Request(`https://edge${path}`, { method: "GET" }),
+      env
+    );
+    // Reserved paths fall through to the upstream proxy (null), or answer
+    // from an explicit handler — but they must NEVER become a bark push.
+    const text = response ? await response.text() : "fall-through";
+    assert.ok(
+      !text.includes("no paired recipient"),
+      `${path} was treated as a push key`
+    );
+  }
+});
+
+test("the migration import requires the admin key", async () => {
+  const env = testEnv({ ADMIN_API_KEY: "import-admin-key" });
+  const response = await handleOfficialPush(
+    new Request("https://edge/api/v1/admin/import-registrations", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer wrong" },
+    }),
+    env
+  );
+  assert.equal(response.status, 401);
+});
+
+test("import accepts an authorized bulk upload", async () => {
+  const { state } = mockStorage();
+  const registry = new OfficialPushRegistry(state, testEnv());
+  const namespace = { idFromName: () => "id", get: () => registry };
+  const env = testEnv({ ADMIN_API_KEY: "import-admin-key", OFFICIAL_PUSH_REGISTRY: namespace });
+  const inner = registry.fetch.bind(registry);
+  registry.fetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    const url = new URL(request.url);
+    // Small JSON bodies only in these tests; buffering avoids undici's
+    // duplex requirement when re-wrapping a streamed request body.
+    const body = request.body ? await request.text() : undefined;
+    return inner(new Request(`https://registry${url.pathname}${url.search}`, {
+      method: request.method,
+      headers: request.headers,
+      body,
+    }));
+  };
+  const response = await handleOfficialPush(
+    new Request("https://edge/api/v1/admin/import-registrations", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer import-admin-key" },
+      body: JSON.stringify({ devices: [
+        { deviceKey: "k", deviceToken: "t", createdAt: 1 },
+      ] }),
+    }),
+    env
+  );
+  assert.equal(response.status, 200);
 });
