@@ -334,3 +334,30 @@ test("import accepts an authorized bulk upload", async () => {
   );
   assert.equal(response.status, 200);
 });
+
+test("register accepts the official app's {deviceToken, key} field names", async () => {
+  const { state } = mockStorage();
+  const registry = new OfficialPushRegistry(state, testEnv());
+  const namespace = { idFromName: () => "id", get: () => registry };
+  const env = testEnv({ OFFICIAL_PUSH_REGISTRY: namespace });
+  const inner = registry.fetch.bind(registry);
+  registry.fetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    const url = new URL(request.url);
+    const body = request.body ? await request.text() : undefined;
+    return inner(new Request(`https://registry${url.pathname}${url.search}`, {
+      method: request.method, headers: request.headers, body,
+    }));
+  };
+  const response = await handleOfficialPush(
+    new Request("https://edge/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deviceToken: "tok-official", key: "key-official" }),
+    }),
+    env
+  );
+  assert.equal(response.status, 200);
+  const stored = await registry.fetch(new Request("https://registry/device?key=key-official"));
+  assert.equal((await stored.json()).deviceToken, "tok-official");
+});
