@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
+	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -30,8 +31,15 @@ import (
 
 const (
 	envelopeSchema = "drel.push-envelope.v1"
-	serverVersion  = "2026.10.23-go"
+	// 2026-10-24: add the /self-hosted/pair QR pairing page.
+	serverVersion = "2026.10.24-go"
 )
+
+// qrcode-generator 1.4.4 (MIT) renders the pairing code client-side without
+// taking a Go module dependency for one page.
+//
+//go:embed qr.min.js
+var qrLibraryJS string
 
 type config struct {
 	ListenAddr        string
@@ -754,7 +762,7 @@ func (s *server) health(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 func (s *server) descriptor(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"schema": "drel.self-hosted-push.v1", "name": s.cfg.Name, "publicBaseURL": s.cfg.PublicURL, "registrationPath": "/self-hosted/register", "pairingPath": "/self-hosted/pairings", "recipientPath": "/self-hosted/recipients/{deviceKey}", "pushPath": "/push", "unregisterPath": "/unregister", "healthPath": "/health", "deliveryModes": []string{"direct", "encrypted"}})
+	writeJSON(w, http.StatusOK, map[string]any{"schema": "drel.self-hosted-push.v1", "name": s.cfg.Name, "publicBaseURL": s.cfg.PublicURL, "registrationPath": "/self-hosted/register", "pairingPath": "/self-hosted/pairings", "pairingPagePath": "/self-hosted/pair", "recipientPath": "/self-hosted/recipients/{deviceKey}", "pushPath": "/push", "unregisterPath": "/unregister", "healthPath": "/health", "deliveryModes": []string{"direct", "encrypted"}})
 }
 
 func (s *server) gatewayConfig(w http.ResponseWriter, r *http.Request) {
@@ -1021,6 +1029,37 @@ func (s *server) barkPush(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"code": 200, "message": "direct push accepted", "messageId": messageID})
 }
 
+// servePairingPage mints a one-time pairing ticket and renders the QR code a
+// phone can scan in Drel: Settings → 推送通道 → 添加或管理自定义通道 →
+// 扫描配置码. Refreshing the page simply mints a fresh ticket; outstanding
+// tickets expire on their own, so no logout or cleanup surface is needed.
+func (s *server) servePairingPage(w http.ResponseWriter, r *http.Request) {
+	if s.apns == nil {
+		writeError(w, http.StatusServiceUnavailable, "APNs is not configured")
+		return
+	}
+	token, expiry, err := s.store.issue(clientIP(r))
+	if err != nil {
+		writeError(w, http.StatusTooManyRequests, err.Error())
+		return
+	}
+	configurationURL := "drel://self-hosted-push?server=" + url.QueryEscape(s.cfg.PublicURL) + "&token=" + token
+	if r.URL.Query().Get("format") == "json" {
+		writeJSON(w, 200, map[string]any{
+			"schema":          "drel.self-hosted-pairing.v1",
+			"pairingToken":    token,
+			"expiresAt":       expiry.UTC().Format(time.RFC3339),
+			"configurationURL": configurationURL,
+		})
+		return
+	}
+	escapedCode := html.EscapeString(configurationURL)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	page := `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Drel Pairing</title><style>body{font:16px system-ui;background:#f5f7fb;color:#172033;margin:0}.wrap{max-width:560px;margin:auto;padding:48px 20px}.card{background:white;border-radius:24px;padding:28px;box-shadow:0 18px 60px #17203318}h1{margin-top:0}.muted{color:#697386}code{overflow-wrap:anywhere}.qr{width:264px;height:264px;margin:18px auto;background:white;border:1px solid #e3e7ef;border-radius:16px;display:flex;align-items:center;justify-content:center}.qr svg{width:88%;height:88%}button{border:0;border-radius:999px;padding:13px 20px;background:#5b5cf0;color:white;font-weight:700;width:100%}ol{padding-left:20px}a{color:#4d50d8}</style></head><body><main class="wrap"><section class="card"><p class="muted">Drel self-hosted push</p><h1>Pair this phone</h1><ol><li>Open <strong>Drel</strong> on the phone</li><li><strong>设置</strong> → <strong>推送通道</strong></li><li><strong>添加或管理自定义通道</strong></li><li><strong>扫描配置码</strong> — point it at the code below</li></ol><div id="qr" class="qr"><p class="muted">rendering…</p></div><p class="muted">The ticket expires <span id="exp"></span>. Refresh this page for a new one.</p><p><code>` + escapedCode + `</code></p><button id="copy">Copy configuration code</button><p id="result" class="muted"></p><hr><p><a href="https://drel.app/self-hosted/">Self-hosting guide</a> · <a href="?format=json">JSON</a></p></section></main><script>` + qrLibraryJS + `</script><script>const configURL=` + fmt.Sprintf("%q", configurationURL) + `;try{const q=qrcode(0,"M");q.addData(configURL);q.make();document.getElementById("qr").innerHTML=q.createSvgTag({cellSize:6,margin:2,scalable:true});}catch(e){document.getElementById("qr").innerHTML="<p class=muted>QR failed to render; use the code below.</p>"}document.getElementById("exp").textContent=new Date(` + fmt.Sprintf("%q", expiry.UTC().Format(time.RFC3339)) + `).toLocaleString();document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(configURL);result.textContent="Copied."}catch(e){result.textContent="Copy failed; select the code manually."}};</script></body></html>`
+	_, _ = w.Write([]byte(page))
+}
+
 func (s *server) pushDiscovery(w http.ResponseWriter, r *http.Request, key string, markdownPath bool) {
 	if _, ok := s.store.recipient(key); !ok {
 		writeError(w, http.StatusNotFound, "no paired recipient")
@@ -1183,6 +1222,7 @@ func (s *server) handler() http.Handler {
 	mux.HandleFunc("/health", s.health)
 	mux.HandleFunc("/.well-known/drel-push.json", s.descriptor)
 	mux.HandleFunc("/self-hosted/pairings", method(http.MethodPost, s.createPairing))
+	mux.HandleFunc("/self-hosted/pair", method(http.MethodGet, s.servePairingPage))
 	mux.HandleFunc("/self-hosted/register", method(http.MethodPost, s.register))
 	mux.HandleFunc("/self-hosted/recipients/", method(http.MethodGet, s.recipient))
 	mux.HandleFunc("/push", method(http.MethodPost, s.push))
