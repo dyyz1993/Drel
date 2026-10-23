@@ -1,0 +1,58 @@
+%% Drel release flow sequence: gates, recorded approval, publish surfaces, rollback
+%% Source of truth: docs/diagrams/release-flow.mmd
+sequenceDiagram
+    autonumber
+    participant D as Maintainer
+    participant E as Evidence archive<br/>docs/testing/results/
+    participant G as GitHub main + CI
+    participant W as CF Worker<br/>api.drel.app
+    participant T as TestFlight
+    participant U as Acceptor (you)
+    participant P as CF Pages site
+    participant S as Self-hosted server
+
+    rect rgb(245,247,251)
+    Note over D,E: 1. Gates and evidence (both pass and fail are archived)
+    D->>D: bump project.yml version+build<br/>CHANGELOG entry with Scope/Verified/Evidence
+    D->>D: verify-release-notes / identity<br/>docs-links / repo-hygiene / release-gate
+    alt a gate fails
+        D->>E: the failure report is archived too
+        D->>D: fix, then start over
+    else all green
+        D->>E: release-drel.sh tag then test<br/>report + recording + evidence archived
+    end
+    end
+
+    rect rgb(253,245,230)
+    Note over D,U: 2. Acceptance (the release decision is yours)
+    E-->>U: test report + TestFlight build
+    U->>U: accept on a real device<br/>push, sound, lock screen
+    alt rejected
+        U-->>D: send back (evidence stays, no rerun)
+        D->>D: fix, tag and test again
+    else accepted
+        U-->>E: confirm --approved-by "you"<br/>the approver is written into the report
+        Note over E: without a recorded approval<br/>publish refuses to run
+    end
+    end
+
+    rect rgb(238,243,255)
+    Note over D,S: 3. Publishing (one automatic surface, three manual)
+    D->>G: git push main
+    G->>G: CI gates: conventions, release purity,<br/>design lint, smoke tests
+    alt drel-api-proxy changed
+        G->>W: automatic wrangler deploy
+    end
+    D->>T: publish the TestFlight build (manual)
+    D->>P: local preview accepted, then publish (manual)
+    D->>S: bump ServerVersion, rsync, restart,<br/>verify /health (manual)
+    D->>G: push tag v(ver)+(build)
+    end
+
+    rect rgb(255,240,240)
+    Note over D,S: 4. Rollback (every layer has a path)
+    D->>W: wrangler rollback<br/>(code rolls back, DO data does not)
+    D->>T: disable the broken build,<br/>previous builds stay installable
+    D->>P: Pages instant rollback
+    D->>S: restore the previous binary / conf backup
+    end
