@@ -1013,7 +1013,27 @@ final class PWAAppCenterViewController: UIViewController {
     }
 
     private func makeBarkURL(title: String, body: String, queryItems: [URLQueryItem]) -> URL? {
-        PushExample.requestURL(
+        // 测试发送、复制、铃声试听必须跟随当前选中的推送通道；固定用官方
+        // 地址会让自建通道下的一切按钮静默打到官方服务（2026-10-23 模拟器
+        // 实测：切到自建后发送测试仍访问 api.drel.app）。
+        let channel = DrelPushChannelStore.shared
+            .activeChannel(officialPushURL: officialPushURL)
+        guard channel.isOfficial else {
+            // 自建通道的 pushURL 就是完整 Bark 基址 https://host/<deviceKey>，
+            // 拆成 base + key 交给同一个构造器。
+            guard let lastSlash = channel.pushURL.lastIndex(of: "/") else { return nil }
+            let base = String(channel.pushURL[..<lastSlash])
+            let key = String(channel.pushURL[channel.pushURL.index(after: lastSlash)...])
+            return PushExample.requestURL(
+                id: "",
+                title: title,
+                body: body,
+                queryItems: queryItems,
+                baseURL: base,
+                pushIdentity: key
+            )
+        }
+        return PushExample.requestURL(
             id: "",
             title: title,
             body: body,
