@@ -455,11 +455,17 @@ export async function handleOfficialPush(request, env) {
     const parsed = parseBarkPath(path);
     if (parsed) {
       const input = queryPushRequest(parsed.key, url.searchParams);
+      // The path carries the primary title/body; query parameters only fill
+      // what the path leaves out. Apply the path segments BEFORE the
+      // discovery check, or every /:key/:title/:body GET looks like a bare
+      // key and falls into the discovery document instead of pushing — the
+      // app's in-app test send hit exactly that and reported success on the
+      // 200 markdown response while nothing was ever delivered.
+      if (parsed.title) input.title = parsed.title;
+      if (parsed.body) input.body = parsed.body;
       if (!input.title && !input.body && !input.url) {
         return pushDiscovery(request, parsed, input);
       }
-      if (parsed.title) input.title = parsed.title;
-      if (parsed.body) input.body = parsed.body;
       if (!input.title && !input.body) {
         return failure(400, "a direct push needs a title, body, or supported action");
       }

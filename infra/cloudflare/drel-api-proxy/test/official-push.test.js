@@ -213,6 +213,74 @@ test("a push to a registered key delivers to APNs and records history", async ()
   void deliveries;
 });
 
+test("a bark path GET with a title and body pushes instead of serving discovery", async () => {
+  // Regression: the discovery check used to read only the query fields, so
+  // every /:key/:title/:body GET — the form the app's in-app test send and
+  // every Bark-style curl uses — answered with the discovery document (HTTP
+  // 200, non-JSON) and nothing was ever delivered. The path title/body must
+  // be applied before the bare-key discovery decision.
+  const { state } = mockStorage();
+  const registry = new OfficialPushRegistry(state, testEnv());
+  await registry.fetch(
+    new Request("https://registry/device", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deviceKey: "realkey1", deviceToken: "tok", platform: "iOS" }),
+    })
+  );
+
+  const namespace = { idFromName: () => "test-id", get: () => registry };
+  const inner = registry.fetch.bind(registry);
+  registry.fetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    const url = new URL(request.url);
+    const body = request.body ? await request.text() : undefined;
+    return inner(new Request(`https://registry${url.pathname}${url.search}`, {
+      method: request.method,
+      headers: request.headers,
+      body,
+    }));
+  };
+
+  // A genuine P-256 key so the ES256 provider JWT signs for real.
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const env = testEnv({
+    OFFICIAL_PUSH_REGISTRY: namespace,
+    APNS_AUTH_KEY_P8: privateKey.export({ format: "pem", type: "pkcs8" }),
+  });
+
+  const deliveries = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    deliveries.push({ url: String(url), body: init?.body ? JSON.parse(init.body) : null });
+    return { ok: true, status: 200, text: async () => "" };
+  };
+  try {
+    const response = await handleOfficialPush(
+      new Request("https://edge/realkey1/%E6%B5%8B%E8%AF%95/path-form-test"),
+      env
+    );
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") || "", /json/);
+    const body = await response.json();
+    assert.equal(body.code, 200);
+    assert.equal(body.accepted, 1);
+    assert.equal(deliveries.length, 1, "the path form must reach APNs exactly once");
+    assert.equal(deliveries[0].body.aps.alert.title, "测试");
+    assert.equal(deliveries[0].body.aps.alert.body, "path-form-test");
+
+    // A bare key still serves the discovery document and pushes nothing.
+    deliveries.length = 0;
+    const discovery = await handleOfficialPush(new Request("https://edge/realkey1"), env);
+    assert.match(discovery.headers.get("content-type") || "", /markdown/);
+    assert.match(await discovery.text(), /Drel Push Discovery/);
+    assert.equal(deliveries.length, 0);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
 test("deliverPlainAPNs posts the payload to Apple over the right shape", async () => {
   const env = testEnv();
   // Use a genuine P-256 key so the ES256 JWT signs for real.

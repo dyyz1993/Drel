@@ -280,3 +280,89 @@ managed-push；(2) APNS_TOPIC 的值与目标 App 的 bundle id 是否一致；(
 - Revalidation: 若新增中转模式再修订
 - Validation: verified; Last-Validated: 2026-10-23; Evidence: main.go 直连代码 + rebrand 产物编译成功（bundle id/scheme 已验证，官方标识 0 残留）
 - Disposition: retain; Application: applied
+
+---
+
+## L-20261023-05 设备 key 含控制字符会被 CF WAF 拦截，注册时必须校验
+
+**Area**: server
+**Status**: resolved
+**Recurrence-Count**: 1
+**First-Seen**: 2026-10-23
+**Last-Seen**: 2026-10-23
+
+**Insight**: 一个历史遗留设备 key 含控制字符 `\x1F`（81 字符，形如
+`yfkp...\x1F994...`，疑似旧 Bark 迁移时的复合值）。App 的测试发送走
+Bark URL 路径（`GET /{key}/{title}/{body}`），key 中的控制字符被
+percent-encode 成 `%1F`，**Cloudflare WAF 视为路径遍历直接 403**——请求
+根本到不了 Worker，且 tail 无日志（拦在 Worker 之前），表现为"静默不达"。
+而 POST /push（key 在 JSON body 里）不受 WAF 影响，Apple 正常受理。
+
+**Why**: URL 路径中的控制字符是典型路径遍历特征，CF 托管 WAF 默认拦截。
+排查时 wrangler tail 完全无请求记录是关键线索——说明请求死在 Worker 之前。
+
+**How to apply**: (1) 边缘与 Go 的 /register 都已加 key 校验
+（6-128 位 `[A-Za-z0-9_-]`），脏 key 在注册时即被 400 拒绝并提示重置推送
+地址；(2) 用户修复方式：App 设置里把推送 key 重置为干净的随机值；(3) 排查
+"发送成功但收不到"时，若 tail 无日志，先怀疑 WAF/边缘拦截而非投递失败；
+(4) 迁移注册表时对 key 做同样校验，脏 key 不导入。
+**Recurrence 补充（同日）**：CF 边缘还有第二层同类拦截——**Bot 防护会按
+User-Agent 拦请求**（Python urllib 默认 UA 直接 403，curl 正常）。脚本化
+调用 api.drel.app 一律用 curl 或带真实浏览器 UA；用 urllib/requests 裸调
+被 403 时先换 UA 重试，别误判成服务端故障。
+
+**Recurrence 补充（同日，迁移导入错误）**：旧 Swift 服务器把注册记录存成
+**复合键** `userKey\x1FdeviceToken`（同一把用户 key 可绑多台设备）。迁移导入时
+我把整个复合串当成了 deviceKey——而用户 App 里显示/存储的只是 `\x1F` 前面的
+部分（16 位干净 key）。用户纠正"这个是我的 key，不需要换"后核实：
+App 端 key 本来就干净，`\x1F` 只存在于服务器存储；正确修法是把用户现有
+token 在边缘注册到**原 key** 下（POST /register {deviceToken, key}），而非让
+用户换 key。教训：**迁移存储格式前，先确认"用户可见的标识"与"服务器内部
+存储形式"的区别**；多设备共享 key 时复合键= key\x1Ftoken。
+
+**Context Maintenance**
+- Decay-Type: practice
+- Decay-Rate: durable
+- Authority: 线上 wrangler tail 无请求 + curl 直现 403 + 用户纠正（key 不换）；Owner: Drel 服务端
+- Revalidation: 若 CF WAF 规则变化再评估
+- Validation: verified; Last-Validated: 2026-10-23; Evidence: 官方 /register 线上实测 + 用户原 key 16 位推送 200 accepted
+- Disposition: retain; Application: applied
+
+## L-20261023-06 Worker bark 路径推送被 discovery 分支拦截；200 非_json 响应不能报成功
+
+**Area**: server + app
+**Status**: resolved
+**Recurrence-Count**: 1
+**First-Seen**: 2026-10-23
+**Last-Seen**: 2026-10-23
+
+**Insight**: 用户反馈"点 App 内『发送测试通知』收不到，但外部推送能收到"。
+真根因（与 L-05 的 WAF 问题不同层）：边缘 Worker 的 bark 路由里，
+discovery（介绍页）判断只看 query 参数，而路径段 `/{key}/{title}/{body}`
+的 title/body 是**之后**才合并的——所以一切 Bark 路径形式 GET 全部落入
+discovery 分支，返回 HTTP 200 + markdown 介绍页，推送从未发出。而 App 的
+`sendDrelTestPush` 拿到 200、JSON 解析失败后**静默跳过失败分支报"已发送"**，
+把路由 bug 遮蔽了一整天。用户的自动化推送走 POST /push / query 形式不受影响，
+形成"别人推得动、App 自己推不动"的假象。
+
+**Why**: (1) "先判断后合并"的顺序错误使路径段永远不参与判定；(2) 客户端把
+"HTTP 200"等价于"推送成功"，而 Bark 兼容路由的投递结论只在 JSON body 里
+（code/accepted），200 的非 JSON 响应恰恰说明请求没命中推送路由。
+
+**How to apply**: (1) Worker official-push.js：parsed.title/body 必须在
+discovery 判断**之前**应用（已修复并部署，回归测试锁定：
+"a bark path GET with a title and body pushes instead of serving discovery"）；
+(2) Go 端 barkPush 无此 bug（discovery 仅 len(parts)==1 触发），跨端实现
+同一路由协议时要逐端对照测试三种形式：路径 / query / JSON；(3) 客户端判定
+投递成功必须要求"可解析 JSON 且 code==200"，else 一律报失败（PWAAppCenter
+sendDrelTestPush 已加固）；(4) 排查"服务端说 200 但没送达"时，先 curl 复现
+App 的**精确 URL**看响应体是不是推送 JSON，再查 APNs 层。
+
+**Context Maintenance**
+- Decay-Type: practice
+- Decay-Rate: durable
+- Authority: 三形式对照实测（路径=discovery 页、query/JSON=accepted:1）+ 修复后 App 精确 URL 返回 accepted:1 并入历史;Owner: Drel 边缘+App
+- Revalidation: 若 bark 路由协议变更再评估
+- Validation: verified; Last-Validated: 2026-10-23; Evidence: wrangler deploy 95bd68f0 后 `GET /yfkp…/测试通知/你好…` → {"code":200,"accepted":1} + /api/v1/messages 历史记录 18:39:43
+- Disposition: retain; Application: applied
+- See Also: L-20261023-05（同为"发送成功却收不到"，但根因在 WAF/注册层）
