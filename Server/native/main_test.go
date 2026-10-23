@@ -739,3 +739,53 @@ func TestHealthReportsVersionAndReadiness(t *testing.T) {
 		t.Fatalf("health must expose apnsReady: %#v", health)
 	}
 }
+
+func TestPairingPageServesQRAndWorksWithRegister(t *testing.T) {
+	s, _ := newEndToEndServer(t)
+	h := s.handler()
+
+	response := jsonRequest(t, h, http.MethodGet, "/self-hosted/pair", nil)
+	if response.Code != http.StatusOK {
+		t.Fatalf("pair page returned %d", response.Code)
+	}
+	page := response.Body.String()
+	if !strings.Contains(page, "<svg") && !strings.Contains(page, "qrcode") {
+		t.Fatal("pair page must embed the QR renderer")
+	}
+	if !strings.Contains(page, "drel://self-hosted-push?server=") {
+		t.Fatal("pair page must carry the configuration URL")
+	}
+
+	jsonResponse := jsonRequest(t, h, http.MethodGet, "/self-hosted/pair?format=json", nil)
+	if jsonResponse.Code != http.StatusOK {
+		t.Fatalf("pair json returned %d", jsonResponse.Code)
+	}
+	var payload struct {
+		Schema           string `json:"schema"`
+		PairingToken     string `json:"pairingToken"`
+		ConfigurationURL string `json:"configurationURL"`
+	}
+	if err := json.NewDecoder(jsonResponse.Body).Decode(&payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Schema != "drel.self-hosted-pairing.v1" || payload.PairingToken == "" {
+		t.Fatalf("pairing payload mismatch: %#v", payload)
+	}
+	if !strings.Contains(payload.ConfigurationURL, "token="+payload.PairingToken) {
+		t.Fatalf("configuration URL must carry the token: %s", payload.ConfigurationURL)
+	}
+
+	// The minted ticket must complete a real registration.
+	encodedKey := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
+	regBody := map[string]any{
+		"deviceToken":         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		"deviceKey":           "pairpage1",
+		"encryptionPublicKey": encodedKey,
+		"pairingToken":        payload.PairingToken,
+		"platform":            "iOS",
+	}
+	reg := jsonRequest(t, h, http.MethodPost, "/self-hosted/register", regBody)
+	if reg.Code != http.StatusOK {
+		t.Fatalf("register with the page ticket returned %d: %s", reg.Code, reg.Body.String())
+	}
+}
