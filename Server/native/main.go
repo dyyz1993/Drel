@@ -4,6 +4,7 @@ package main
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
@@ -21,23 +22,33 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 )
 
-const envelopeSchema = "drel.push-envelope.v1"
+const (
+	envelopeSchema = "drel.push-envelope.v1"
+	serverVersion  = "2026.10.23-go"
+)
 
 type config struct {
-	ListenAddr string
-	PublicURL  string
-	Name       string
-	DataDir    string
-	APNSKeyID  string
-	APNSTeamID string
-	APNSKey    string
-	APNSTopic  string
-	APNSEnv    string
+	ListenAddr        string
+	PublicURL         string
+	Name              string
+	DataDir           string
+	APNSKeyID         string
+	APNSTeamID        string
+	APNSKey           string
+	APNSTopic         string
+	APNSEnv           string
+	GatewayID         string
+	GatewayName       string
+	GatewayPublicURL  string
+	GatewayKeyID      string
+	GatewayPrivateKey string
+	AdminAPIKey       string
 }
 
 type registration struct {
@@ -76,6 +87,205 @@ func newStore(dataDir string) (*store, error) {
 		}
 	}
 	return s, nil
+}
+
+type gatewaySigner struct {
+	id         string
+	name       string
+	baseURL    string
+	keyID      string
+	privateKey ed25519.PrivateKey
+	publicKey  ed25519.PublicKey
+}
+
+type gatewayStore struct {
+	mu        sync.Mutex
+	manifests map[string]map[string]any
+	dataFile  string
+	signer    *gatewaySigner
+}
+
+func newGatewayStore(dataDir string, c config) (*gatewayStore, error) {
+	if err := os.MkdirAll(dataDir, 0700); err != nil {
+		return nil, err
+	}
+	gs := &gatewayStore{
+		manifests: map[string]map[string]any{},
+		dataFile:  filepath.Join(dataDir, "html-apps.json"),
+	}
+	if data, err := os.ReadFile(gs.dataFile); err == nil {
+		var list []map[string]any
+		if err := json.Unmarshal(data, &list); err == nil {
+			for _, item := range list {
+				if id, ok := item["appId"].(string); ok && id != "" {
+					gs.manifests[id] = item
+				}
+			}
+		}
+	}
+	if c.GatewayKeyID != "" && c.GatewayPrivateKey != "" {
+		seed, err := base64.RawURLEncoding.DecodeString(c.GatewayPrivateKey)
+		if err == nil && len(seed) == 32 {
+			priv := ed25519.NewKeyFromSeed(seed)
+			pub := priv.Public().(ed25519.PublicKey)
+			baseURL := c.GatewayPublicURL
+			if baseURL == "" {
+				baseURL = c.PublicURL
+			}
+			gs.signer = &gatewaySigner{
+				id:         c.GatewayID,
+				name:       c.GatewayName,
+				baseURL:    baseURL,
+				keyID:      c.GatewayKeyID,
+				privateKey: priv,
+				publicKey:  pub,
+			}
+		} else {
+			log.Printf("gateway private key invalid: must be 32-byte Base64URL seed")
+		}
+	}
+	return gs, nil
+}
+
+func (gs *gatewayStore) signLocked(m map[string]any) (map[string]any, error) {
+	if gs.signer == nil {
+		return nil, errors.New("gateway signing key is not configured")
+	}
+	unsigned := make(map[string]any, len(m))
+	for k, v := range m {
+		if k != "signature" {
+			unsigned[k] = v
+		}
+	}
+	// json.Marshal on map[string]any deterministically sorts keys in lexicographical order.
+	canonical, err := json.Marshal(unsigned)
+	if err != nil {
+		return nil, fmt.Errorf("canonical json: %w", err)
+	}
+	sig := ed25519.Sign(gs.signer.privateKey, canonical)
+	sigValue := base64.RawURLEncoding.EncodeToString(sig)
+
+	signed := make(map[string]any, len(unsigned)+1)
+	for k, v := range unsigned {
+		signed[k] = v
+	}
+	signed["signature"] = map[string]any{
+		"algorithm": "ed25519",
+		"keyId":     gs.signer.keyID,
+		"value":     sigValue,
+	}
+	return signed, nil
+}
+
+func (gs *gatewayStore) save(m map[string]any) (map[string]any, error) {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
+
+	appID, _ := m["appId"].(string)
+	if appID == "" {
+		return nil, errors.New("appId is required")
+	}
+	name, _ := m["name"].(string)
+	if name == "" {
+		return nil, errors.New("name is required")
+	}
+	startURL, _ := m["startURL"].(string)
+	if startURL == "" {
+		return nil, errors.New("startURL is required")
+	}
+
+	signed, err := gs.signLocked(m)
+	if err != nil {
+		return nil, err
+	}
+
+	previous := gs.manifests[appID]
+	// Persist the unsigned document (consistent with Swift storage)
+	unsigned := make(map[string]any, len(signed))
+	for k, v := range signed {
+		if k != "signature" {
+			unsigned[k] = v
+		}
+	}
+	gs.manifests[appID] = unsigned
+	if err := gs.persistLocked(); err != nil {
+		gs.manifests[appID] = previous
+		return nil, err
+	}
+	return signed, nil
+}
+
+func (gs *gatewayStore) persistLocked() error {
+	list := make([]map[string]any, 0, len(gs.manifests))
+	keys := make([]string, 0, len(gs.manifests))
+	for k := range gs.manifests {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		list = append(list, gs.manifests[k])
+	}
+	data, err := json.MarshalIndent(list, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(gs.dataFile, data, 0600)
+}
+
+func (gs *gatewayStore) list() ([]map[string]any, error) {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
+
+	keys := make([]string, 0, len(gs.manifests))
+	for k := range gs.manifests {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	res := make([]map[string]any, 0, len(keys))
+	for _, k := range keys {
+		item := gs.manifests[k]
+		if gs.signer != nil {
+			signed, err := gs.signLocked(item)
+			if err != nil {
+				return nil, err
+			}
+			res = append(res, signed)
+		} else {
+			res = append(res, item)
+		}
+	}
+	return res, nil
+}
+
+func (gs *gatewayStore) get(appID string) (map[string]any, bool, error) {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
+
+	item, ok := gs.manifests[appID]
+	if !ok {
+		return nil, false, nil
+	}
+	if gs.signer != nil {
+		signed, err := gs.signLocked(item)
+		if err != nil {
+			return nil, true, err
+		}
+		return signed, true, nil
+	}
+	return item, true, nil
+}
+
+func (gs *gatewayStore) remove(appID string) bool {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
+
+	if _, ok := gs.manifests[appID]; !ok {
+		return false
+	}
+	delete(gs.manifests, appID)
+	_ = gs.persistLocked()
+	return true
 }
 
 func (s *store) saveLocked() error {
@@ -530,16 +740,119 @@ func (a *apns) sendPlain(token string, input pushRequest, messageID, sourceChann
 }
 
 type server struct {
-	cfg   config
-	store *store
-	apns  *apns
+	cfg     config
+	store   *store
+	apns    *apns
+	gateway *gatewayStore
 }
 
 func (s *server) health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "apnsReady": s.apns != nil})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":    "ok",
+		"version":   serverVersion,
+		"apnsReady": s.apns != nil,
+	})
 }
 func (s *server) descriptor(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"schema": "drel.self-hosted-push.v1", "name": s.cfg.Name, "publicBaseURL": s.cfg.PublicURL, "registrationPath": "/self-hosted/register", "pairingPath": "/self-hosted/pairings", "recipientPath": "/self-hosted/recipients/{deviceKey}", "pushPath": "/push", "unregisterPath": "/unregister", "healthPath": "/health", "deliveryModes": []string{"direct", "encrypted"}})
+}
+
+func (s *server) gatewayConfig(w http.ResponseWriter, r *http.Request) {
+	if s.gateway.signer == nil {
+		writeError(w, http.StatusServiceUnavailable, "Gateway signing key is not configured")
+		return
+	}
+	pubKey := base64.RawURLEncoding.EncodeToString(s.gateway.signer.publicKey)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":           s.gateway.signer.id,
+		"name":         s.gateway.signer.name,
+		"baseURL":      s.gateway.signer.baseURL,
+		"healthPath":   "/health",
+		"manifestPath": "/api/v1/html-apps",
+		"publicKeyID":  s.gateway.signer.keyID,
+		"publicKey":    pubKey,
+	})
+}
+
+func (s *server) checkAdminAuth(r *http.Request) bool {
+	if s.cfg.AdminAPIKey == "" {
+		return true
+	}
+	auth := r.Header.Get("Authorization")
+	if strings.HasPrefix(auth, "Bearer ") {
+		return strings.TrimPrefix(auth, "Bearer ") == s.cfg.AdminAPIKey
+	}
+	return r.Header.Get("X-Admin-Key") == s.cfg.AdminAPIKey
+}
+
+func (s *server) htmlApps(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		list, err := s.gateway.list()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"manifests": list})
+	case http.MethodPost:
+		if !s.checkAdminAuth(r) {
+			writeError(w, http.StatusUnauthorized, "Invalid or missing API key")
+			return
+		}
+		if s.gateway.signer == nil {
+			writeError(w, http.StatusServiceUnavailable, "Gateway signing key is not configured")
+			return
+		}
+		var payload map[string]any
+		if err := decodeJSON(w, r, &payload); err != nil {
+			writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+			return
+		}
+		signed, err := s.gateway.save(payload)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, signed)
+	default:
+		w.Header().Set("allow", "GET, POST")
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+func (s *server) htmlAppDetail(w http.ResponseWriter, r *http.Request) {
+	appID := strings.TrimPrefix(r.URL.Path, "/api/v1/html-apps/")
+	appID = strings.Trim(appID, "/")
+	if appID == "" {
+		writeError(w, http.StatusBadRequest, "Missing appId")
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		manifest, ok, err := s.gateway.get(appID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if !ok {
+			writeError(w, http.StatusNotFound, "HTML app manifest not found: "+appID)
+			return
+		}
+		writeJSON(w, http.StatusOK, manifest)
+	case http.MethodDelete:
+		if !s.checkAdminAuth(r) {
+			writeError(w, http.StatusUnauthorized, "Invalid or missing API key")
+			return
+		}
+		if !s.gateway.remove(appID) {
+			writeError(w, http.StatusNotFound, "HTML app manifest not found: "+appID)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		w.Header().Set("allow", "GET, DELETE")
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
 }
 
 func (s *server) sourceChannelFor(item registration) string {
@@ -798,7 +1111,23 @@ func clientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 func loadConfig() config {
-	return config{ListenAddr: env("DREL_LISTEN_ADDR", "127.0.0.1:8080"), PublicURL: strings.TrimRight(env("DREL_SELF_HOSTED_PUBLIC_BASE_URL", ""), "/"), Name: env("DREL_SELF_HOSTED_NAME", "Drel Self-hosted Push"), DataDir: env("DREL_DATA_DIR", "/var/lib/drel-selfhosted"), APNSKeyID: os.Getenv("APNS_KEY_ID"), APNSTeamID: os.Getenv("APNS_TEAM_ID"), APNSKey: os.Getenv("APNS_KEY_PATH"), APNSTopic: env("APNS_TOPIC", "com.webbridgekit.superapp"), APNSEnv: env("APNS_ENVIRONMENT", "production")}
+	return config{
+		ListenAddr:        env("DREL_LISTEN_ADDR", "127.0.0.1:8080"),
+		PublicURL:         strings.TrimRight(env("DREL_SELF_HOSTED_PUBLIC_BASE_URL", ""), "/"),
+		Name:              env("DREL_SELF_HOSTED_NAME", "Drel Self-hosted Push"),
+		DataDir:           env("DREL_DATA_DIR", "/var/lib/drel-selfhosted"),
+		APNSKeyID:         os.Getenv("APNS_KEY_ID"),
+		APNSTeamID:        os.Getenv("APNS_TEAM_ID"),
+		APNSKey:           os.Getenv("APNS_KEY_PATH"),
+		APNSTopic:         env("APNS_TOPIC", "com.webbridgekit.superapp"),
+		APNSEnv:           env("APNS_ENVIRONMENT", "production"),
+		GatewayID:         env("GATEWAY_ID", "drel-gateway"),
+		GatewayName:       env("GATEWAY_NAME", "Drel Gateway"),
+		GatewayPublicURL:  strings.TrimRight(env("GATEWAY_PUBLIC_BASE_URL", ""), "/"),
+		GatewayKeyID:      os.Getenv("GATEWAY_KEY_ID"),
+		GatewayPrivateKey: os.Getenv("GATEWAY_PRIVATE_KEY"),
+		AdminAPIKey:       os.Getenv("ADMIN_API_KEY"),
+	}
 }
 func env(k, d string) string {
 	if v := os.Getenv(k); v != "" {
@@ -808,10 +1137,14 @@ func env(k, d string) string {
 }
 func main() {
 	c := loadConfig()
-	if c.PublicURL == "" || !strings.HasPrefix(c.PublicURL, "https://") {
-		log.Fatal("DREL_SELF_HOSTED_PUBLIC_BASE_URL must be an HTTPS URL")
+	if c.PublicURL == "" || (!strings.HasPrefix(c.PublicURL, "https://") && os.Getenv("DREL_ALLOW_HTTP") != "1") {
+		log.Fatal("DREL_SELF_HOSTED_PUBLIC_BASE_URL must be an HTTPS URL (set DREL_ALLOW_HTTP=1 for dev)")
 	}
 	st, err := newStore(c.DataDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	gw, err := newGatewayStore(c.DataDir, c)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -819,8 +1152,8 @@ func main() {
 	if err != nil {
 		log.Printf("APNs unavailable; pairings and pushes remain fail-closed: %v", err)
 	}
-	s := &server{c, st, a}
-	log.Printf("Drel native relay listening on %s", c.ListenAddr)
+	s := &server{c, st, a, gw}
+	log.Printf("Drel unified Go server listening on %s", c.ListenAddr)
 	log.Fatal(http.ListenAndServe(c.ListenAddr, s.handler()))
 }
 
@@ -834,6 +1167,9 @@ func (s *server) handler() http.Handler {
 	mux.HandleFunc("/self-hosted/recipients/", method(http.MethodGet, s.recipient))
 	mux.HandleFunc("/push", method(http.MethodPost, s.push))
 	mux.HandleFunc("/unregister", method(http.MethodPost, s.unregister))
+	mux.HandleFunc("/api/v1/gateway", method(http.MethodGet, s.gatewayConfig))
+	mux.HandleFunc("/api/v1/html-apps", s.htmlApps)
+	mux.HandleFunc("/api/v1/html-apps/", s.htmlAppDetail)
 	mux.HandleFunc("/", method(http.MethodGet, s.barkPush))
 	return securityHeaders(mux)
 }
@@ -851,6 +1187,16 @@ func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("x-content-type-options", "nosniff")
 		w.Header().Set("referrer-policy", "no-referrer")
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Key")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
