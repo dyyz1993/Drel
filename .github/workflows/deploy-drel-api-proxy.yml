@@ -6,7 +6,7 @@ on:
       - "infra/cloudflare/drel-api-proxy/**"
       - ".github/workflows/deploy-drel-api-proxy.yml"
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "infra/cloudflare/drel-api-proxy/**"
       - ".github/workflows/deploy-drel-api-proxy.yml"
@@ -29,7 +29,7 @@ jobs:
       - run: npm run check
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
     defaults:
