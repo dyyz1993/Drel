@@ -449,3 +449,61 @@ test("register rejects device keys that cannot travel in URL paths", async () =>
     assert.equal(response.status, 400, `key ${JSON.stringify(badKey)} must be rejected`);
   }
 });
+
+test("a direct official push carries no drelSourceChannel stamp", async () => {
+  // Regression: the official worker used to mint
+  // drel.selfhosted.<origin> on every direct push, which the app's
+  // official inbox view (excluding drel.selfhosted.*) then hid — official
+  // messages disappeared from the official inbox after the edge migration.
+  // Direct pushes must stay untagged; only a relayed input tag passes through.
+  const { state } = mockStorage();
+  const registry = new OfficialPushRegistry(state, testEnv());
+  await registry.fetch(
+    new Request("https://registry/device", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deviceKey: "officialkey", deviceToken: "tok", platform: "iOS" }),
+    })
+  );
+  const inner = registry.fetch.bind(registry);
+  registry.fetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    const url = new URL(request.url);
+    const body = request.body ? await request.text() : undefined;
+    return inner(new Request(`https://registry${url.pathname}${url.search}`, {
+      method: request.method,
+      headers: request.headers,
+      body,
+    }));
+  };
+
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const namespace = { idFromName: () => "test-id", get: () => registry };
+  const env = testEnv({
+    OFFICIAL_PUSH_REGISTRY: namespace,
+    APNS_AUTH_KEY_P8: privateKey.export({ format: "pem", type: "pkcs8" }),
+    GATEWAY_PUBLIC_BASE_URL: "https://api.drel.app",
+  });
+
+  const sent = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (_url, init) => {
+    sent.push(JSON.parse(init.body));
+    return { ok: true, status: 200, text: async () => "" };
+  };
+  try {
+    const response = await handleOfficialPush(
+      new Request("https://api.drel.app/officialkey/Direct%20push/edge-ungated", {
+        headers: { accept: "application/json" },
+      }),
+      env
+    );
+    assert.equal(response.status, 200);
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].drelSourceChannel, undefined,
+      "a direct official push must not be stamped as selfhosted");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
