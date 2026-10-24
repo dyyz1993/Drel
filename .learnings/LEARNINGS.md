@@ -439,3 +439,28 @@ origin 兜底 stamp）；(2) 服务端打的每个标签都会被客户端分类
 - Validation: verified; Last-Validated: 2026-10-24; Evidence: Worker 36b6207e 部署后 `GET /yfkp…/验证/official-ungated-after-fix` → accepted:1 且历史无标签
 - Disposition: retain; Application: applied
 - See Also: L-20261023-06（同为边缘迁移窗口引入、被「200 即成功」掩盖的路由类问题）
+
+## L-20261024-03 用户说「模板」默认指消息面板模板，不是 HTML 应用模板
+
+**Area**: 词汇/沟通
+**Status**: resolved
+**Recurrence-Count**: 1
+**First-Seen**: 2026-10-24
+**Last-Seen**: 2026-10-24
+
+**Insight**: 讨论审批功能去向时用户问「模板」，我答成了 HTML 应用模板
+（dev.drel.data-template），用户纠正：指的是**消息面板的推送模板**
+（App「全部 API 示例」PushExampleCatalogView + 官网 playground 分组模板）。
+项目里「模板」有两个并存概念：消息模板（payload 参数组合样例，23 个）与
+HTML 应用模板（数据模板应用，1 个），讨论时必须先确认指哪个。
+
+**How to apply**: (1) 用户提「模板」时先按上下文判断：聊推送/通知/卡片 =
+消息模板；聊首页应用/离线包 = HTML 应用模板；拿不准就问一句；(2) 审批类
+讨论挂在消息模板语境下（contentType=approval 的 payload 形态）。
+
+**Context Maintenance**
+- Decay-Type: vocabulary
+- Decay-Rate: durable
+- Authority: 用户当场纠正; Owner: Drel 产品语汇
+- Validation: verified; Last-Validated: 2026-10-24
+- Disposition: retain; Application: applied
