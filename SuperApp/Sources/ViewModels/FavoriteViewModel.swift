@@ -164,6 +164,32 @@ class FavoriteViewModel: ViewModel {
         favoritesRelay.accept(sections)
         isEmptyRelay.accept(currentFavorites.isEmpty)
         loadingRelay.accept(false)
+
+        backfillMissingIcons()
+    }
+
+    /// 缺图标的收藏项异步补图：缓存优先、未命中走网络（FaviconLoader），
+    /// 结果写回 Realm，刷新后持久可见。批量收尾只刷新一次列表。
+    private func backfillMissingIcons() {
+        let missing = currentFavorites.filter { ($0.favicon?.isEmpty ?? true) }
+        guard !missing.isEmpty else { return }
+        Task { [weak self] in
+            var updated = 0
+            for favorite in missing {
+                guard let url = URL(string: favorite.url),
+                      let data = await FaviconLoader.shared.loadIcon(forPageURL: url) else { continue }
+                guard let record = self?.favoriteService.findFavorite(url: url),
+                      record.favicon == nil else { continue }
+                record.favicon = data
+                self?.favoriteService.updateFavorite(record)
+                updated += 1
+            }
+            if updated > 0 {
+                await MainActor.run { [weak self] in
+                    self?.loadFavorites()
+                }
+            }
+        }
     }
 
     // MARK: - Public Methods
