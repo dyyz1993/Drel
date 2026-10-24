@@ -72,11 +72,14 @@ class InboxViewController: BaseViewController<InboxViewModel> {
     private let searchField = WBKSearchField(placeholder: L10n.tr("inbox.search.placeholder"))
 
     private let displayModeControl: UISegmentedControl = {
+        // 三段式收件箱视图：未读（默认）→ 当前通道的未读；最近 → 全部平铺；
+        // 分组 → 按会话分组。段选择同时决定筛选与展示模式。
         let control = UISegmentedControl(items: [
-            L10n.tr("inbox.display.latest"),
+            L10n.tr("inbox.filter.unread"),
+            L10n.tr("inbox.display.recent"),
             L10n.tr("inbox.display.groups")
         ])
-        control.selectedSegmentIndex = InboxViewModel.DisplayMode.latest.rawValue
+        control.selectedSegmentIndex = 0
         control.selectedSegmentTintColor = ThemeTokens.Color.surface
         control.backgroundColor = ThemeTokens.Color.backgroundSecondary
         control.setTitleTextAttributes([
@@ -91,14 +94,7 @@ class InboxViewController: BaseViewController<InboxViewModel> {
         return control
     }()
 
-    private lazy var filterButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.showsMenuAsPrimaryAction = true
-        button.accessibilityIdentifier = "inbox.filterMenu"
-        button.accessibilityLabel = "筛选通知"
-        return button
-    }()
-    private let filterRelay = BehaviorRelay<InboxViewModel.FilterType>(value: .all)
+    private let filterRelay = BehaviorRelay<InboxViewModel.FilterType>(value: .unread)
 
     private lazy var tableView: UITableView = {
         let table = UITableView(frame: .zero, style: .plain)
@@ -186,7 +182,6 @@ class InboxViewController: BaseViewController<InboxViewModel> {
     override func makeUI() {
         view.backgroundColor = ThemeTokens.Color.background
         view.accessibilityIdentifier = "InboxViewController"
-        setupFilterPills()
         setupScaffold()
         displayModeControl.addTarget(self, action: #selector(displayModeChanged), for: .valueChanged)
 
@@ -240,16 +235,12 @@ class InboxViewController: BaseViewController<InboxViewModel> {
         scaffold.addSection(header)
         scaffold.addSection(searchField, spacing: ThemeTokens.Spacing.sm)
 
-        let filterBar = UIStackView(arrangedSubviews: [displayModeControl, filterButton])
+        let filterBar = UIStackView(arrangedSubviews: [displayModeControl])
         filterBar.axis = .horizontal
         filterBar.spacing = ThemeTokens.Spacing.sm
         filterBar.alignment = .fill
         filterBar.distribution = .fill
         displayModeControl.snp.makeConstraints { make in
-            make.width.equalTo(150)
-            make.height.equalTo(ThemeTokens.ComponentContract.FilterPill.height)
-        }
-        filterButton.snp.makeConstraints { make in
             make.height.equalTo(ThemeTokens.ComponentContract.FilterPill.height)
         }
         scaffold.addSection(filterBar, spacing: ThemeTokens.Spacing.sm)
@@ -323,57 +314,22 @@ class InboxViewController: BaseViewController<InboxViewModel> {
     #endif
 
     @objc private func displayModeChanged() {
-        guard let mode = InboxViewModel.DisplayMode(rawValue: displayModeControl.selectedSegmentIndex) else { return }
+        // 三段视图同时决定筛选与展示：未读=仅未读+平铺；最近=全部平铺；
+        // 分组=全部按会话分组。「分组」段名与 UI 测试的按钮查询保持一致。
+        switch displayModeControl.selectedSegmentIndex {
+        case 0:
+            filterRelay.accept(.unread)
+            viewModel.setDisplayMode(.latest)
+        case 2:
+            filterRelay.accept(.all)
+            viewModel.setDisplayMode(.groups)
+        default:
+            filterRelay.accept(.all)
+            viewModel.setDisplayMode(.latest)
+        }
         UISelectionFeedbackGenerator().selectionChanged()
         pendingAnimatedReload = true
-        viewModel.setDisplayMode(mode)
-    }
-
-    private func setupFilterPills() {
-        updateFilterSelection(.all)
-    }
-
-    private var filterOptions: [(String, InboxViewModel.FilterType)] {
-        [
-            (L10n.tr("inbox.filter.all"), .all),
-            (L10n.tr("inbox.filter.unread"), .unread),
-            (L10n.tr("inbox.filter.apps"), .apps),
-            (L10n.tr("inbox.filter.action_required"), .actionRequired)
-        ]
-    }
-
-    private func updateFilterSelection(_ selected: InboxViewModel.FilterType) {
-        let selectedTitle = filterOptions.first(where: { $0.1 == selected })?.0
-            ?? L10n.tr("inbox.filter.all")
-        var configuration = UIButton.Configuration.gray()
-        configuration.title = selectedTitle
-        configuration.image = LucideIcon.chevronDown.templateImage(
-            pointSize: ThemeTokens.Icons.Sizes.xs
-        )
-        configuration.imagePadding = ThemeTokens.Spacing.sm
-        configuration.baseForegroundColor = ThemeTokens.Color.primary
-        configuration.baseBackgroundColor = ThemeTokens.Color.primarySoft
-        configuration.cornerStyle = .capsule
-        configuration.contentInsets = NSDirectionalEdgeInsets(
-            top: 0,
-            leading: ThemeTokens.Spacing.md,
-            bottom: 0,
-            trailing: ThemeTokens.Spacing.md
-        )
-        filterButton.configuration = configuration
-        filterButton.menu = UIMenu(children: filterOptions.map { title, type in
-            UIAction(
-                title: title,
-                state: type == selected ? .on : .off
-            ) { [weak self] _ in
-                guard let self else { return }
-                UISelectionFeedbackGenerator().selectionChanged()
-                self.filterRelay.accept(type)
-                self.updateFilterSelection(type)
-                self.viewModel.refreshData()
-            }
-        })
-        filterButton.accessibilityValue = selectedTitle
+        viewModel.refreshData()
     }
 
     override func bindViewModel() {
