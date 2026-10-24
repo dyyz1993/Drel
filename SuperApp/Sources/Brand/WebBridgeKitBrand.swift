@@ -11,4 +11,15 @@ enum DrelBrand {
     static var image: UIImage? {
         UIImage(named: imageName)?.withRenderingMode(.alwaysOriginal)
     }
+
+    /// The self-hosted channel wears the same mark in the teal variant, so the
+    /// product identity stays recognisable while the active channel is
+    /// distinguishable at a glance.
+    enum SelfHosted {
+        static let imageName = "DrelBrandSelfHosted"
+
+        static var image: UIImage? {
+            UIImage(named: imageName)?.withRenderingMode(.alwaysOriginal)
+        }
+    }
 }

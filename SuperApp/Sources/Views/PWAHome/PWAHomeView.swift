@@ -170,13 +170,22 @@ struct PWAHomeView: View {
         }
     }
 
-    private var endpointCard: some View {
-        VStack(alignment: .leading, spacing: ThemeTokens.Spacing.sm) {
+    private var pushChannelMark: UIImage {
+        if viewModel.activePushChannel?.isOfficial == false {
+            return DrelBrand.SelfHosted.image ?? DrelBrand.image ?? UIImage()
+        }
+        return DrelBrand.image ?? DrelBrand.SelfHosted.image ?? UIImage()
+    }
+
+    private var endpointCard: some View {        VStack(alignment: .leading, spacing: ThemeTokens.Spacing.sm) {
             HStack(spacing: ThemeTokens.Spacing.md) {
-                Image(uiImage: LucideIcon.link.templateImage(pointSize: ThemeTokens.Icons.Sizes.lg) ?? UIImage())
-                    .renderingMode(.template)
-                    .foregroundColor(Color.appPrimary)
-                    .frame(width: 40, height: 40)
+                // 产品标识而非功能图标：官方通道用标准蓝紫品牌标，自建通道用
+                // 同一造型的青绿变体，一眼可分当前在用哪套服务。
+                Image(uiImage: pushChannelMark)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .padding(6)
                     .background(Color(ThemeTokens.Color.primarySoft))
                     .clipShape(RoundedRectangle(cornerRadius: ThemeTokens.CornerRadius.md))
                     .accessibilityHidden(true)
