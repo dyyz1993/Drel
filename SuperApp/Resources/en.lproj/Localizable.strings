@@ -87,7 +87,7 @@
 "inbox.group.orders" = "Order Updates";
 "inbox.group.promotion" = "Promotions";
 "inbox.group.invites" = "Game Invites";
-"inbox.display.latest" = "Latest";
+"inbox.display.recent" = "Recent";
 "inbox.display.groups" = "Groups";
 "inbox.test.title" = "Test Notification";
 "inbox.test.body_format" = "This is a test message, sent at %@";
