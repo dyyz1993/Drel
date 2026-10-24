@@ -766,8 +766,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         let isCopyAction = response.actionIdentifier == Self.copyNotificationActionIdentifier
 
         // Record the message into the inbox FIRST, then copy or route. If routing
-        // fires before the message is stored, focusMessage finds nothing and
-        // the user lands on the inbox list instead of the detail page.
+        // fires before the message is stored, focusMessage finds nothing and the
+        // user lands on the inbox list instead of the detail page.
         Task { [weak self] in
             DrelPushAppCatalogCoordinator.shared.activateIfTrusted(userInfo: userInfo)
             let payload = self?.makeMessagePayload(
@@ -779,8 +779,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 try? await MessageEngine.shared.receive(payload)
             }
 
-            // Message is now in the inbox; safe to perform the chosen action.
+            // Tapping a banner points the whole channel context (inbox view
+            // and in-app sending) at the channel the message came from, so
+            // focusMessage always finds the record and the follow-up send
+            // action stays in the same channel. Switching re-scopes the
+            // inbox synchronously via DrelPushChannelStore.didChange.
             await MainActor.run { [weak self] in
+                let messageChannel = (userInfo["drelSourceChannel"] as? String)
+                    ?? (userInfo["channel"] as? String)
+                    ?? "apns"
+                DrelPushChannelStore.shared.selectChannelForMessageChannel(messageChannel)
+                guard let self else { return }
                 if isCopyAction {
                     let copyValue = (userInfo["copy"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
                     UIPasteboard.general.string = copyValue?.isEmpty == false ? copyValue : content.body
@@ -788,7 +797,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 } else {
                     PushNotificationManager.shared.handleNotificationTap(
                         userInfo: routingInfo,
-                        rootViewController: self?.window?.rootViewController
+                        rootViewController: self.window?.rootViewController
                     )
                 }
             }
