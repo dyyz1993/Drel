@@ -87,7 +87,7 @@
 "inbox.group.orders" = "订单提醒";
 "inbox.group.promotion" = "活动通知";
 "inbox.group.invites" = "游戏邀请";
-"inbox.display.latest" = "最新";
+"inbox.display.recent" = "最近";
 "inbox.display.groups" = "分组";
 "inbox.test.title" = "测试通知";
 "inbox.test.body_format" = "这是一条测试消息，发送于 %@";
