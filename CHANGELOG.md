@@ -50,8 +50,24 @@ reviewing and revoking grants, and a one-command permission regression gate.
   screenshot set and per-case animation artifacts. — Scope: `App`, `Website` —
   Verified: `simulator` — Evidence:
   [docs/testing/results/drel-permission-regression-README.md](docs/testing/results/drel-permission-regression-README.md)
+- Favorites capture icons: a fixed-budget LRU cache serves saved icons
+  first, an undecodable-miss falls back to fetching the site's favicon,
+  and a favorite whose URL matches a registered gateway app prefers the
+  manifest's signed icon from the same cache the home screen uses; missing
+  icons are backfilled and persisted. — Scope: `App` — Verified:
+  `server-test` — Evidence:
+  [docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md](docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md)
 
 ### Changed
+
+- The inbox presents one three-segment view — Unread (the default),
+  Recent, Groups — replacing the previous display-mode control plus
+  filter menu. — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md](docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md)
+- Tapping a notification banner switches the inbox view and the in-app
+  sending context to the channel that delivered the message, then opens
+  it. — Scope: `App` — Verified: `manual` — Evidence:
+  [docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md](docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md)
 
 - The active gateway identity is synced at app launch, so a grant issued
   under one gateway is never evaluated against another gateway's manifest.
@@ -73,6 +89,11 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Fixed
 
+- The official inbox view again shows the official messages that the
+  migration-window edge mistakenly tagged as self-hosted; genuine
+  self-hosted relay messages remain scoped to their channel. — Scope:
+  `App`, `Push` — Verified: `manual` — Evidence:
+  [docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md](docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md)
 - The in-app test send, address copy and ringtone try actions follow the
   selected push channel instead of always hitting the official server. —
   Scope: `App` — Verified: `simulator` — Evidence:
