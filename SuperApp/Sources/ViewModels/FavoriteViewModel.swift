@@ -168,17 +168,26 @@ class FavoriteViewModel: ViewModel {
         backfillMissingIcons()
     }
 
-    /// 缺图标的收藏项异步补图：缓存优先、未命中走网络（FaviconLoader），
-    /// 结果写回 Realm，刷新后持久可见。批量收尾只刷新一次列表。
+    /// 缺图标的收藏项异步补图，取值顺序：
+    /// ① URL 匹配到已注册网关应用 → manifest 声明的签名图标（与首页共用
+    ///    PWAAppIconLoader 的磁盘缓存，同源不重复下载，可信且稳定）；
+    /// ② 普通 favicon 链：IconCacheService LRU → /favicon.ico 网络；
+    /// ③ 都没有 → cell 侧首字母兜底。结果写回 Realm，刷新后持久可见。
+    /// 批量收尾只刷新一次列表。
     private func backfillMissingIcons() {
         let missing = currentFavorites.filter { ($0.favicon?.isEmpty ?? true) }
         guard !missing.isEmpty else { return }
+        let metadataStore = HTMLAppPresentationMetadataStore()
         Task { [weak self] in
             var updated = 0
             for favorite in missing {
-                guard let url = URL(string: favorite.url),
-                      let data = await FaviconLoader.shared.loadIcon(forPageURL: url) else { continue }
-                guard let record = self?.favoriteService.findFavorite(url: url),
+                guard let url = URL(string: favorite.url) else { continue }
+                var data = await Self.manifestIconData(for: url, metadataStore: metadataStore)
+                if data == nil {
+                    data = await FaviconLoader.shared.loadIcon(forPageURL: url)
+                }
+                guard let data,
+                      let record = self?.favoriteService.findFavorite(url: url),
                       record.favicon == nil else { continue }
                 record.favicon = data
                 self?.favoriteService.updateFavorite(record)
@@ -190,6 +199,20 @@ class FavoriteViewModel: ViewModel {
                 }
             }
         }
+    }
+
+    /// URL 命中已注册网关应用时，取其 manifest 声明的图标（首页同源同缓存）。
+    private static func manifestIconData(
+        for url: URL,
+        metadataStore: HTMLAppPresentationMetadataStore
+    ) async -> Data? {
+        guard let manifest = HTMLAppRuntimeCenter.shared.trustRegistry.registeredApp(matching: url) else {
+            return nil
+        }
+        let metadata = metadataStore.metadata(for: manifest.appID)
+        guard let iconURL = metadata?.iconURLs.last else { return nil }
+        let cacheKey = "\(manifest.appID)|\(manifest.webManifest?.sha256 ?? "no-web-manifest")"
+        return await PWAAppIconLoader.shared.data(for: iconURL, cacheKey: cacheKey)
     }
 
     // MARK: - Public Methods
