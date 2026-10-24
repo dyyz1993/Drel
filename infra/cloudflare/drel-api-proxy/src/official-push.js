@@ -519,10 +519,13 @@ async function deliverPushRequest(env, input, origin) {
   if (!device) return failure(404, "no paired recipient");
 
   const messageID = newMessageID();
-  const sourceChannel = input.drelSourceChannel
-    ? undefined
-    : `drel.selfhosted.${String(env.GATEWAY_PUBLIC_BASE_URL || origin).toLowerCase()}`;
-  const payload = buildPlainAPNsPayload(input, messageID, sourceChannel);
+  // Only relay an incoming drelSourceChannel through — the official surface
+  // must never mint one. Stamping direct official pushes with
+  // "drel.selfhosted.<origin>" made the app's official inbox view (which
+  // excludes drel.selfhosted.*) hide every official message — the "official
+  // pushes stopped appearing in the inbox" regression after the CF edge
+  // migration. Un-tagged = official, exactly like the pre-edge Swift server.
+  const payload = buildPlainAPNsPayload(input, messageID, input.drelSourceChannel);
 
   try {
     await deliverPlainAPNs(env, device.deviceToken, payload);

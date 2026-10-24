@@ -403,3 +403,39 @@ verify ok），当时空白页同样是缺端口。
 - Validation: verified; Last-Validated: 2026-10-24; Evidence: 修正后 QR/描述符/gateway baseURL 均含 :8443（在线 grep 实证）
 - Disposition: retain; Application: applied
 - See Also: L-20261023-05（supervisord 主 conf 内联段陷阱）
+
+## L-20261024-02 官方边缘给直发推送误盖 selfhosted 标签，官方收件箱视图自隐藏
+
+**Area**: server + app
+**Status**: resolved
+**Recurrence-Count**: 1
+**First-Seen**: 2026-10-24
+**Last-Seen**: 2026-10-24
+
+**Insight**: 用户反馈「自建通道推送进收件箱、官方通道不进」并两次追问「是不是改了
+服务端代码导致的」——直觉完全正确。根因：官方边缘 Worker 的 deliverPushRequest
+对**没有**入站 drelSourceChannel 的直发推送**铸造**了一个
+`drel.selfhosted.<origin>` 标签（原意是给网关中转场景用），导致 App 端官方
+收件箱视图（排除一切 `drel.selfhosted.*`）把官方消息全部隐藏。CF 全量迁移前
+旧 Swift 服务不盖章，所以「之前有、现在没有」。
+
+**Why**: (1) 「透传」与「铸造」语义写反（Go 版按注册来源 stamp，边缘版按
+origin 兜底 stamp）；(2) 服务端打的每个标签都会被客户端分类逻辑消费，改标签
+策略等于改客户端可见行为——两边要一起看；(3) 用户的对照实验（自建可见/
+官方不可见）是定位此类问题的最短路径。
+
+**How to apply**: (1) 边缘已修：direct 推送只透传入站 drelSourceChannel、绝不
+铸造（回归测试 "a direct official push carries no drelSourceChannel stamp"，
+27/27）；(2) App 垫片：官方视图把 `drel.selfhosted.<官方地址>` 视为官方，
+迁移窗口期已落库的误盖历史消息恢复可见（随下一构建）；(3) 排查「某通道消息
+不进收件箱」时先查服务端投递历史里该条的 drelSourceChannel 值再查 App 过滤
+逻辑；(4) 跨端协议字段变更必须回归「官方/自建 × 前台/后台/点击」组合矩阵。
+
+**Context Maintenance**
+- Decay-Type: practice
+- Decay-Rate: durable
+- Authority: 官方边缘历史实查（三条 drelSourceChannel='drel.selfhosted.https://api.drel.app'）+ 修复后线上复测 drelSourceChannel=None;Owner: Drel 边缘+App
+- Revalidation: 若通道标签协议再变更
+- Validation: verified; Last-Validated: 2026-10-24; Evidence: Worker 36b6207e 部署后 `GET /yfkp…/验证/official-ungated-after-fix` → accepted:1 且历史无标签
+- Disposition: retain; Application: applied
+- See Also: L-20261023-06（同为边缘迁移窗口引入、被「200 即成功」掩盖的路由类问题）

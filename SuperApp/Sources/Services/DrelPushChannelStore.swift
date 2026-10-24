@@ -77,10 +77,22 @@ final class DrelPushChannelStore {
     /// messages. Shared by the inbox list and the notifications tab badge
     /// so the badge never counts messages the active view hides.
     func messagesForActiveChannel(_ messages: [StoredMessage]) -> [StoredMessage] {
+        let officialBase = DrelGatewayConfiguration.official.baseURL.lowercased()
+        func isOfficialChannel(_ channel: String) -> Bool {
+            // Compat: during the CF-edge migration window the official relay
+            // stamped every direct push with "drel.selfhosted.<official
+            // origin>", which this filter would otherwise hide from the
+            // official view. Those records still sit on devices, so the
+            // official origin stays official here.
+            if channel.hasPrefix("drel.selfhosted.") {
+                return channel == "drel.selfhosted.\(officialBase)"
+            }
+            return true
+        }
         guard let selected = UserDefaults.standard.string(forKey: selectedChannelKey),
               selected != Self.officialChannelID
         else {
-            return messages.filter { !$0.payload.channel.hasPrefix("drel.selfhosted.") }
+            return messages.filter { isOfficialChannel($0.payload.channel) }
         }
         return messages.filter { $0.payload.channel == selected }
     }
