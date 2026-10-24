@@ -67,6 +67,28 @@ final class DrelPushChannelStore {
         NotificationCenter.default.post(name: Self.didChangeNotification, object: nil)
     }
 
+    /// Points the active channel at whichever channel a message came from,
+    /// so tapping a banner both shows and sends in that message's channel.
+    /// Untagged payloads (and the mis-stamped official-origin records from
+    /// the edge-migration window) mean the official channel. Returns whether
+    /// the selection changed.
+    @discardableResult
+    func selectChannelForMessageChannel(_ messageChannel: String) -> Bool {
+        let officialBase = DrelGatewayConfiguration.official.baseURL.lowercased()
+        let target: String
+        if messageChannel.hasPrefix("drel.selfhosted."),
+           messageChannel != "drel.selfhosted.\(officialBase)" {
+            target = messageChannel
+        } else {
+            target = Self.officialChannelID
+        }
+        let current = UserDefaults.standard.string(forKey: selectedChannelKey)
+        guard current != target else { return false }
+        UserDefaults.standard.set(target, forKey: selectedChannelKey)
+        NotificationCenter.default.post(name: Self.didChangeNotification, object: nil)
+        return true
+    }
+
     func isActiveSelfHosted(officialPushURL: String) -> Bool {
         activeChannel(officialPushURL: officialPushURL).kind == .selfHosted
     }
