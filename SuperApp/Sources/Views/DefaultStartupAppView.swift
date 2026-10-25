@@ -31,12 +31,7 @@ struct DefaultStartupAppView: View {
                             defaultStartupAppID = manifest.appID
                         } label: {
                             HStack(spacing: ThemeTokens.Spacing.md) {
-                                Image(uiImage: LucideIcon.appFill.templateImage(pointSize: ThemeTokens.Icons.Sizes.md) ?? UIImage())
-                                    .renderingMode(.template)
-                                    .foregroundColor(Color.appPrimary)
-                                    .frame(width: 36, height: 36)
-                                    .background(Color(ThemeTokens.Color.primarySoft))
-                                    .clipShape(RoundedRectangle(cornerRadius: ThemeTokens.CornerRadius.sm))
+                                ManifestIconView(manifest: manifest)
 
                                 VStack(alignment: .leading, spacing: ThemeTokens.Spacing.xs) {
                                     Text(manifest.name)
@@ -87,6 +82,38 @@ struct DefaultStartupAppView: View {
         if !defaultStartupAppID.isEmpty,
            !manifests.contains(where: { $0.appID == defaultStartupAppID }) {
             defaultStartupAppID = ""
+        }
+    }
+}
+
+/// 行图标：manifest 声明的签名图标优先（与首页同源同磁盘缓存），未取到时
+/// 回退到模板图标。对齐收藏夹 cell 的「真实图标 + 兜底」取值方式。
+private struct ManifestIconView: View {
+    let manifest: HTMLAppManifest
+    @State private var icon: UIImage?
+
+    var body: some View {
+        ZStack {
+            if let icon {
+                Image(uiImage: icon)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(uiImage: LucideIcon.appFill.templateImage(pointSize: ThemeTokens.Icons.Sizes.md) ?? UIImage())
+                    .renderingMode(.template)
+                    .foregroundColor(Color.appPrimary)
+            }
+        }
+        .frame(width: 36, height: 36)
+        .background(Color(ThemeTokens.Color.primarySoft))
+        .clipShape(RoundedRectangle(cornerRadius: ThemeTokens.CornerRadius.sm))
+        .task(id: manifest.appID) {
+            let metadata = HTMLAppPresentationMetadataStore().metadata(for: manifest.appID)
+            guard let iconURL = metadata?.iconURLs.last else { return }
+            let cacheKey = "\(manifest.appID)|\(manifest.webManifest?.sha256 ?? "no-web-manifest")"
+            if let data = await PWAAppIconLoader.shared.data(for: iconURL, cacheKey: cacheKey) {
+                icon = UIImage(data: data)
+            }
         }
     }
 }
