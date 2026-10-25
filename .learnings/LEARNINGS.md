@@ -464,3 +464,38 @@ HTML 应用模板（数据模板应用，1 个），讨论时必须先确认指�
 - Authority: 用户当场纠正; Owner: Drel 产品语汇
 - Validation: verified; Last-Validated: 2026-10-24
 - Disposition: retain; Application: applied
+
+## L-20261026-01 退役后端前的逐类型 wire 对账抓出两处静默差异
+
+**Area**: server
+**Status**: resolved
+**Recurrence-Count**: 1
+**First-Seen**: 2026-10-26
+**Last-Seen**: 2026-10-26
+
+**Insight**: 解绑 Swift 上游前做「逐推送类型」对账（边缘 vs Swift 逐字段比
+APNs 线上语义），抓出两处边缘从未对齐的静默差异：① passive 推送 Swift 发
+apns-priority 5、边缘写死 10（Apple 推荐 background 用 5，10 可能被节流）；
+② ttl 在 Swift 转 apns-expiration 绝对纪元（上限 30 天）、边缘只当自定义
+字段透传——Apple 从未收到过期时间。均已修复（passive→5；ttl→capped
+apns-expiration），push-type 恒 alert 保持一致（Swift 线上验证过撤回可用）。
+
+**Why**: 迁移时对齐了「功能可跑」（payload 字段、路由语义），但 APNs
+**传输层 header**（priority/expiration）不在功能测试视野里——它们不出错时
+只是行为差异（送达时序/过期清理），不报错、不炸测试。
+
+**How to apply**: (1) 后端退役/迁移前必做「逐类型 wire 对账」：枚举客户端
+实际发送的每种推送形态（plain/passive/level/带 ttl/撤回 delete/加密/审批），
+逐个 diff 两实现的 APNs header（push-type/priority/expiration/collapse）；
+(2) 差异用「Swift 线上语义」为准绳对齐，而不是照 Apple 文档"更正确"化——
+真机已验证过的是 Swift 行为；(3) 对账结果沉淀为 header 断言测试
+（passive→5、ttl→expiration 已入 official-push.test.js）。
+
+**Context Maintenance**
+- Decay-Type: practice
+- Decay-Rate: durable
+- Authority: Swift APNsService.swift 348/453 行 vs 边缘 deliverPlainAPNs 逐行 diff;Owner: Drel 边缘
+- Revalidation: 若 APNs 语义或 Swift 参考实现再变更
+- Validation: verified; Last-Validated: 2026-10-26; Evidence: 32/32 测试含 priority/expiration 断言 + 线上 4 项验证（/health、未匹配 404、bark 路径、/push JSON 全通）
+- Disposition: retain; Application: applied
+- See Also: L-20261023-06（同为迁移窗口差异：路由形式 vs 传输 header）
