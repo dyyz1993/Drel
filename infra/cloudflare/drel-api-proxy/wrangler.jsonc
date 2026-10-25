@@ -11,7 +11,10 @@
     }
   ],
   "vars": {
-    "UPSTREAM_ORIGIN": "https://wbk.shanbox.19930810.xyz:8443",
+    // Swift-backend decommission (2026-10-26): the edge serves the whole API.
+    // Unmatched paths answer a clean 404; restoring this variable re-enables
+    // the legacy proxy in one deploy if a rollback is ever needed.
+    // "UPSTREAM_ORIGIN": "https://wbk.shanbox.19930810.xyz:8443",
     "DREL_MANAGED_PUSH_MAX_DELIVERIES_PER_MINUTE": "60"
   },
   "durable_objects": {

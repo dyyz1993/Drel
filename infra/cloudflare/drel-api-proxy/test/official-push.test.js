@@ -308,11 +308,69 @@ test("deliverPlainAPNs posts the payload to Apple over the right shape", async (
   assert.equal(init.headers["apns-topic"], "com.webbridgekit.superapp");
   assert.equal(init.headers["apns-push-type"], "alert");
   assert.equal(init.headers["apns-priority"], "10");
+  assert.equal(init.headers["apns-expiration"], undefined,
+    "a push without ttl carries no expiration");
   assert.ok(String(init.headers.authorization).startsWith("bearer "));
   const sent = JSON.parse(init.body);
   assert.equal(sent.aps.alert.title, "t");
   assert.equal(sent.url, "https://x.example");
   void createPrivateKey;
+});
+
+test("passive pushes go out at priority 5 with no sound, matching the Swift wire", async () => {
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const envWithRealKey = {
+    ...testEnv(),
+    APNS_AUTH_KEY_P8: privateKey.export({ format: "pem", type: "pkcs8" }),
+  };
+  const deliveries = [];
+  const fetchImpl = async (_url, init) => {
+    deliveries.push(init);
+    return { ok: true, status: 200, text: async () => "" };
+  };
+
+  const payload = buildPlainAPNsPayload({ title: "t", body: "b", level: "passive" }, "m-2", "chan");
+  assert.equal(payload.aps.sound, undefined);
+  await deliverPlainAPNs(envWithRealKey, "tok", payload, fetchImpl);
+
+  assert.equal(deliveries[0].headers["apns-priority"], "5");
+  assert.equal(deliveries[0].headers["apns-expiration"], undefined);
+});
+
+test("ttl becomes a capped absolute apns-expiration epoch", async () => {
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const envWithRealKey = {
+    ...testEnv(),
+    APNS_AUTH_KEY_P8: privateKey.export({ format: "pem", type: "pkcs8" }),
+  };
+  const deliveries = [];
+  const fetchImpl = async (_url, init) => {
+    deliveries.push(init);
+    return { ok: true, status: 200, text: async () => "" };
+  };
+
+  const before = Math.floor(Date.now() / 1000);
+  await deliverPlainAPNs(
+    envWithRealKey,
+    "tok",
+    buildPlainAPNsPayload({ title: "t", body: "b", ttl: 3600 }, "m-3", "chan"),
+    fetchImpl
+  );
+  const seen = Number(deliveries[0].headers["apns-expiration"]);
+  assert.ok(seen >= before + 3600 && seen <= before + 3600 + 30,
+    "expiration should be now + ttl");
+
+  // Over-budget ttl caps at 30 days.
+  await deliverPlainAPNs(
+    envWithRealKey,
+    "tok",
+    buildPlainAPNsPayload({ title: "t", body: "b", ttl: 10 * 30 * 24 * 3600 }, "m-4", "chan"),
+    fetchImpl
+  );
+  const capped = Number(deliveries[1].headers["apns-expiration"]);
+  assert.ok(capped <= Math.floor(Date.now() / 1000) + 30 * 24 * 3600 + 30);
 });
 
 test("the registry stores device lookups and bounded history", async () => {
