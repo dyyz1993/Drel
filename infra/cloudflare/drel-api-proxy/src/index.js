@@ -77,6 +77,23 @@ export default {
       if (edgeResponse) return edgeResponse;
     }
 
+    // With no upstream configured the Worker is the whole API: unmatched
+    // paths answer a clean 404 instead of a 502 from fetching an undefined
+    // origin. This is the Swift-backend-decommission posture — every surface
+    // that carried real traffic is served above this line.
+    if (!env.UPSTREAM_ORIGIN) {
+      return Response.json(
+        { code: 404, message: "Not found. The Drel API is served entirely at the edge." },
+        {
+          status: 404,
+          headers: {
+            "cache-control": "no-store",
+            "x-drel-api-proxy": "edge"
+          }
+        }
+      );
+    }
+
     const publicURL = new URL(request.url);
     let upstream;
     try {
