@@ -122,13 +122,24 @@ export function buildPlainAPNsPayload(input, messageID, sourceChannel) {
 
 export async function deliverPlainAPNs(env, deviceToken, payload, fetchImpl = fetch) {
   const token = await apnsJWT(env);
+  // Wire parity with the retired Swift relay: passive notifications are
+  // delivered at priority 5 (they do not need to wake the device this
+  // instant), and a positive ttl becomes an apns-expiration absolute epoch
+  // capped at 30 days. Everything else stays priority 10, no expiration.
+  const level = String(payload.level ?? "");
+  const priority = level === "passive" ? "5" : "10";
+  const ttl = Number(payload.ttl);
+  const expiration = Number.isFinite(ttl) && ttl > 0
+    ? String(Math.floor(Date.now() / 1000) + Math.min(ttl, 30 * 24 * 3600))
+    : undefined;
   const response = await fetchImpl(`${apnsProductionBaseURL()}/3/device/${encodeURIComponent(deviceToken)}`, {
     method: "POST",
     headers: {
       authorization: `bearer ${token}`,
       "apns-topic": env.APNS_TOPIC,
       "apns-push-type": "alert",
-      "apns-priority": "10",
+      "apns-priority": priority,
+      ...(expiration ? { "apns-expiration": expiration } : {}),
       "content-type": "application/json",
     },
     body: JSON.stringify(payload),
