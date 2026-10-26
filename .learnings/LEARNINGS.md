@@ -590,3 +590,40 @@ sitemap URL 可达且 XML 合法，但新验证站点当日 sitemap quota=0，�
 - Disposition: retain; Application: proposed
 
 ---
+
+## [LRN-20261026-004] best_practice
+
+**Logged**: 2026-10-26T14:50:12Z
+**Priority**: medium
+**Status**: active
+**Area**: infra
+
+### Summary
+外部平台配额/审核类阻塞要用定时心跳观测，而不是一次性人工反复刷新；
+连续无效达到预设次数后升级到替代方案。
+
+### Details
+drel.app 百度验证通过后，sitemap 提交被新站点当日 quota=0 阻塞。
+建立 `drel-sitemap` 每日本地心跳，最多 5 次；成功提交即报告，若连续 5 次
+配额仍为 0 则提示补充站点主体/备案信息或改用其他推进方案并删除自动化。
+
+### Suggested Action
+对外部状态用有限次数、可退出条件的 heartbeat；执行中遇到 CAPTCHA/风控
+必须停止并请求人工介入。
+
+### Metadata
+- Source: user_request
+- Related Files: docs/site/README.md
+- Tags: automation, heartbeat, baidu, sitemap, quota
+- Pattern-Key: external-platform.quota_heartbeat
+- Recurrence-Count: 1
+- First-Seen: 2026-10-26
+- Last-Seen: 2026-10-26
+
+### Context Maintenance
+- Decay-Type: decision
+- Decay-Rate: durable
+- Authority: 用户要求定时查几天，没用就继续推进; Owner: Drel infra
+- Revalidation: 自动化结束、用户改变跟进周期，或百度配额规则变更时
+- Validation: configured; Last-Validated: 2026-10-26; Evidence: automationId=drel-sitemap, FREQ=DAILY;COUNT=5
+- Disposition: retain; Application: applied
