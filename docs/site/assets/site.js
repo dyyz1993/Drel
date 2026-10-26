@@ -2,6 +2,18 @@
 (function () {
   "use strict";
 
+  /* ── Cloudflare Web Analytics ─────────────────────────────────────── */
+  // The dashboard "automatic injection" is not applied to this Pages
+  // project, so install the provided manual snippet once per document.
+  if (!document.querySelector("script[data-cf-beacon]")) {
+    const analytics = document.createElement("script");
+    analytics.defer = true;
+    analytics.type = "module";
+    analytics.src = "https://static.cloudflareinsights.com/beacon.min.js";
+    analytics.setAttribute("data-cf-beacon", '{"token": "30a20317a22841cb8debd93693fd804a"}');
+    document.head.appendChild(analytics);
+  }
+
   /* ── Copy buttons ─────────────────────────────────────────────────── */
   function fallbackCopy(text) {
     const field = document.createElement("textarea");

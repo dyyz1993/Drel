@@ -31,6 +31,55 @@ Every saved entry, including a one-off pending learning, includes:
 
 ---
 
+## [LRN-20261027-004] knowledge_gap
+
+**Logged**: 2026-10-27T01:06:08+08:00
+**Priority**: medium
+**Status**: resolved
+**Area**: infra
+
+### Summary
+drel.app 的 Cloudflare Web Analytics 站点已存在；后台和扩展 Playwright
+均能选 `Enable`，但 Update 无法持久，公开 HTML 仍未见 Cloudflare beacon。
+
+### Details
+Cloudflare Dashboard 显示 `drel.app` 已启用 Web Analytics（过去 24 小时
+7 PV / 7 Visits），管理页 RUM 单选框可变为 `enable`，但 Chrome-bridge、
+xbrowser CDP trusted mouse 和 Codex browser Playwright 的保存动作都没
+有持久生效；公开页面 HTML 一直没有 `static.cloudflareinsights.com` 注入。
+Wrangler OAuth scope 不含 Web Analytics API，zone analytics API 也认证
+失败。当前 UI 保存动作看似成功但后台状态/注入未变化，需要 Cloudflare
+API token 或用户可见标签人工确认。
+
+### Suggested Action
+已保留 Dashboard 全量 RUM 配置，同时在 `docs/site/assets/site.js` 安装
+Dashboard 返回的手动 snippet（site token
+`30a20317a22841cb8debd93693fd804a`）。该方案覆盖所有加载 `site.js` 的
+静态页面，不依赖平台自动注入。若 Cloudflare 后续修复 Pages 自动注入，
+可移除这段手动初始化。
+
+### Metadata
+- Source: error
+- Related Files: docs/site/privacy/index.html, build/reports/search-index/latest.json
+- Tags: cloudflare-web-analytics, rum, traffic-monitoring, api-scopes
+- Pattern-Key: cloudflare.web_analytics.rum_persistence
+- Recurrence-Count: 1
+- First-Seen: 2026-10-27
+- Last-Seen: 2026-10-27
+
+### Context Maintenance
+- Decay-Type: dependency
+- Decay-Rate: medium
+- Authority: Cloudflare Dashboard 实查 + drel.app HTML 复查; Owner: Drel infra
+- Revalidation: Cloudflare Web Analytics API scope/RUM 设置变更后复查
+- Validation: verified; Last-Validated: 2026-10-27; Evidence: Dashboard API
+  返回 `auto_install:true / ruleset.enabled:true`，但 HTML 无 beacon；手动
+  snippet 部署后浏览器实测 `beacon:true` 且发起
+  `beacon.min.js` + `/cdn-cgi/rum` 请求
+- Disposition: retain; Application: proposed
+
+---
+
 ## [LRN-20261026-003] correction
 
 **Logged**: 2026-10-26T14:39:21Z
