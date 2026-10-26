@@ -57,6 +57,26 @@ reviewing and revoking grants, and a one-command permission regression gate.
   icons are backfilled and persisted. — Scope: `App` — Verified:
   `server-test` — Evidence:
   [docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md](docs/testing/results/drel-1-5-0-109-inbox-channel/verification.md)
+- The push address card wears the Drel product mark: the official channel
+  keeps the standard blue-violet gradient while a self-hosted channel shows
+  the same mark in a teal variant. — Scope: `App` — Verified: `simulator` —
+  Evidence:
+  [docs/testing/results/drel-1-5-0-110-brand-merge/verification.md](docs/testing/results/drel-1-5-0-110-brand-merge/verification.md)
+- Scanning a self-hosted pairing code now binds the whole service at once:
+  the same origin's gateway descriptor is fetched and saved automatically,
+  so the gateway never needs a separate import. — Scope: `App` — Verified:
+  `server-test` — Evidence:
+  [docs/testing/results/drel-1-5-0-110-brand-merge/verification.md](docs/testing/results/drel-1-5-0-110-brand-merge/verification.md)
+- The default-startup-app list matches the favorites row style, preferring
+  each app's manifest-declared icon. — Scope: `App` — Verified:
+  `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-110-brand-merge/verification.md](docs/testing/results/drel-1-5-0-110-brand-merge/verification.md)
+- The official edge matches the retired Swift relay's wire semantics:
+  passive pushes go out at apns-priority 5, a positive ttl becomes a capped
+  apns-expiration, direct pushes carry no self-hosted tag, and unmatched
+  paths answer a clean 404 after the legacy upstream was unbound. — Scope:
+  `Push`, `Server` — Verified: `server-test` — Evidence:
+  [docs/testing/results/drel-1-5-0-110-brand-merge/verification.md](docs/testing/results/drel-1-5-0-110-brand-merge/verification.md)
 
 ### Changed
 
