@@ -21,7 +21,15 @@ cd "$ROOT"
 APP_ID="${WBK_APP_ID:-6802806992}"
 KEY_ID="${WBK_ASC_KEY_ID:-4NXJ8HL7K9}"
 KEY_ISSUER="${WBK_ASC_ISSUER:-18f47979-0b65-4045-b969-00ba54177716}"
-ASC_API="/usr/bin/python3 $HOME/Project/study-mac-app/quite-note/tools/asc-api.py"
+# Prefer the repository's self-contained helper so the script also runs in CI,
+# where the author's ~/Project/study-mac-app checkout does not exist.
+# asc-api.sh takes ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH from the env.
+if [[ -x "$ROOT/tools/asc-api.sh" ]]; then
+  export ASC_KEY_ID="$KEY_ID" ASC_ISSUER_ID="$KEY_ISSUER" ASC_APP_ID="$APP_ID"
+  ASC_API="$ROOT/tools/asc-api.sh"
+else
+  ASC_API="/usr/bin/python3 $HOME/Project/study-mac-app/quite-note/tools/asc-api.py"
+fi
 EXPORT_OPTS="${WBK_EXPORT_OPTS:-/tmp/drel-export-options.plist}"
 DD="${WBK_RELEASE_DD:-/tmp/wbk-dd-publish}"
 SKIP_UPLOAD="${WBK_SKIP_UPLOAD:-0}"
