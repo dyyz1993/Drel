@@ -408,6 +408,13 @@ Debug 工具（调试中心、调试面板、Bridge 实验室、Web 缓存调试
 - `SuperApp/Resources/en.lproj/Localizable.strings` - English
 - `Sources/Utils/L10n.swift` - Localization helper with multi-bundle fallback
 
+## Browser Automation CAPTCHA Rule
+
+- When web automation encounters a CAPTCHA slider, image challenge, SMS/login
+  verification, or risk-control gate, stop immediately. Do not drag the slider
+  or bypass the challenge. Preserve the page state, capture evidence, and ask
+  the user to complete it manually; resume only after the user says it is done.
+
 ## CI
 
 - `.github/workflows/ci.yml` - 14 jobs, Smoke Tests may need retry
