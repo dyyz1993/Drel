@@ -162,12 +162,46 @@ final class SelfHostedPushConfigurationViewController: UIViewController {
         PushNotificationManager.shared.activateSelfHostedPush(importPayload: payload) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
-                case .ready: self?.refresh()
+                case .ready:
+                    self?.refresh()
+                    // 一码双绑：推送配对成功即视为「绑定了这个服务」。同一台
+                    // 服务器的网关描述符（/api/v1/gateway）顺带入库，用户不必
+                    // 再到网关管理里重复导入一次。只入库不切换活动网关——
+                    // 避免首页应用目录突然从官方切到自建的空清单。
+                    if let configuration = SelfHostedPushConfiguration.load() {
+                        self?.importGatewayDescriptor(for: configuration.serverURL)
+                    }
                 case .denied: self?.showError("请在系统设置中允许通知后再连接自托管服务器。")
                 case .failed(let message): self?.showError(message)
                 }
             }
         }
+    }
+
+    /// 拉取 `{server}/api/v1/gateway` 描述符并存入网关注册表（不激活）。
+    /// 失败不影响推送绑定结果——网关可稍后在应用中心手动导入。
+    private func importGatewayDescriptor(for serverURL: String) {
+        guard let base = URL(string: serverURL) else { return }
+        let descriptorURL = base.appendingPathComponent("api/v1/gateway")
+        var request = URLRequest(url: descriptorURL)
+        request.timeoutInterval = 10
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
+            guard let http = response as? HTTPURLResponse,
+                  (200..<300).contains(http.statusCode),
+                  let data,
+                  let configuration = try? JSONDecoder().decode(HTMLAppGatewayConfiguration.self, from: data) else {
+                return
+            }
+            DispatchQueue.main.async {
+                let registry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
+                do {
+                    try registry.save(configuration, activate: false)
+                    HUDService.shared.showSuccess(withStatus: "服务已绑定：推送 + 网关")
+                } catch {
+                    WebBridgeLogger.shared.info("gateway auto-bind failed: \(error.localizedDescription)")
+                }
+            }
+        }.resume()
     }
 
     private func statusText(for configuration: SelfHostedPushConfiguration) -> String {
