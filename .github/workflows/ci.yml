@@ -22,7 +22,7 @@ jobs:
   # ─── Job 1: SwiftLint ───────────────────────────────────────────
   swiftlint:
     name: SwiftLint
-    runs-on: [self-hosted, macos-heavy]
+    runs-on: macos-15
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
   # ─── Job 2: Build ───────────────────────────────────────────────
   build:
     name: Build
-    runs-on: [self-hosted, macos-heavy]
+    runs-on: macos-15
     timeout-minutes: 30
     needs: []
     steps:
@@ -107,7 +107,7 @@ jobs:
   # ─── Job 3: Smoke Tests (with retry) ────────────────────────────
   smoke-tests:
     name: Drel Smoke Tests
-    runs-on: [self-hosted, macos-heavy]
+    runs-on: macos-15
     timeout-minutes: 30
     needs: build
     continue-on-error: true
@@ -285,7 +285,7 @@ jobs:
   # ─── Job 4: UI Fidelity Tests (with retry) ──────────────────────
   ui-fidelity:
     name: Drel UI Fidelity Tests
-    runs-on: [self-hosted, macos-heavy]
+    runs-on: macos-15
     timeout-minutes: 30
     needs: build
     continue-on-error: true
@@ -500,7 +500,7 @@ jobs:
   # ─── Job 5: Design System Lint ──────────────────────────────────
   design-lint:
     name: 🎨 Design System Lint
-    runs-on: [self-hosted, macos-heavy]
+    runs-on: macos-15
     timeout-minutes: 10
     needs: build
     steps:
@@ -522,7 +522,7 @@ jobs:
   # architecture-lint Rule 9 (DEBUG-only files must be file-level #if DEBUG).
   release-purity:
     name: 🔒 Release Purity
-    runs-on: [self-hosted, macos-heavy]
+    runs-on: macos-15
     timeout-minutes: 20
     needs: build
     steps:
