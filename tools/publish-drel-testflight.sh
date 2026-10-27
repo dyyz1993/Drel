@@ -141,11 +141,11 @@ for i in $(seq 1 30); do
   sleep 20
   # 注意：先取引号内完整值再清理，直接 grep -oE '[A-Z_]+' 会只拿到首字母
   STATE=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD&fields[builds]=version,processingState" 2>/dev/null \
-    | { grep -oE '"processingState": *"[^"]+"' || true; } | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
+    | { grep -oE '"processingState" *: *"[^"]+"' || true; } | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
   echo "  [$((i*20))s] processingState=$STATE"
   if [[ "$STATE" == "VALID" ]]; then
     BUILD_ID=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" 2>/dev/null \
-      | grep -oE '"id": *"[a-f0-9-]{36}"' | head -1 | grep -oE '[a-f0-9-]{36}')
+      | { grep -oE '"id" *: *"[a-f0-9-]{36}"' || true; } | head -1 | grep -oE '[a-f0-9-]{36}')
     $ASC_API get "/v1/builds/$BUILD_ID/buildBetaDetail" 2>/dev/null | grep -E "internalBuildState"
     ok "Drel 1.5.0 ($BUILD) 处理完成，TestFlight 可安装"
     echo
