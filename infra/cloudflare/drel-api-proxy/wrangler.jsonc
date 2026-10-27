@@ -30,6 +30,10 @@
       {
         "name": "OFFICIAL_PUSH_REGISTRY",
         "class_name": "OfficialPushRegistry"
+      },
+      {
+        "name": "APPROVAL_REGISTRY",
+        "class_name": "ApprovalRegistry"
       }
     ]
   },
@@ -45,6 +49,10 @@
     {
       "tag": "v3-official-push",
       "new_sqlite_classes": ["OfficialPushRegistry"]
+    },
+    {
+      "tag": "v4-approval-state",
+      "new_sqlite_classes": ["ApprovalRegistry"]
     }
   ],
   "observability": {

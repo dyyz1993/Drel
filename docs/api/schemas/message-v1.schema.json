@@ -86,14 +86,33 @@
           "maxItems": 5,
           "items": { "$ref": "#/$defs/action" }
         },
-        "responseMode": { "enum": ["poll", "webhook"] },
-        "responseURL": { "type": "string", "format": "uri", "pattern": "^https://" }
+        "responseMode": { "enum": ["poll", "webhook", "thirdParty"] },
+        "responseURL": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "submit": {
+          "type": "object",
+          "required": ["url", "ticket"],
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://",
+              "maxLength": 2048
+            },
+            "ticket": { "type": "string", "minLength": 1, "maxLength": 8192 }
+          },
+          "additionalProperties": false
+        }
       },
       "allOf": [
         {
           "if": { "properties": { "responseMode": { "const": "webhook" } }, "required": ["responseMode"] },
           "then": { "required": ["responseURL"] },
           "else": { "not": { "required": ["responseURL"] } }
+        },
+        {
+          "if": { "properties": { "responseMode": { "const": "thirdParty" } }, "required": ["responseMode"] },
+          "then": { "required": ["submit"] },
+          "else": { "not": { "required": ["submit"] } }
         }
       ],
       "additionalProperties": false
