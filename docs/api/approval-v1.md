@@ -37,7 +37,9 @@ curl https://api.drel.app/api/v1/approvals/approval-42 \
   -H 'Authorization: Bearer YOUR_KEY'
 ```
 
-查询地址由 WebBridgeKit 提供，源站不需要实现状态查询接口。
+查询地址由 WebBridgeKit 的 edge Durable Object 提供，源站不需要实现状态查询接口。
+原生 `poll` 与 `webhook` 审批会在 APNs 接受推送后写入状态；同一条推送也进入
+Tier-2 消息历史。状态记录以 `requestId` 为主键，重启 Worker 后仍可查询。
 
 ## 提交响应
 
@@ -58,6 +60,53 @@ Content-Type: application/json
 ```
 
 `expectedRevision` 用于防止旧页面覆盖新状态；第一份有效响应生效，后续响应返回 `409 Conflict`。需要填写理由时统一放在 `values.reason`。`values` 和路由 `params` 的值统一使用字符串，保证 curl、APNs、原生路由与 webhook 的表示一致。
+
+`/respond` 在 edge 内以 `requestId` 对应的 Durable Object 原子提交；它只更新
+审批记录，不会再次发送 APNs 推送。客户端本地把状态更新为响应结果，之后重新打开
+消息时通过查询接口恢复真实状态。
+
+### 第三方提交（`thirdParty`）
+
+当审批由外部系统自行校验和落地，用 `responseMode: "thirdParty"` 并提供
+`submit`：
+
+```json
+{
+  "approval": {
+    "actions": [
+      {"id":"approve","title":"通过","style":"primary","resultState":"approved"},
+      {"id":"reject","title":"拒绝","style":"destructive","requiresReason":true,"resultState":"rejected"}
+    ],
+    "responseMode": "thirdParty",
+    "submit": {
+      "url": "https://approve.example.com/api/review",
+      "ticket": "opaque-short-lived-ticket"
+    }
+  }
+}
+```
+
+客户端只校验 `submit.url` 是 HTTPS、host 非空且 `ticket` 非空；它不查询
+Drel 的审批状态，也不自行判断 ticket 是否过期或已使用。点击动作后，客户端向
+`submit.url` 原样 POST：
+
+```json
+{
+  "ticket": "opaque-short-lived-ticket",
+  "requestId": "approval-42",
+  "actionId": "approve",
+  "expectedRevision": 1,
+  "values": {}
+}
+```
+
+`requestId`、动作范围、过期时间、一次性重放保护、GitHub 状态校验与最终业务
+操作全部由该 URL 的接收方负责。响应至少应返回客户端使用的
+`{"requestId":"approval-42","state":"approved","revision":2}`。
+
+`thirdParty` 审批不会在 Drel 官方服务里创建可查询的审批记录，因此
+`GET /api/v1/approvals/{requestId}` 对它返回 `404`；状态查询由 `submit.url`
+对应的系统提供。
 
 ## Webhook
 

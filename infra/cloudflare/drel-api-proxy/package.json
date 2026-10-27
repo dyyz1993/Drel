@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test test/*.test.js",
+    "test:approval": "node --test test/approval-loop.test.js",
     "check": "npx --yes wrangler@latest deploy --dry-run",
     "deploy": "npx --yes wrangler@latest deploy"
   }
