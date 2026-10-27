@@ -31,17 +31,43 @@ struct ApprovalConfiguration: Codable, Equatable, Sendable {
     let actions: [ApprovalAction]
     let responseMode: String
     let responseURL: String?
+    let submit: ApprovalSubmit?
+
+    init(
+        actions: [ApprovalAction],
+        responseMode: String,
+        responseURL: String?,
+        submit: ApprovalSubmit? = nil
+    ) {
+        self.actions = actions
+        self.responseMode = responseMode
+        self.responseURL = responseURL
+        self.submit = submit
+    }
 
     var clientPayload: ApprovalClientPayload {
-        ApprovalClientPayload(actions: actions)
+        ApprovalClientPayload(actions: actions, responseMode: responseMode, submit: submit)
     }
+}
+
+struct ApprovalSubmit: Codable, Equatable, Sendable {
+    let url: String
+    let ticket: String
 }
 
 struct ApprovalClientPayload: Codable, Equatable, Sendable {
     let actions: [ApprovalAction]
+    let responseMode: String?
+    let submit: ApprovalSubmit?
+
+    init(actions: [ApprovalAction], responseMode: String? = nil, submit: ApprovalSubmit? = nil) {
+        self.actions = actions
+        self.responseMode = responseMode
+        self.submit = submit
+    }
 
     var dictionary: [String: Any] {
-        [
+        var value: [String: Any] = [
             "actions": actions.map { action in
                 var value: [String: Any] = [
                     "id": action.id,
@@ -53,6 +79,13 @@ struct ApprovalClientPayload: Codable, Equatable, Sendable {
                 return value
             },
         ]
+        if let responseMode {
+            value["responseMode"] = responseMode
+        }
+        if let submit {
+            value["submit"] = ["url": submit.url, "ticket": submit.ticket]
+        }
+        return value
     }
 }
 

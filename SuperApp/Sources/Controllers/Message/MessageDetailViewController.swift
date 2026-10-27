@@ -323,8 +323,8 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
     private func setupSideIndicators() {
         guard peerMessages != nil else { return }
         view.addSubview(indicatorStack)
-        indicatorStack.addArrangedSubview(nextIndicator)
         indicatorStack.addArrangedSubview(prevIndicator)
+        indicatorStack.addArrangedSubview(nextIndicator)
         indicatorStack.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
             make.bottom.equalTo(view.safeAreaLayoutGuide).offset(-ThemeTokens.Spacing.sm)

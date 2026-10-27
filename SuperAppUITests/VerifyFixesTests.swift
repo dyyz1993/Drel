@@ -190,6 +190,17 @@ final class VerifyFixesTests: XCTestCase {
 
         waitForNav()
         sleep(2)
+
+        let nextButton = app.buttons["message.detail.indicator.next"]
+        if nextButton.waitForExistence(timeout: 3) {
+            nextButton.tap()
+            sleep(1)
+            let prevButton = app.buttons["message.detail.indicator.prev"]
+            if prevButton.waitForExistence(timeout: 2) && nextButton.exists {
+                XCTAssertLessThan(prevButton.frame.minX, nextButton.frame.minX, "上一条 button must be to the left of 下一条 button")
+            }
+        }
+
         saveScreenshot("/tmp/wbk-fix-inbox-detail.png")
     }
 

@@ -80,12 +80,8 @@ extension MessageDetailViewController {
         contextualActionStackView.alpha = 0.55
         approvalStateValueLabel?.text = L10n.tr("message.action.submitting")
 
-        ApprovalResponseClient(baseURL: baseURL, deviceKey: deviceKey).respond(
-            requestID: requestID,
-            actionID: action.id,
-            expectedRevision: revision,
-            values: values
-        ) { [weak self] result in
+        let client = ApprovalResponseClient(baseURL: baseURL, deviceKey: deviceKey)
+        let completion: (Result<ApprovalResponseResult, Error>) -> Void = { [weak self] result in
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.isSubmittingApproval = false
@@ -110,6 +106,24 @@ extension MessageDetailViewController {
                     HUDService.shared.showError(withStatus: error.localizedDescription)
                 }
             }
+        }
+        if let submit = message.payload.approval?.submit {
+            client.respond(
+                submit: submit,
+                requestID: requestID,
+                actionID: action.id,
+                expectedRevision: revision,
+                values: values,
+                completion: completion
+            )
+        } else {
+            client.respond(
+                requestID: requestID,
+                actionID: action.id,
+                expectedRevision: revision,
+                values: values,
+                completion: completion
+            )
         }
     }
 

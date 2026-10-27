@@ -15,6 +15,8 @@
  *   POST /register                    device registry (token + key)
  *   POST /unregister                  remove a registration
  *   GET  /api/v1/messages/:key        inbox back-fill (Tier-2 history)
+ *   GET  /api/v1/approvals/:requestId approval status
+ *   POST /api/v1/approvals/:requestId/respond approval response
  *   POST /api/v1/admin/import-registrations   one-time migration helper
  *   GET  /health                      edge health when the flag is on
  *
@@ -29,6 +31,10 @@ const encoder = new TextEncoder();
 
 const HISTORY_LIMIT = 200;
 const HISTORY_SCHEMA = "drel.message-history.v1";
+const APPROVAL_SCHEMA = "webbridgekit.approval-status.v1";
+const APPROVAL_STATES = ["pending", "approved", "rejected", "cancelled", "expired"];
+const APPROVAL_ID = /^[A-Za-z0-9._:-]{1,128}$/;
+const APPROVAL_ACTION_ID = /^[A-Za-z0-9._-]{1,64}$/;
 
 function json(value, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -42,6 +48,31 @@ function json(value, status = 200) {
 
 function failure(status, message) {
   return json({ error: message }, status);
+}
+
+function approvalPayload(input) {
+  const presentation = input.presentation ?? "native";
+  if (input.type !== "approval" || presentation !== "native") return null;
+  const state = input.state ?? input.actionState;
+  if (!input.id || !input.requestId || !Number.isInteger(Number(input.revision))
+    || !APPROVAL_STATES.includes(String(state))) {
+    return null;
+  }
+  const configuration = input.approval;
+  if (!configuration || !Array.isArray(configuration.actions) || configuration.actions.length === 0) {
+    return null;
+  }
+  if (!["poll", "webhook", "thirdParty"].includes(configuration.responseMode)) return null;
+  return {
+    id: input.id,
+    requestId: input.requestId,
+    revision: Number(input.revision),
+    state: String(state),
+    title: input.title ?? "",
+    body: input.body ?? "",
+    expiresAt: input.expiresAt ?? null,
+    configuration,
+  };
 }
 
 function base64URLEncode(bytes) {
@@ -116,11 +147,76 @@ export function buildPlainAPNsPayload(input, messageID, sourceChannel) {
     if (value === undefined || value === null || value === "") continue;
     payload[key] = value;
   }
+  // Approval v1 names the lifecycle field `state`. The native client requires
+  // it to decide whether actions are still actionable, so normalize it onto
+  // both wire spellings instead of relying on a caller-specific alias.
+  const actionState = input.state ?? input.actionState;
+  if (actionState !== undefined && actionState !== null && actionState !== "") {
+    payload.actionState = actionState;
+    payload.state = actionState;
+  }
   if (sourceChannel) payload.drelSourceChannel = sourceChannel;
   return payload;
 }
 
-export async function deliverPlainAPNs(env, deviceToken, payload, fetchImpl = fetch) {
+function validatePushRequest(input) {
+  if (input.type !== "approval") return null;
+  const presentation = input.presentation ?? "native";
+  const required = [
+    ["id", input.id],
+    ["requestId", input.requestId],
+    ["revision", input.revision],
+    ["state", input.state ?? input.actionState],
+  ];
+  const missing = required.filter(([, value]) => value === undefined || value === null || value === "");
+  if (missing.length) {
+    return `approval requires ${missing.map(([name]) => name).join(", ")}`;
+  }
+  if (!Number.isInteger(Number(input.revision)) || Number(input.revision) < 1) {
+    return "approval revision must be a positive integer";
+  }
+  const state = String(input.state ?? input.actionState);
+  if (!["pending", "approved", "rejected", "cancelled", "expired"].includes(state)) {
+    return "approval state is invalid";
+  }
+  if (!["native", "web", "pwa"].includes(String(presentation))) {
+    return "approval presentation must be native, web, or pwa";
+  }
+  if (presentation === "native") {
+    const actions = input.approval?.actions;
+    if (!Array.isArray(actions) || actions.length === 0) {
+      return "native approval requires approval.actions";
+    }
+    const responseMode = input.approval?.responseMode;
+    if (!["poll", "webhook", "thirdParty"].includes(responseMode)) {
+      return "native approval responseMode must be poll, webhook, or thirdParty";
+    }
+    if (responseMode === "thirdParty") {
+      const submit = input.approval?.submit;
+      if (!submit || typeof submit.url !== "string" || typeof submit.ticket !== "string"
+        || submit.ticket.trim() === "") {
+        return "thirdParty approval requires approval.submit.url and ticket";
+      }
+      try {
+        const url = new URL(submit.url);
+        if (url.protocol !== "https:" || !url.hostname) {
+          return "approval.submit.url must be HTTPS";
+        }
+      } catch {
+        return "approval.submit.url must be a valid HTTPS URL";
+      }
+    }
+  }
+  return null;
+}
+
+export async function deliverPlainAPNs(
+  env,
+  deviceToken,
+  payload,
+  fetchImpl = fetch,
+  apnsEnvironment = "production",
+) {
   const token = await apnsJWT(env);
   // Wire parity with the retired Swift relay: passive notifications are
   // delivered at priority 5 (they do not need to wake the device this
@@ -132,7 +228,7 @@ export async function deliverPlainAPNs(env, deviceToken, payload, fetchImpl = fe
   const expiration = Number.isFinite(ttl) && ttl > 0
     ? String(Math.floor(Date.now() / 1000) + Math.min(ttl, 30 * 24 * 3600))
     : undefined;
-  const response = await fetchImpl(`${apnsProductionBaseURL()}/3/device/${encodeURIComponent(deviceToken)}`, {
+  const response = await fetchImpl(`${apnsBaseURL(apnsEnvironment)}/3/device/${encodeURIComponent(deviceToken)}`, {
     method: "POST",
     headers: {
       authorization: `bearer ${token}`,
@@ -150,8 +246,14 @@ export async function deliverPlainAPNs(env, deviceToken, payload, fetchImpl = fe
   }
 }
 
-function apnsProductionBaseURL() {
-  return "https://api.push.apple.com";
+function normalizeAPNsEnvironment(value) {
+  return value === "sandbox" ? "sandbox" : "production";
+}
+
+function apnsBaseURL(environment) {
+  return environment === "sandbox"
+    ? "https://api.sandbox.push.apple.com"
+    : "https://api.push.apple.com";
 }
 
 /* ── Bark path parsing (/:key[/:title[/:body]] plus query fields) ──── */
@@ -228,7 +330,8 @@ export class OfficialPushRegistry {
     this.env = env;
   }
 
-  async fetch(request) {
+  async fetch(input, init) {
+    const request = input instanceof Request ? input : new Request(input, init);
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -243,6 +346,7 @@ export class OfficialPushRegistry {
       await this.state.storage.put(`device:${body.deviceKey}`, {
         deviceToken: body.deviceToken,
         deviceKey: body.deviceKey,
+        apnsEnvironment: normalizeAPNsEnvironment(body.apnsEnvironment),
         encryptionPublicKey: body.encryptionPublicKey ?? "",
         platform: body.platform ?? "",
         appVersion: body.appVersion ?? "",
@@ -269,6 +373,7 @@ export class OfficialPushRegistry {
         await this.state.storage.put(`device:${device.deviceKey}`, {
           deviceToken: device.deviceToken,
           deviceKey: device.deviceKey,
+          apnsEnvironment: normalizeAPNsEnvironment(device.apnsEnvironment),
           encryptionPublicKey: device.encryptionPublicKey ?? "",
           platform: device.platform ?? "",
           appVersion: device.appVersion ?? "",
@@ -301,11 +406,204 @@ export class OfficialPushRegistry {
   }
 }
 
+/* ── Approval state: one Durable Object row per requestId ─────────── */
+
+export class ApprovalRegistry {
+  constructor(state) {
+    this.state = state;
+  }
+
+  async fetch(request) {
+    const run = () => this.respond(request);
+    return this.state.storage.blockConcurrencyWhile
+      ? this.state.storage.blockConcurrencyWhile(run)
+      : run();
+  }
+
+  async respond(request) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const requestMatch = path.match(/^\/approval\/([^/]+)$/);
+    const respondMatch = path.match(/^\/approval\/([^/]+)\/respond$/);
+    const upsertMatch = path.match(/^\/approval\/([^/]+)\/upsert$/);
+
+    if (upsertMatch && request.method === "POST") {
+      let input;
+      try {
+        input = await request.json();
+      } catch {
+        return failure(400, "Invalid JSON body");
+      }
+      const approval = approvalPayload({
+        type: "approval",
+        presentation: "native",
+        ...input,
+        approval: input.configuration,
+      });
+      if (!approval) return failure(400, "Invalid approval");
+      const existing = await this.read(approval.requestId);
+      if (existing) {
+        if (existing.messageId !== approval.id || approval.revision < existing.revision) {
+          return failure(409, "Approval revision conflict");
+        }
+        if (approval.revision === existing.revision) return json(existing);
+      }
+      const now = new Date().toISOString();
+      const record = {
+        schema: APPROVAL_SCHEMA,
+        requestId: approval.requestId,
+        messageId: approval.id,
+        state: approval.state,
+        revision: approval.revision,
+        title: approval.title,
+        body: approval.body,
+        expiresAt: approval.expiresAt,
+        configuration: approval.configuration,
+        actionId: existing?.actionId ?? null,
+        values: existing?.values ?? {},
+        respondedAt: existing?.respondedAt ?? null,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+        delivery: { state: "notRequested", attempts: 0, lastAttemptAt: null, lastError: null },
+      };
+      await this.state.storage.put(`approval:${record.requestId}`, record);
+      return json(record);
+    }
+
+    if (requestMatch && request.method === "GET") {
+      const record = await this.read(requestMatch[1]);
+      if (!record) return failure(404, "Approval not found");
+      const effective = await this.expireIfNeeded(record);
+      return json(effective);
+    }
+
+    if (respondMatch && request.method === "POST") {
+      let submission;
+      try {
+        submission = await request.json();
+      } catch {
+        return failure(400, "Invalid JSON body");
+      }
+      if (!submission || typeof submission.actionId !== "string"
+        || !Number.isSafeInteger(submission.expectedRevision)
+        || submission.expectedRevision < 1
+        || !submission.values || typeof submission.values !== "object"
+        || Array.isArray(submission.values)
+        || !Object.values(submission.values).every((value) => typeof value === "string")) {
+        return failure(400, "Invalid approval submission");
+      }
+      const record = await this.expireIfNeeded(await this.read(respondMatch[1]));
+      if (!record) return failure(404, "Approval not found");
+      if (record.state !== "pending") return failure(409, "Approval has already been resolved");
+      if (submission.expectedRevision !== record.revision) {
+        return failure(409, "Approval revision conflict");
+      }
+      const action = record.configuration.actions.find((item) => item?.id === submission.actionId);
+      if (!action || !APPROVAL_ACTION_ID.test(action.id)) {
+        return failure(400, "Unknown approval action");
+      }
+      if (action.requiresReason === true
+        && typeof submission.values.reason !== "string") {
+        return failure(400, "This action requires a reason");
+      }
+      if (action.requiresReason === true && submission.values.reason.trim() === "") {
+        return failure(400, "This action requires a reason");
+      }
+      const resultState = action.resultState ?? action.id;
+      if (!["approved", "rejected", "cancelled"].includes(resultState)) {
+        return failure(400, "Approval action is missing resultState");
+      }
+      const now = new Date().toISOString();
+      const resolved = {
+        ...record,
+        state: resultState,
+        revision: record.revision + 1,
+        actionId: action.id,
+        values: submission.values,
+        respondedAt: now,
+        updatedAt: now,
+      };
+      await this.state.storage.put(`approval:${resolved.requestId}`, resolved);
+      return json(resolved);
+    }
+
+    return failure(404, "Approval route not found");
+  }
+
+  async read(requestId) {
+    return (await this.state.storage.get(`approval:${requestId}`)) ?? null;
+  }
+
+  async expireIfNeeded(record) {
+    if (!record || record.state !== "pending" || !record.expiresAt) return record;
+    const expires = Date.parse(record.expiresAt);
+    if (!Number.isFinite(expires) || expires > Date.now()) return record;
+    const expired = {
+      ...record,
+      state: "expired",
+      revision: record.revision + 1,
+      updatedAt: new Date().toISOString(),
+    };
+    await this.state.storage.put(`approval:${record.requestId}`, expired);
+    return expired;
+  }
+}
+
 function registryStub(env) {
   const namespace = env.OFFICIAL_PUSH_REGISTRY;
   if (!namespace) return null;
   const id = namespace.idFromName("official-push-v1");
   return namespace.get(id);
+}
+
+function approvalStub(env) {
+  const namespace = env.APPROVAL_REGISTRY;
+  if (!namespace) return null;
+  const id = namespace.idFromName("approval-v1");
+  return namespace.get(id);
+}
+
+async function forwardApprovalRequest(env, request, suffix = "") {
+  const stub = approvalStub(env);
+  if (!stub) return failure(503, "approval registry unavailable");
+  const requestID = decodeURIComponent(suffix.split("/")[0]);
+  if (!APPROVAL_ID.test(requestID)) return failure(400, "Invalid requestId");
+  let body;
+  if (request.method === "POST") {
+    try {
+      body = await request.text();
+    } catch {
+      return failure(400, "Invalid request body");
+    }
+  }
+  const response = await stub.fetch(
+    `https://approval.internal/approval/${encodeURIComponent(requestID)}${suffix.endsWith("/respond") ? "/respond" : ""}`,
+    {
+      method: request.method,
+      headers: { "content-type": "application/json" },
+      body,
+    }
+  );
+  return new Response(response.body, {
+    status: response.status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+async function recordApproval(env, input) {
+  const approval = approvalPayload(input);
+  if (!approval || approval.configuration.responseMode === "thirdParty") return;
+  if (!APPROVAL_ID.test(approval.id) || !APPROVAL_ID.test(approval.requestId)) return;
+  const stub = approvalStub(env);
+  if (!stub) return;
+  await stub.fetch(`https://approval.internal/approval/${encodeURIComponent(approval.requestId)}/upsert`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(approval),
+  });
 }
 
 async function lookupDevice(env, deviceKey) {
@@ -353,6 +651,16 @@ export async function handleOfficialPush(request, env) {
     return new Response(response.body, { status: response.status, headers: { "content-type": "application/json" } });
   }
 
+  const approvalMatch = path.match(/^\/api\/v1\/approvals\/([^/]+)(\/respond)?$/);
+  if (approvalMatch && (request.method === "GET" || (approvalMatch[2] && request.method === "POST"))) {
+    const authorization = request.headers.get("authorization") || "";
+    const deviceKey = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+    if (!deviceKey) return failure(401, "Missing device key");
+    const device = await lookupDevice(env, deviceKey);
+    if (!device) return failure(401, "Invalid device key");
+    return forwardApprovalRequest(env, request, `${approvalMatch[1]}${approvalMatch[2] ?? ""}`);
+  }
+
   if (path === "/api/v1/admin/import-registrations" && request.method === "POST") {
     if (!adminAuthorized(request, env)) {
       return failure(401, "Invalid or missing API key");
@@ -387,6 +695,9 @@ export async function handleOfficialPush(request, env) {
     // self-hosted surfaces use deviceKey. Accept every documented spelling.
     const deviceKey = body.deviceKey ?? body.device_key ?? body.key;
     const deviceToken = body.deviceToken ?? body.device_token;
+    const apnsEnvironment = normalizeAPNsEnvironment(
+      body.apnsEnvironment ?? body.apns_environment
+    );
     if (!deviceKey || !deviceToken) {
       return failure(400, "a device key and a device token are required");
     }
@@ -411,6 +722,7 @@ export async function handleOfficialPush(request, env) {
       body: JSON.stringify({
         deviceToken,
         deviceKey,
+        apnsEnvironment,
         encryptionPublicKey: body.encryptionPublicKey ?? "",
         platform: body.platform ?? "",
         appVersion: body.appVersion ?? "",
@@ -423,6 +735,7 @@ export async function handleOfficialPush(request, env) {
       message: "Device registered",
       deviceKey,
       deviceToken,
+      apnsEnvironment,
     });
   }
 
@@ -523,6 +836,8 @@ function adminAuthorized(request, env) {
 }
 
 async function deliverPushRequest(env, input, origin) {
+  const validationError = validatePushRequest(input);
+  if (validationError) return failure(400, validationError);
   if (!edgeSignerReady(env)) {
     return failure(503, "APNs is not configured");
   }
@@ -539,7 +854,13 @@ async function deliverPushRequest(env, input, origin) {
   const payload = buildPlainAPNsPayload(input, messageID, input.drelSourceChannel);
 
   try {
-    await deliverPlainAPNs(env, device.deviceToken, payload);
+    await deliverPlainAPNs(
+      env,
+      device.deviceToken,
+      payload,
+      fetch,
+      normalizeAPNsEnvironment(device.apnsEnvironment),
+    );
   } catch (error) {
     return failure(502, String(error.message || error));
   }
@@ -552,6 +873,7 @@ async function deliverPushRequest(env, input, origin) {
     createDate: Date.now(),
     fields: payload,
   });
+  await recordApproval(env, input);
 
   return json({
     code: 200,

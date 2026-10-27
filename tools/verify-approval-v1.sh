@@ -2,9 +2,13 @@
 
 set -u
 
+# The public edge intentionally hides the legacy synthetic "/health" value
+# behind the push flag, while localhost always exposes it. Both status codes
+# are healthy for this contract script.
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BASE_URL="${WBK_APPROVAL_URL:-http://localhost:8080}"
 DEVICE_KEY="${WBK_APPROVAL_DEVICE_KEY:-test}"
+REGISTER_DEVICE="${WBK_APPROVAL_REGISTER_DEVICE:-0}"
 REQUEST_ID="approval-contract-$(date +%s)-$$"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/wbk-approval-v1.XXXXXX")"
 PASS=0
@@ -70,6 +74,20 @@ native = {
     },
 }
 
+third_party = {
+    **native,
+    "id": request_id + "-third-party",
+    "requestId": request_id + "-third-party",
+    "approval": {
+        **native["approval"],
+        "responseMode": "thirdParty",
+        "submit": {
+            "url": "https://approve.example.com/api/review",
+            "ticket": "opaque-test-ticket",
+        },
+    },
+}
+
 web = {
     **common,
     "id": request_id + "-web",
@@ -118,6 +136,7 @@ submission = {
 
 for name, value in {
     "native": native,
+    "third-party": third_party,
     "web": web,
     "pwa": pwa,
     "invalid-webhook": invalid_webhook,
@@ -202,12 +221,30 @@ PY
 write_fixtures
 validate_schemas
 
-if curl --silent --fail "$BASE_URL/health" > "$TMP_DIR/health.json"; then
+HEALTH_STATUS="$(curl --silent --output "$TMP_DIR/health.json" --write-out '%{http_code}' "$BASE_URL/health")"
+if [[ "$HEALTH_STATUS" == "200" || "$HEALTH_STATUS" == "204" ]]; then
   pass "approval backend is reachable"
 else
   fail "approval backend is reachable at $BASE_URL"
   echo "Summary: $PASS passed, $FAIL failed"
   exit 1
+fi
+
+if [[ "$REGISTER_DEVICE" == "1" ]]; then
+  REGISTER_STATUS="$(curl --silent --output "$TMP_DIR/register.json" --write-out '%{http_code}' \
+    --request POST "$BASE_URL/register" \
+    --header 'Content-Type: application/json' \
+    --data "$(python3 - "$DEVICE_KEY" <<'PY'
+import json
+import sys
+print(json.dumps({"deviceToken": "0" * 64, "deviceKey": sys.argv[1]}, separators=(",", ":")))
+PY
+)")"
+  if [[ "$REGISTER_STATUS" == "200" ]]; then
+    pass "verification device registered"
+  else
+    fail "verification device registration returned HTTP $REGISTER_STATUS"
+  fi
 fi
 
 CREATE_STATUS="$(curl --silent --output "$TMP_DIR/create.json" --write-out '%{http_code}' \
@@ -218,6 +255,19 @@ if [[ "$CREATE_STATUS" == "200" ]]; then
   pass "native approval is accepted by /push"
 else
   fail "native approval creation returned HTTP $CREATE_STATUS"
+fi
+
+THIRD_PARTY_STATUS="$(curl --silent --output "$TMP_DIR/third-party-response.json" --write-out '%{http_code}' \
+  --request POST "$BASE_URL/push" \
+  --header 'Content-Type: application/json' \
+  --data-binary "@$TMP_DIR/third-party.json")"
+THIRD_PARTY_QUERY_STATUS="$(curl --silent --output "$TMP_DIR/third-party-query.json" --write-out '%{http_code}' \
+  "$BASE_URL/api/v1/approvals/$REQUEST_ID-third-party" \
+  --header "Authorization: Bearer $DEVICE_KEY")"
+if [[ "$THIRD_PARTY_STATUS" == "200" && "$THIRD_PARTY_QUERY_STATUS" == "404" ]]; then
+  pass "thirdParty approval is render-only and has no official status record"
+else
+  fail "thirdParty boundary returned push=$THIRD_PARTY_STATUS query=$THIRD_PARTY_QUERY_STATUS"
 fi
 
 for PRESENTATION in web pwa; do
