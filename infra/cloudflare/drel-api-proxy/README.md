@@ -108,8 +108,10 @@ GET  /api/v1/approvals/{requestId}
 POST /api/v1/approvals/{requestId}/respond
 ```
 
-Both require `Authorization: Bearer <deviceKey>`. The first valid response
-wins, increments `revision`, and any later response returns `409`. Expired
-requests become `expired`; the record survives Worker restarts because it lives
-in Durable Object storage. Deploying this change adds the `v4-approval-state`
-migration and the `APPROVAL_REGISTRY` binding.
+Both require `Authorization: Bearer <deviceKey>` for the device that received
+the pushed approval. A different registered device gets `404`, so possession of
+any valid device key does not grant access to another device's approval. The
+first valid response wins, increments `revision`, and any later response
+returns `409`. Expired requests become `expired`; the record survives Worker
+restarts because it lives in Durable Object storage. Deploying this change
+adds the `v4-approval-state` migration and the `APPROVAL_REGISTRY` binding.
