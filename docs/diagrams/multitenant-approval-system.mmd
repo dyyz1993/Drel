@@ -1,0 +1,38 @@
+flowchart LR
+    subgraph CI["CI / GitHub"]
+        GHA["GitHub Actions"]
+        OIDC["GitHub OIDC"]
+        GHAPI["GitHub API"]
+    end
+
+    subgraph Gate["Multi-tenant Approval Gate"]
+        TicketAPI["Ticket API"]
+        Verify["OIDC + ticket verifier"]
+        Tenant["Tenant / project policy"]
+        Identity["Identity broker"]
+        ACL["Approver ACL"]
+        State["Approval state + idempotency"]
+        Adapter["Provider adapter"]
+        Audit["Append-only audit"]
+    end
+
+    subgraph Client["Drel"]
+        Msg["Native approval card"]
+        Device["Device assertion"]
+    end
+
+    GHA -->|"OIDC token + run"| TicketAPI
+    TicketAPI --> OIDC
+    TicketAPI --> Verify
+    Verify --> GHAPI
+    Verify --> Tenant
+    Tenant -->|"short-lived ticket"| Msg
+    Msg --> Device
+    Device -->|"ticket + actor assertion"| Verify
+    Verify --> Identity
+    Identity --> ACL
+    ACL --> State
+    State --> Adapter
+    Adapter --> GHAPI
+    State --> Audit
+    Audit -->|"normalized result"| Msg

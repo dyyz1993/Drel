@@ -80,6 +80,7 @@ for `api.drel.app`; do not add a direct CNAME to the `:8443` source server.
 ```bash
 curl -sS https://api.drel.app/health
 curl -sSI https://api.drel.app/health
+npm run test:approval
 ```
 
 Before changing Drel's bundled default URL, also verify `/register`, the push
@@ -94,3 +95,21 @@ putting a real device key in shell history:
 curl -sS https://api.drel.app/managed-push/health
 curl -sS https://api.drel.app/.well-known/drel-managed-push.json
 ```
+
+## Approval state
+
+`ApprovalRegistry` is a Durable Object keyed by the approval `requestId`.
+Native `poll` and `webhook` approvals are recorded after APNs accepts the
+push; `thirdParty` approvals are intentionally render-only and never create an
+official status row. The authenticated routes are:
+
+```text
+GET  /api/v1/approvals/{requestId}
+POST /api/v1/approvals/{requestId}/respond
+```
+
+Both require `Authorization: Bearer <deviceKey>`. The first valid response
+wins, increments `revision`, and any later response returns `409`. Expired
+requests become `expired`; the record survives Worker restarts because it lives
+in Durable Object storage. Deploying this change adds the `v4-approval-state`
+migration and the `APPROVAL_REGISTRY` binding.

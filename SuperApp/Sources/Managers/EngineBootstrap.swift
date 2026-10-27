@@ -131,36 +131,12 @@ public final class EngineBootstrap {
         #endif
 
         #if !DREL_CONTAINER_ONLY
-        // The reusable development host keeps its legacy live-message hooks
-        // for exercising HTML-app routing. Drel's Store build is different:
-        // receiving a push only records it in the inbox. A user's notification
+        // In Drel, receiving a push only records it in the inbox. A user's notification
         // tap is the sole path that may open its URL (via PushRouter), which
         // prevents an incoming message, its tap response, and session restore
-        // from each opening the same page.
-        await engine.setOnMessageReceived { storedMessage in
-            Task { @MainActor in
-                if let urlString = storedMessage.payload.targetURL, let url = URL(string: urlString) {
-                    NotificationCenter.default.post(
-                        name: .didReceivePushMessage,
-                        object: nil,
-                        userInfo: [
-                            "url": url,
-                            "title": storedMessage.payload.title,
-                            "body": storedMessage.payload.body,
-                            "source": storedMessage.payload.channel,
-                            "appId": storedMessage.payload.targetAppId as Any,
-                            "params": storedMessage.payload.userInfo as Any
-                        ]
-                    )
-                }
-            }
-        }
-
-        await engine.setOnRoute { payload, target in
-            Task { @MainActor in
-                self.handleRoute(payload: payload, target: target)
-            }
-        }
+        // from each opening the same page (or opening 100 windows for 100 unread pushes).
+        await engine.setOnMessageReceived(nil)
+        await engine.setOnRoute(nil)
         #else
         await engine.setOnMessageReceived(nil)
         await engine.setOnRoute(nil)
@@ -241,79 +217,6 @@ public final class EngineBootstrap {
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow }
-    }
-
-    private func handleRoute(payload: MessagePayload, target: RouteTarget) {
-        switch target.type {
-        case .url:
-            if let url = URL(string: target.destination) {
-                let parsed = WebBrowserParams.from(url: url)
-                var params = WebBrowserParams(
-                    displayMode: parsed.displayMode,
-                    modalSize: parsed.modalSize,
-                    showMask: parsed.showMask,
-                    clickMaskCloses: parsed.clickMaskCloses,
-                    showCloseButton: parsed.showCloseButton,
-                    hideNavigationBar: parsed.hideNavigationBar,
-                    hideStatusBar: parsed.hideStatusBar,
-                    hideTabBar: parsed.hideTabBar,
-                    disableSwipeBack: parsed.disableSwipeBack,
-                    orientation: parsed.orientation,
-                    allowJavaScriptClose: parsed.allowJavaScriptClose,
-                    customTitle: parsed.customTitle,
-                    debugMode: parsed.debugMode,
-                    useManifestLoader: false
-                )
-                if let mode = target.mode {
-                    switch mode {
-                    case "immersive": params = WebBrowserParams(displayMode: .immersive, useManifestLoader: false)
-                    case "modal": params = WebBrowserParams(displayMode: .modal, useManifestLoader: false)
-                    default: break
-                    }
-                }
-                WebBrowserManager.shared.openBrowser(url: url, params: params)
-            }
-        case .appId:
-            // The appId must be resolved through the launch resolver to get
-            // the trusted manifest's actual startURL — passing the raw appId
-            // string as a URL produces an invalid scheme and a blank page.
-            let resolver = HTMLAppLaunchResolver(
-                trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry
-            )
-            do {
-                let route = payload.route ?? "/"
-                let launchTarget = try resolver.resolve(
-                    appID: target.destination,
-                    route: route
-                )
-                let params = WebBrowserParams(
-                    displayMode: .immersive,
-                    hideNavigationBar: true,
-                    hideStatusBar: true,
-                    hideTabBar: true,
-                    payload: launchTarget.context.bridgePayload,
-                    useManifestLoader: false,
-                    preferCachedContent: launchTarget.offlineMode == .partial
-                )
-                WebBrowserManager.shared.openBrowser(
-                    url: launchTarget.loaderURL,
-                    params: params
-                )
-            } catch {
-                StructuredLogger.shared.warning(
-                    "[EngineBootstrap] Failed to resolve appId route: \(error.localizedDescription)",
-                    category: .navigation
-                )
-            }
-        case .deeplink:
-            if let url = URL(string: target.destination) {
-                UIApplication.shared.open(url)
-            }
-        case .none:
-            break
-        @unknown default:
-            break
-        }
     }
 
     public func shutdown() async {

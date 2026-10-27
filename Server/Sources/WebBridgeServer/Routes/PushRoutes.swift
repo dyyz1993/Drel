@@ -320,18 +320,20 @@ enum PushRoutes {
     try pushRequest.validateMessageContract()
 
     if let approval = pushRequest.nativeApproval {
-      _ = try await services.approvalStore.upsert(
-        deviceKey: pushRequest.deviceKey,
-        messageID: approval.messageID,
-        requestID: approval.requestID,
-        title: pushRequest.title,
-        body: pushRequest.body,
-        state: approval.state,
-        revision: approval.revision,
-        expiresAt: pushRequest.expiresAt,
-        clientPayload: pushRequest.payload,
-        configuration: approval.configuration
-      )
+      if approval.configuration.responseMode != "thirdParty" {
+        _ = try await services.approvalStore.upsert(
+          deviceKey: pushRequest.deviceKey,
+          messageID: approval.messageID,
+          requestID: approval.requestID,
+          title: pushRequest.title,
+          body: pushRequest.body,
+          state: approval.state,
+          revision: approval.revision,
+          expiresAt: pushRequest.expiresAt,
+          clientPayload: pushRequest.payload,
+          configuration: approval.configuration
+        )
+      }
     }
 
     return try await services.apnsService.sendPush(
@@ -671,8 +673,19 @@ struct JSONPushRequest: Codable, Sendable {
 
     switch presentation {
     case "native":
-      guard approval != nil else {
+      guard let approval, !approval.actions.isEmpty else {
         throw HTTPError(.badRequest, message: "Native approval requires approval actions")
+      }
+      if approval.responseMode == "thirdParty" {
+        guard let submit = approval.submit,
+          let components = URLComponents(string: submit.url),
+          components.scheme?.lowercased() == "https",
+          components.host?.isEmpty == false,
+          !submit.ticket.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+          throw HTTPError(
+            .badRequest, message: "thirdParty approval requires an HTTPS submit.url and ticket")
+        }
       }
     case "web":
       guard approval == nil,

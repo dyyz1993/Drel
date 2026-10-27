@@ -8,6 +8,8 @@ import Foundation
 /// shanbox. When diagnosing any client/server mismatch, check this value
 /// FIRST — a stale server explains many "the fix doesn't work" reports.
 enum ServerVersion {
+    /// - 2026.10.27-1: server history preserves native approval actions so
+    ///   Tier-2 replay can still render the approval buttons.
     /// - 2026.10.19-2: Manifest v2 accepts clipboard/location `always` grants
     ///   and `addToHomeScreen`; official action-demo app updated to version 2.
     /// - 2026.10.19-1: Manifest v2 accepts `fullscreen`; official action-demo
@@ -38,5 +40,5 @@ enum ServerVersion {
     ///   keep the cached token and fail fast.
     /// - 2026.08.20-1: empty-body Bark pushes (撤回/清角标), passive pushes
     ///   omit `aps.sound`, `/health` exposes this version.
-    static let current = "2026.10.19-2"
+    static let current = "2026.10.27-1"
 }

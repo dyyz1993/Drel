@@ -15,13 +15,14 @@ import {
   gatewayPublicKey,
 } from "./gateway.js";
 import {
+  ApprovalRegistry,
   OfficialPushRegistry,
   handleOfficialPush,
   pushAtEdgeEnabled,
   edgeSignerReady,
 } from "./official-push.js";
 
-export { ManagedPushRegistry, GatewayManifestRegistry, OfficialPushRegistry };
+export { ManagedPushRegistry, GatewayManifestRegistry, OfficialPushRegistry, ApprovalRegistry };
 
 function upstreamURL(requestURL, origin) {
   const inbound = new URL(requestURL);

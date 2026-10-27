@@ -109,6 +109,15 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Fixed
 
+- Receiving multiple unread push notifications with URLs no longer triggers
+  bulk automatic browser navigation on background import; only the single
+  notification explicitly tapped by the user opens its destination. — Scope:
+  `App`, `Push` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-111-batch-push-routing/verification.md](docs/testing/results/drel-1-5-0-111-batch-push-routing/verification.md)
+- The message detail bottom navigation pill order places "Previous" on the
+  left and "Next" on the right, matching standard reading and swipe directions.
+  — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-111-batch-push-routing/verification.md](docs/testing/results/drel-1-5-0-111-batch-push-routing/verification.md)
 - The official inbox view again shows the official messages that the
   migration-window edge mistakenly tagged as self-hosted; genuine
   self-hosted relay messages remain scoped to their channel. — Scope:

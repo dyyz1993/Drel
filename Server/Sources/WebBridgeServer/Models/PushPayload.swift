@@ -219,6 +219,11 @@ struct PushPayload: Codable, Sendable {
         putInt("badge", badge)
         put("presentation", presentation)
         put("schema", schema)
+        if let approval,
+           let data = try? JSONEncoder().encode(approval),
+           let json = String(data: data, encoding: .utf8) {
+            fields["approval"] = json
+        }
         put("ciphertext", ciphertext)
         put("drelEnvelope", drelEnvelope)
         put("drelSourceChannel", drelSourceChannel)

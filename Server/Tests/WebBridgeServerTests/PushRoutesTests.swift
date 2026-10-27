@@ -262,6 +262,96 @@ struct PushRoutesTests {
         #expect(resolved.revision == 18)
     }
 
+    @Test("History fields preserve native approval actions and lifecycle")
+    func historyFieldsPreserveNativeApprovalActionsAndLifecycle() throws {
+        let payload = PushPayload(
+            schema: "webbridgekit.message.v1",
+            type: "approval",
+            title: "Approval",
+            body: "Release?",
+            category: "approval",
+            actionState: "pending",
+            requestID: "approval-history-1",
+            contentType: "approval",
+            revision: 3,
+            presentation: "native",
+            approval: ApprovalClientPayload(actions: [
+                ApprovalAction(
+                    id: "approve",
+                    title: "Approve",
+                    style: "primary",
+                    requiresReason: false,
+                    resultState: .approved
+                ),
+                ApprovalAction(
+                    id: "reject",
+                    title: "Reject",
+                    style: "destructive",
+                    requiresReason: true,
+                    resultState: .rejected
+                ),
+            ], responseMode: "poll")
+        )
+
+        let fields = payload.customFields
+        #expect(fields["state"] == "pending")
+        #expect(fields["actionState"] == "pending")
+        #expect(fields["requestId"] == "approval-history-1")
+        #expect(fields["revision"] == "3")
+        #expect(fields["presentation"] == "native")
+
+        let approvalJSON = try #require(fields["approval"])
+        let approval = try JSONDecoder().decode(
+            ApprovalClientPayload.self,
+            from: Data(approvalJSON.utf8)
+        )
+        #expect(approval.actions.count == 2)
+        #expect(approval.actions.first?.id == "approve")
+        #expect(approval.actions.last?.requiresReason == true)
+        #expect(approval.actions.last?.resultState == .rejected)
+    }
+
+    @Test("History fields preserve third-party approval submit")
+    func historyFieldsPreserveThirdPartyApprovalSubmit() throws {
+        let payload = PushPayload(
+            schema: "webbridgekit.message.v1",
+            type: "approval",
+            title: "Release approval",
+            body: "Approve in Drel",
+            category: "approval",
+            actionState: "pending",
+            requestID: "approval-third-party-1",
+            contentType: "approval",
+            revision: 1,
+            presentation: "native",
+            approval: ApprovalClientPayload(
+                actions: [
+                    ApprovalAction(
+                        id: "approve",
+                        title: "Approve",
+                        style: "primary",
+                        requiresReason: false,
+                        resultState: .approved
+                    ),
+                ],
+                responseMode: "thirdParty",
+                submit: ApprovalSubmit(
+                    url: "https://approve.xbrowser.dev/api/review",
+                    ticket: "ticket-abc"
+                )
+            )
+        )
+
+        let approvalJSON = try #require(payload.customFields["approval"])
+        let approval = try JSONDecoder().decode(
+            ApprovalClientPayload.self,
+            from: Data(approvalJSON.utf8)
+        )
+        #expect(approval.responseMode == "thirdParty")
+        #expect(approval.submit?.url == "https://approve.xbrowser.dev/api/review")
+        #expect(approval.submit?.ticket == "ticket-abc")
+    }
+
   @Test("APNs payload size includes every serialized delivery field")
   func apnsPayloadSizeIncludesSerializedDeliveryFields() throws {
     let payload = PushPayload(title: "GitHub 趋势日报", body: String(repeating: "A", count: 5000))

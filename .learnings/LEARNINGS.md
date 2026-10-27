@@ -31,6 +31,55 @@ Every saved entry, including a one-off pending learning, includes:
 
 ---
 
+## [LRN-20261027-005] best_practice
+
+**Logged**: 2026-10-27T14:40:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: infra
+
+### Summary
+
+审批协议要区分官方状态审批与第三方受控提交；edge 状态必须由 Durable Object
+持久化，第三方提交只做模板渲染。
+
+### Details
+
+最小方案不是自研通用问答引擎，也不是让 Drel 直接持有 GitHub 凭据。模板只提供
+动作、`requestId`、`revision`、`responseMode` 和可选的 `submit.url/ticket`；
+`thirdParty` 由客户端原样 POST 到外部 Worker，GitHub 状态、ticket 过期/重放和
+最终操作由第三方负责。`poll`/`webhook` 的原生审批才由 edge 记录并在
+`/api/v1/approvals/{requestId}` 可查，`/respond` 在 Durable Object 内实现
+first-response-wins。离线应用包模板、消息展示模板和审批模板是三种不同产物。
+
+### Suggested Action
+
+新增审批类能力时先选 `responseMode`；需要第三方操作就返回 `submit`，不要在
+Drel 服务里复制对方业务状态。edge 状态写入必须以 `requestId` 为键、校验 revision，
+并显式跳过 `thirdParty`。测试同时覆盖状态重启后仍可查询和 thirdParty 查询 404。
+
+### Metadata
+
+- Source: user_feedback
+- Related Files: docs/api/approval-v1.md, infra/cloudflare/drel-api-proxy/src/official-push.js
+- Tags: approval, durable-object, third-party, github-actions, template
+- Pattern-Key: approval.third_party_controlled_submit
+- Recurrence-Count: 1
+- First-Seen: 2026-10-27
+- Last-Seen: 2026-10-27
+
+### Context Maintenance
+
+- Decay-Type: decision
+- Decay-Rate: durable
+- Authority: 用户明确限定最小方案与 submitApproval 受控能力; Owner: Drel + release gate maintainers
+- Revalidation: 当审批协议或 GitHub 审批接入方式改变时复查
+- Validation: verified; Last-Validated: 2026-10-27; Evidence: edge 单测 40/40，
+  本地 Durable Object 闭环 2/2，thirdParty 状态查询 404
+- Disposition: retain; Application: applied
+
+---
+
 ## [LRN-20261027-004] knowledge_gap
 
 **Logged**: 2026-10-27T01:06:08+08:00
@@ -675,4 +724,39 @@ drel.app 百度验证通过后，sitemap 提交被新站点当日 quota=0 阻塞
 - Authority: 用户要求定时查几天，没用就继续推进; Owner: Drel infra
 - Revalidation: 自动化结束、用户改变跟进周期，或百度配额规则变更时
 - Validation: configured; Last-Validated: 2026-10-26; Evidence: automationId=drel-sitemap, FREQ=DAILY;COUNT=5
+- Disposition: retain; Application: applied
+
+---
+
+## [LRN-20261028-001] correction
+
+**Logged**: 2026-10-28T03:50:00Z
+**Priority**: medium
+**Status**: resolved
+**Area**: ui
+
+### Summary
+消息详情底部的上一条/下一条导航胶囊顺序错误；「下一条」应在右边而非左边。
+
+### Details
+`MessageDetailViewController.setupSideIndicators` 原先先将 `nextIndicator` 加入 `indicatorStack`，再加入 `prevIndicator`，导致在水平布局下「下一条 ›」出现在屏幕左侧，而「‹ 上一条」出现在右侧。这违背了从左往右（左为返回/上一条，右为前进/下一条）的阅读习惯与手势拖拽高亮方向。用户明确纠正指出「下一条」应该在右边。
+
+### Suggested Action
+`indicatorStack` 改为先添加 `prevIndicator`，再添加 `nextIndicator`，保持左「‹ 上一条」、右「下一条 ›」。已补充 `MessageDetailNavigationTests` 锁定子视图顺序。
+
+### Metadata
+- Source: user_correction
+- Related Files: SuperApp/Sources/Controllers/Message/MessageDetailViewController.swift, DrelTests/PushExampleURLBuilderTests.swift
+- Tags: ui, navigation, message-detail, indicator-order
+- Pattern-Key: ui.navigation_pill_order
+- Recurrence-Count: 1
+- First-Seen: 2026-10-28
+- Last-Seen: 2026-10-28
+
+### Context Maintenance
+- Decay-Type: design
+- Decay-Rate: durable
+- Authority: 用户直接视觉纠正; Owner: Drel iOS UI
+- Revalidation: 消息详情底栏重构时
+- Validation: verified; Last-Validated: 2026-10-28; Evidence: DrelTests.MessageDetailNavigationTests.testIndicatorOrderPlacesPrevOnLeftAndNextOnRight passed
 - Disposition: retain; Application: applied
