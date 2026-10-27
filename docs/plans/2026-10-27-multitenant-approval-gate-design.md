@@ -328,12 +328,13 @@ The ticket is accepted only if all of these match:
   authenticate the same CI run and create a new request or a fresh ticket for
   the existing request; it must not reuse an expired ticket.
 
-### 8.4 Recommended evolution: request reference plus short-lived action ticket
+### 8.4 Deferred evolution: request reference plus short-lived action ticket
 
 The current `approval.submit = {url, ticket}` is convenient but embeds a
 short-lived ticket in a possibly long-lived Inbox message.
 
-For the multi-tenant version, support:
+This is not part of the current implementation. If inbox lifetime later proves
+to be a real constraint, a future version may support:
 
 ```json
 {
@@ -348,10 +349,10 @@ For the multi-tenant version, support:
 }
 ```
 
-The old shape remains accepted for compatibility. In the new shape, Drel
-first calls a `prepare` endpoint with the request reference and device
-assertion; the gate then returns a fresh short-lived decision ticket. The
-approval request itself remains stable, while credentials stay short-lived.
+The old shape remains accepted for compatibility. In this future shape, Drel
+would exchange the request reference for a fresh short-lived decision ticket.
+The approval request itself would remain stable, while credentials stay
+short-lived. No device identity is required by the default contract.
 
 ## 9. Default Approval Model
 
@@ -610,9 +611,12 @@ Errors must be typed:
 - Generic message model with `type=approval`.
 - Native action rendering.
 - `approval.submit.url` as an opaque, HTTPS-only destination.
-- `ticket` or `requestRef` as opaque values.
-- Device-bound signing for approval assertions.
-- A settings/onboarding flow to link Drel to an approval identity provider.
+- An opaque one-time `ticket`.
+- A structured JSON response body containing `ticket`, `requestId`,
+  `actionId`, `expectedRevision`, and `values`.
+
+Drel does not keep an approval public key, Keychain approval identity,
+approver ACL, or device-signature flow in the default path.
 
 ### 13.2 What Drel must not do
 
@@ -626,15 +630,15 @@ Errors must be typed:
 ### 13.3 Native click path
 
 1. User opens the approval message and taps the action.
-2. Drel signs the request identity, ticket hash, action, device, and nonce.
-3. Drel POSTs to `submit.url`.
-4. Gate verifies and consumes the one-time ticket.
-5. Provider adapter performs the decision.
-6. Gate returns the normalized result.
-7. Drel updates the card and hides terminal actions.
+2. Drel POSTs the opaque ticket and structured decision JSON to `submit.url`.
+3. The receiving service verifies and atomically consumes the one-time ticket.
+4. The provider adapter performs the decision.
+5. The gate returns the normalized result.
+6. Drel updates the card and hides terminal actions.
 
-If no actor identity is linked, Drel opens the gate's hosted OAuth approval
-page. This is still “click to release”, with one secure identity step.
+A provider that independently requires a human identity check can put its own
+OAuth/OIDC confirmation behind `submit.url`; that is a provider-specific
+policy, not an extra credential requirement in Drel.
 
 ### 13.4 Publish semantics
 
@@ -760,10 +764,9 @@ prototype:
 - Sign tenant-scoped tickets.
 - Add replay and expiry tests before enabling multi-tenant issuance.
 
-### Phase 3 — Approver identity and ACL
+### Phase 3 — Optional provider identity and ACL
 
-- Add GitHub OAuth identity linking.
-- Optionally add provider-hosted human identity confirmation when required.
+- Keep human identity confirmation provider-owned when a project requires it.
 - Resolve environment reviewers, teams, roles, and self-approval policy.
 - Remove the owner-PAT fallback from the normal path.
 
@@ -776,10 +779,11 @@ prototype:
 
 ### Phase 5 — Drel native approval
 
-- Add identity-link onboarding.
-- Add short-lived preparation and action tickets.
-- Keep the hosted OAuth fallback for unlinked identities.
-- Test native click → gate → GitHub → Drel state update on a physical device.
+- Keep the generic `{url, ticket}` contract.
+- Add short-lived preparation only if long-lived inbox messages make it
+  necessary.
+- Test native click → gate → GitHub → Drel state update on Simulator, then on
+  a physical device when APNs delivery is in scope.
 
 ### Phase 6 — Public onboarding
 
@@ -796,10 +800,10 @@ The multi-tenant design is implementable only when these tests can pass:
 3. A ticket for run A cannot approve run B.
 4. A ticket for environment `staging` cannot approve `production`.
 5. A ticket cannot be reused after one decision.
-6. A valid ticket with no linked actor identity cannot perform a high-risk
-   native approval.
-7. A linked actor who is not an environment reviewer receives `not_an_approver`.
-8. A linked allowed actor can approve through the provider adapter.
+6. A valid unconsumed ticket can perform exactly one provider decision.
+7. An expired or consumed ticket cannot perform a second decision.
+8. If a project enables provider-owned identity confirmation, an unauthorized
+   actor cannot approve through that provider adapter.
 9. A GitHub App installation token cannot masquerade as a human approval.
 10. Cross-tenant storage, cache, and audit reads return no data.
 11. A provider timeout produces `unknown` and a retryable idempotent status,
@@ -843,12 +847,11 @@ The multi-tenant design is implementable only when these tests can pass:
 
 Proceed with the multi-tenant direction in this order:
 
-1. Define the tenant/project and actor-identity boundaries.
+1. Define the tenant/project boundaries.
 2. Implement GitHub OIDC and tenant-scoped tickets.
 3. Move provider calls behind a GitHub adapter.
-4. Add hosted OAuth approval as the secure baseline.
-5. Add Drel-linked identity for native one-click approval.
-6. Add audit and only then open onboarding to additional projects.
+4. Add audit and only then open onboarding to additional projects.
+5. Keep human identity confirmation provider-owned when a project requires it.
 
 The existing xbrowser flow remains the compatibility harness. It should not be
 the public multi-tenant security model.
