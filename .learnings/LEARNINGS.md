@@ -760,3 +760,51 @@ drel.app 百度验证通过后，sitemap 提交被新站点当日 quota=0 阻塞
 - Revalidation: 消息详情底栏重构时
 - Validation: verified; Last-Validated: 2026-10-28; Evidence: DrelTests.MessageDetailNavigationTests.testIndicatorOrderPlacesPrevOnLeftAndNextOnRight passed
 - Disposition: retain; Application: applied
+
+---
+
+## [LRN-20261028-001] best_practice
+
+**Logged**: 2026-10-28T04:45:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: infra
+
+### Summary
+
+多租户审批绑定 Drel 身份前，必须先从当前安装读取 Subject/Login/公钥并写入
+project policy；否则实际设备签名会返回 identity_not_linked。
+
+### Details
+
+本地曾用旧模拟器导出的公钥配置 ACL，但实际安装包重新生成或换用了另一套
+Ed25519 Keychain 身份，导致前三次点击 403。正确流程是先打开
+Settings -> 审批身份，复制当前 Subject/Login/PEM，再调用 admin project
+接口更新 policy；每次 policy 更新都会递增 policyVersion，因此旧 ticket
+必须重新签发，不能复用旧推送。
+
+### Suggested Action
+
+真实闭环前固定使用“读 App 身份页 -> 更新 project policy -> 新 requestId /
+新 ticket -> 新审批推送”的流程；UI 遇到 403 时立即读 HTTP error code，而
+不要重复点击同一 ticket。
+
+### Metadata
+
+- Source: error
+- Related Files: SuperApp/Sources/Views/Settings/ApprovalIdentityView.swift, src/actor.ts, src/multitenant.ts
+- Tags: approval, actor-assertion, ed25519, multi-tenant, policy-version
+- Pattern-Key: approval.actor_identity_binding
+- Recurrence-Count: 1
+- First-Seen: 2026-10-28
+- Last-Seen: 2026-10-28
+
+### Context Maintenance
+
+- Decay-Type: decision
+- Decay-Rate: durable
+- Authority: 实测四次审批决策（403/401 到 200）； Owner: Drel + drel-release-gate
+- Revalidation: 审批身份存储、project policy 或 ticket 版本变化时复查
+- Validation: verified; Last-Validated: 2026-10-28; Evidence: Drel decision HTTP 200；
+  GitHub run 40575537375 approval-gate success；publish-npm/marketplace skipped
+- Disposition: retain; Application: applied
