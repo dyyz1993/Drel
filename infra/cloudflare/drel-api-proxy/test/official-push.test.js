@@ -87,6 +87,7 @@ async function seededApprovalRegistry(env) {
     body: JSON.stringify({
       id: "approval-1",
       requestId: "approval-1",
+      deviceKey: "ownerkey",
       revision: 1,
       state: "pending",
       title: "Release?",
