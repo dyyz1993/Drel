@@ -445,6 +445,25 @@ xcrun simctl openurl 79EA5C9F-C501-47FD-8D1B-2DE497F5CDD0 \
 - Crash gate: `bash scripts/scan-crash-logs.sh --json` -> `total: 0` after the approval interaction run.
 - Scope: simulator and local-backend evidence proves contract, rendering, submission, conflict handling, and local state reconciliation. It does not prove APNs delivery to a physical iPhone.
 
+## Edge Approval v1 Physical Evidence (2026-10-27)
+
+- Physical device: paired iPhone 13 (`许映洲的iPhone`), Drel `1.5.0 (110)`.
+- Edge delivery: `POST https://api.drel.app/push` accepted the native approval
+  template for requestId `edge-template-demo-1793083636` (`accepted: 1`).
+- The same request was immediately queryable at
+  `GET /api/v1/approvals/edge-template-demo-1793083636` with
+  `schema=webbridgekit.approval-status.v1`, `state=pending`, `revision=1`.
+- The user tapped **通过** on the physical iPhone. A follow-up query returned
+  `state=approved`, `revision=2`, `actionId=approve`, `respondedAt=2026-10-27T06:48:10.688Z`.
+- Duplicate protection: a later `reject` with `expectedRevision=2` returned
+  `409 {"error":"Approval has already been resolved"}`; the final query stayed
+  `approved` at revision 2.
+- Scope: this proves physical-device rendering and native approval submission
+  to the edge Durable Object for a `poll` approval. It does not prove the
+  `thirdParty submit` path, which requires a newer client build, or GitHub
+  release approval, which is blocked by the invalid Cloudflare GitHub App
+  private key.
+
 ## Message Types v1 Evidence (2026-08-12)
 
 - Contract verification: `bash tools/verify-message-types-v1.sh` -> 15 passed, 0 failed. It covers valid plain, Markdown, image, QR code, verification code, chat, and approval payloads, plus missing required fields and raw inline HTML rejection.
