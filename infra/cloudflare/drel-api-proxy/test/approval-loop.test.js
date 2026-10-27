@@ -100,20 +100,20 @@ async function push(env, approval) {
   }
 }
 
-async function query(env, requestId = "approval-loop-1") {
+async function query(env, requestId = "approval-loop-1", key = deviceKey) {
   return worker.fetch(new Request(
     `https://api.drel.app/api/v1/approvals/${requestId}`,
-    { headers: { authorization: `Bearer ${deviceKey}` } }
+    { headers: { authorization: `Bearer ${key}` } }
   ), env);
 }
 
-async function respond(env, body, requestId = "approval-loop-1") {
+async function respond(env, body, requestId = "approval-loop-1", key = deviceKey) {
   return worker.fetch(new Request(
     `https://api.drel.app/api/v1/approvals/${requestId}/respond`,
     {
       method: "POST",
       headers: {
-        authorization: `Bearer ${deviceKey}`,
+        authorization: `Bearer ${key}`,
         "content-type": "application/json",
       },
       body: JSON.stringify(body),
@@ -181,4 +181,25 @@ test("thirdParty render-only approval has no official status record", async () =
   });
   assert.equal((await push(env, approval)).status, 200);
   assert.equal((await query(env, approval.requestId)).status, 404);
+});
+
+test("approval state is scoped to the device that received the push", async () => {
+  const { env, deviceRegistry } = fixture();
+  for (const key of [deviceKey, "other-device"]) {
+    await deviceRegistry.fetch(new Request("https://internal/device", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deviceKey: key, deviceToken: `token-${key}` }),
+    }));
+  }
+  assert.equal((await push(env, nativeApproval())).status, 200);
+
+  assert.equal((await query(env, "approval-loop-1", "other-device")).status, 404);
+  const response = await respond(env, {
+    actionId: "approve",
+    expectedRevision: 1,
+    values: {},
+  }, "approval-loop-1", "other-device");
+  assert.equal(response.status, 404);
+  assert.equal((await query(env)).status, 200);
 });

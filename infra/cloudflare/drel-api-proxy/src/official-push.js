@@ -439,6 +439,7 @@ export class ApprovalRegistry {
         schema: APPROVAL_SCHEMA,
         requestId: approval.requestId,
         messageId: approval.id,
+        deviceKey: input.deviceKey,
         state: approval.state,
         revision: approval.revision,
         title: approval.title,
@@ -459,6 +460,9 @@ export class ApprovalRegistry {
     if (requestMatch && request.method === "GET") {
       const record = await this.read(requestMatch[1]);
       if (!record) return failure(404, "Approval not found");
+      if (record.deviceKey !== url.searchParams.get("deviceKey")) {
+        return failure(404, "Approval not found");
+      }
       const effective = await this.expireIfNeeded(record);
       return json(effective);
     }
@@ -480,6 +484,9 @@ export class ApprovalRegistry {
       }
       const record = await this.expireIfNeeded(await this.read(respondMatch[1]));
       if (!record) return failure(404, "Approval not found");
+      if (record.deviceKey !== url.searchParams.get("deviceKey")) {
+        return failure(404, "Approval not found");
+      }
       if (record.state !== "pending") return failure(409, "Approval has already been resolved");
       if (submission.expectedRevision !== record.revision) {
         return failure(409, "Approval revision conflict");
@@ -549,7 +556,7 @@ function approvalStub(env) {
   return namespace.get(id);
 }
 
-async function forwardApprovalRequest(env, request, suffix = "") {
+async function forwardApprovalRequest(env, request, suffix = "", deviceKey = "") {
   const stub = approvalStub(env);
   if (!stub) return failure(503, "approval registry unavailable");
   const requestID = decodeURIComponent(suffix.split("/")[0]);
@@ -563,7 +570,7 @@ async function forwardApprovalRequest(env, request, suffix = "") {
     }
   }
   const response = await stub.fetch(
-    `https://approval.internal/approval/${encodeURIComponent(requestID)}${suffix.endsWith("/respond") ? "/respond" : ""}`,
+    `https://approval.internal/approval/${encodeURIComponent(requestID)}${suffix.endsWith("/respond") ? "/respond" : ""}?deviceKey=${encodeURIComponent(deviceKey)}`,
     {
       method: request.method,
       headers: { "content-type": "application/json" },
@@ -585,10 +592,11 @@ async function recordApproval(env, input) {
   if (!APPROVAL_ID.test(approval.id) || !APPROVAL_ID.test(approval.requestId)) return;
   const stub = approvalStub(env);
   if (!stub) return;
+  if (typeof input.deviceKey !== "string" || input.deviceKey === "") return;
   await stub.fetch(`https://approval.internal/approval/${encodeURIComponent(approval.requestId)}/upsert`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(approval),
+    body: JSON.stringify({ ...approval, deviceKey: input.deviceKey }),
   });
 }
 
@@ -644,7 +652,12 @@ export async function handleOfficialPush(request, env) {
     if (!deviceKey) return failure(401, "Missing device key");
     const device = await lookupDevice(env, deviceKey);
     if (!device) return failure(401, "Invalid device key");
-    return forwardApprovalRequest(env, request, `${approvalMatch[1]}${approvalMatch[2] ?? ""}`);
+    return forwardApprovalRequest(
+      env,
+      request,
+      `${approvalMatch[1]}${approvalMatch[2] ?? ""}`,
+      deviceKey
+    );
   }
 
   if (path === "/api/v1/admin/import-registrations" && request.method === "POST") {
