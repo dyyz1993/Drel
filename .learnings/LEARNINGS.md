@@ -772,22 +772,22 @@ drel.app 百度验证通过后，sitemap 提交被新站点当日 quota=0 阻塞
 
 ### Summary
 
-多租户审批绑定 Drel 身份前，必须先从当前安装读取 Subject/Login/公钥并写入
-project policy；否则实际设备签名会返回 identity_not_linked。
+Drel 设备身份签名只应作为高安全、可选的增强模式；通用第三方审批不能默认要求
+用户配置 Subject/Login/公钥。默认模型应是短时、一次性 bearer ticket。
 
 ### Details
 
-本地曾用旧模拟器导出的公钥配置 ACL，但实际安装包重新生成或换用了另一套
-Ed25519 Keychain 身份，导致前三次点击 403。正确流程是先打开
-Settings -> 审批身份，复制当前 Subject/Login/PEM，再调用 admin project
-接口更新 policy；每次 policy 更新都会递增 policyVersion，因此旧 ticket
-必须重新签发，不能复用旧推送。
+这次为证明“谁点击了审批”启用了 Ed25519 actor assertion，因此确实需要读取当前
+安装的 Subject/Login/公钥并写入 project policy。用户指出这不应成为所有接入方
+的默认复杂度：审批服务只需校验一次性 ticket 及 requestId/action/revision，
+拿到有效 ticket 即可完成操作；若要证明真人身份，应由第三方审批服务自己做
+OAuth/OIDC。actor assertion 可保留为 tenant policy 的高级可选项，但必须默认关闭。
 
 ### Suggested Action
 
-真实闭环前固定使用“读 App 身份页 -> 更新 project policy -> 新 requestId /
-新 ticket -> 新审批推送”的流程；UI 遇到 403 时立即读 HTTP error code，而
-不要重复点击同一 ticket。
+通用接入固定使用 `approval.submit = {url,ticket}` + 结构化 JSON POST；
+ticket 短时有效、服务端原子消费、绑定 requestId/action/revision。只有显式开启
+`actorMode=device_assertion` 的 tenant 才执行公钥绑定和签名校验。
 
 ### Metadata
 
@@ -795,7 +795,7 @@ Settings -> 审批身份，复制当前 Subject/Login/PEM，再调用 admin proj
 - Related Files: SuperApp/Sources/Views/Settings/ApprovalIdentityView.swift, src/actor.ts, src/multitenant.ts
 - Tags: approval, actor-assertion, ed25519, multi-tenant, policy-version
 - Pattern-Key: approval.actor_identity_binding
-- Recurrence-Count: 1
+- Recurrence-Count: 2
 - First-Seen: 2026-10-28
 - Last-Seen: 2026-10-28
 
@@ -803,8 +803,9 @@ Settings -> 审批身份，复制当前 Subject/Login/PEM，再调用 admin proj
 
 - Decay-Type: decision
 - Decay-Rate: durable
-- Authority: 实测四次审批决策（403/401 到 200）； Owner: Drel + drel-release-gate
-- Revalidation: 审批身份存储、project policy 或 ticket 版本变化时复查
-- Validation: verified; Last-Validated: 2026-10-28; Evidence: Drel decision HTTP 200；
-  GitHub run 40575537375 approval-gate success；publish-npm/marketplace skipped
-- Disposition: retain; Application: applied
+- Authority: 用户明确纠正“不要把公钥/密钥做成所有用户的默认接入门槛”；
+  Owner: Drel + drel-release-gate
+- Revalidation: 审批提交合同或 tenant 安全模式变化时复查
+- Validation: verified; Last-Validated: 2026-10-28; Evidence: 用户指出默认
+  bearer ticket 已满足通用场景；本轮 actor assertion 闭环仅作为可选模式证据
+- Disposition: revise; Application: proposed

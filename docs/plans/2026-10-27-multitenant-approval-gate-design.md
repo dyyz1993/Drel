@@ -86,9 +86,9 @@ identity, or fall back to a hosted GitHub OAuth approval step.
    verified and the run is cross-checked through the GitHub API.
 2. **Gate to provider:** only the gate's provider adapter may call GitHub or
    another CI system. Drel never calls the provider directly.
-3. **Gate to Drel:** a message and a ticket are capabilities, not user
-   authentication. The approval decision also needs a verified actor assertion
-   or a hosted OAuth session.
+3. **Gate to Drel:** a ticket is a short-lived capability for one action. The
+   default decision model validates and consumes that ticket. A provider that
+   needs human identity can add its own OAuth/OIDC confirmation.
 4. **Tenant to tenant:** repository name alone is never a tenant key. Every
    lookup, ticket claim, cache key, rate limit, and audit event includes
    `tenant_id` and `project_id`.
@@ -123,8 +123,8 @@ The Mermaid source is [multitenant-approval-system.mmd](../diagrams/multitenant-
 | Public API | Versioned CI, approval, identity, and health endpoints |
 | OIDC verifier | Verify provider OIDC tokens and normalize CI identity |
 | Ticket issuer/verifier | Sign short-lived, scoped, one-use request tickets |
-| Identity broker | GitHub OAuth, optional Drel account mapping, session and device assertion verification |
-| Policy engine | Tenant, project, environment, approver ACL, self-approval, quorum, separation of duties |
+| Optional identity broker | Provider-hosted OAuth/OIDC confirmation when explicitly required |
+| Policy engine | Tenant, project, environment, ticket scope, expiry, revision, and one-time use |
 | Approval state machine | `pending → authorized → executing → approved/rejected/expired/error` |
 | Provider adapters | Translate a normalized decision into a provider operation |
 | Audit | Immutable, queryable decision evidence with redaction |
@@ -353,101 +353,39 @@ first calls a `prepare` endpoint with the request reference and device
 assertion; the gate then returns a fresh short-lived decision ticket. The
 approval request itself remains stable, while credentials stay short-lived.
 
-## 9. Approver Identity and ACL
+## 9. Default Approval Model
 
-### 9.1 The central separation
-
-```text
-ticket                  = "this is the CI request"
-approver identity       = "this is the human deciding it"
-provider authorization  = "this human may approve this provider target"
-```
-
-Do not collapse these into one bearer token.
-
-Drel needs a first-class identity path for native approval. Possession of a
-device, or possession of the push message, is not sufficient by itself for a
-privileged release.
-
-### 9.2 Supported identity modes
-
-1. **GitHub OAuth hosted confirmation (secure baseline).**
-   Drel opens the gate's hosted approval page. The user signs in with GitHub;
-   the gate verifies ACL and calls the provider. This works on day one and
-   requires no GitHub token on the phone.
-2. **Drel-linked GitHub identity (recommended for native click).**
-   The user links GitHub to Drel once. The gate stores the provider authorization
-   server-side. Drel receives a short-lived gate session and a device-bound
-   approval assertion. Future native clicks can complete without a browser.
-3. **External OIDC (optional).**
-   For organizations that use an enterprise IdP, the gate can trust a
-   tenant-configured OIDC issuer and map groups to approver roles.
-
-### 9.3 Drel approval assertion
-
-For native clicks, Drel should send:
+The default model is a short-lived, one-time bearer ticket plus structured
+JSON. Drel does not generate a device keypair, does not maintain an approval
+identity, and does not send an actor assertion.
 
 ```json
 {
-  "ticket": "opaque",
+  "ticket": "opaque-one-time-ticket",
   "requestId": "apr_123",
   "actionId": "approve",
   "expectedRevision": 1,
-  "values": {},
-  "actorAssertion": {
-    "issuer": "https://drel.example.com",
-    "subject": "drel-user-...",
-    "audience": "https://approve.example.com",
-    "deviceKey": "device-public-id",
-    "requestId": "apr_123",
-    "ticketHash": "sha-256",
-    "actionId": "approve",
-    "nonce": "one-time",
-    "issuedAt": 1760000000,
-    "expiresAt": 1760000060,
-    "signature": "base64url-signature"
-  }
+  "values": {}
 }
 ```
 
-The assertion signs a canonical representation of the request, ticket hash,
-action, device, user, and nonce. It must be verified against Drel's published
-key or a tenant-configured identity issuer. The device key alone may provide
-proof of continuity, but not human authorization.
+The receiving service must:
 
-### 9.4 ACL resolution order
+1. Verify the ticket signature and expiration.
+2. Verify that the path/body `requestId` matches the ticket.
+3. Verify repository, environment, provider target, and policy version.
+4. Atomically consume the ticket nonce so a second submission returns `409`.
+5. Perform the provider action and record an audit event.
 
-The gate should evaluate the following, fail closed, and record the exact
-policy version:
+Possession of a valid ticket is the authorization for that one action. This is
+the same capability model as a one-time deployment approval link. If a
+provider requires proof of a human identity, that provider can add its own
+OAuth/OIDC confirmation page or user authorization adapter; Drel's default
+`approval.submit` contract stays unchanged.
 
-1. Tenant/project policy allows the identity provider and actor.
-2. Actor is linked to a GitHub identity (or tenant OIDC subject).
-3. GitHub environment required reviewers accept the actor, if configured.
-4. Team/role membership resolves through the provider API or a cached,
-   time-bounded policy snapshot.
-5. Self-approval rule is satisfied.
-6. Minimum approval count is satisfied.
-7. Provider-level protection still passes; never bypass it merely because the
-   gate policy passed.
-
-GitHub's environment rule is the final provider-side gate. The local ACL is
-an additional gate, not a replacement.
-
-### 9.5 Self-approval and quorum
-
-Default:
-
-- One approval.
-- Requester may not approve their own deployment unless the project explicitly
-  opts in.
-- Rejection requires a reason when configured.
-
-Future:
-
-- `minApprovals: 2`
-- Team-based quorum.
-- Separation of duties between author, reviewer, and releaser.
-- Time-based escalation, not automatic approval.
+Optional high-assurance identity modes may be designed later, but they must
+not be required by the generic Drel client or by ordinary open-source
+onboarding.
 
 ## 10. GitHub App Installation Model
 
@@ -574,7 +512,7 @@ The first adapter should:
 1. Read the run with an installation token.
 2. Verify `status == waiting`.
 3. Read the protected environment and pending deployment.
-4. Resolve policy and approver ACL.
+4. Resolve project and environment policy.
 5. Perform the actual decision with a user authorization, or a explicitly
    flagged service-account mode.
 6. Re-read provider state and return a normalized result.
@@ -610,7 +548,7 @@ POST /v1/approvals/{requestId}/prepare
       device/session assertion
 
 POST /v1/approvals/{requestId}/decision
-      ticket + request identity + actor assertion
+      ticket + requestId + actionId + expectedRevision + values
 
 GET  /v1/approvals/{requestId}
       authenticated requester or approver view
@@ -690,7 +628,7 @@ Errors must be typed:
 1. User opens the approval message and taps the action.
 2. Drel signs the request identity, ticket hash, action, device, and nonce.
 3. Drel POSTs to `submit.url`.
-4. Gate verifies ticket + actor assertion + ACL.
+4. Gate verifies and consumes the one-time ticket.
 5. Provider adapter performs the decision.
 6. Gate returns the normalized result.
 7. Drel updates the card and hides terminal actions.
@@ -825,7 +763,7 @@ prototype:
 ### Phase 3 — Approver identity and ACL
 
 - Add GitHub OAuth identity linking.
-- Add Drel device assertion support.
+- Optionally add provider-hosted human identity confirmation when required.
 - Resolve environment reviewers, teams, roles, and self-approval policy.
 - Remove the owner-PAT fallback from the normal path.
 
@@ -877,7 +815,7 @@ The multi-tenant design is implementable only when these tests can pass:
 
 | ADR | Decision | Status |
 |---|---|---|
-| ADR-001 | Ticket identifies CI request; actor assertion identifies the human | Proposed |
+| ADR-001 | A short-lived one-time ticket authorizes exactly one decision; no Drel device identity is required by default | Accepted |
 | ADR-002 | GitHub OIDC is the CI authentication mechanism; no shared CI password | Proposed |
 | ADR-003 | GitHub App installation tokens are machine credentials; user OAuth performs human approval | Proposed |
 | ADR-004 | Tenant + project + environment is the scope; repository alone is insufficient | Proposed |
@@ -936,16 +874,15 @@ the public multi-tenant security model.
 5. Gate verifies the GitHub identity and returns to Drel.
 6. Drel retries the same approval request with a fresh ticket.
 
-### Linked identity
+### Optional provider identity confirmation
 
-1. User taps “approve”.
-2. Drel signs the approval assertion with the device key.
-3. Gate verifies that the linked user is in the project's approver ACL.
-4. Gate performs the provider decision.
-5. Drel receives the terminal state.
+1. A project explicitly requires a provider identity check.
+2. The ticket's `submit.url` points to the project's OAuth/OIDC approval page.
+3. The provider-side service verifies the user and performs the decision.
+4. Drel receives only the normalized terminal state.
 
-Unlinking an identity must revoke future native approval, while preserving
-audit history. Revoking a device must invalidate its pending assertions.
+The generic Drel client does not hold an identity private key or maintain an
+approver ACL.
 
 ## Appendix C — Failure and Recovery Matrix
 
