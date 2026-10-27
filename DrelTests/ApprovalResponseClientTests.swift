@@ -39,7 +39,7 @@ final class ApprovalResponseClientTests: XCTestCase {
         XCTAssertEqual(object["actionId"] as? String, "approve")
         XCTAssertEqual(object["expectedRevision"] as? Int, 1)
         XCTAssertEqual((object["values"] as? [String: String])?["reason"], "ship it")
-        XCTAssertNotNil(object["actorAssertion"] as? String)
+        XCTAssertNil(object["actorAssertion"])
     }
 
     func testMissingSubmitFallsBackToOfficialRespondEndpoint() throws {

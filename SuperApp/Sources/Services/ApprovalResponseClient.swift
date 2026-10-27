@@ -33,18 +33,15 @@ final class ApprovalResponseClient {
     private let baseURL: String
     private let deviceKey: String
     private let session: URLSession
-    private let identity: ApprovalIdentity
 
     init(
         baseURL: String,
         deviceKey: String,
-        session: URLSession = .shared,
-        identity: ApprovalIdentity = ApprovalIdentityKeyStore.shared.identity
+        session: URLSession = .shared
     ) {
         self.baseURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         self.deviceKey = deviceKey
         self.session = session
-        self.identity = identity
     }
 
     func respond(
@@ -129,12 +126,7 @@ final class ApprovalResponseClient {
             "requestId": requestID,
             "actionId": actionID,
             "expectedRevision": expectedRevision,
-            "values": values,
-            "actorAssertion": identity.assertion(
-                requestID: requestID,
-                ticket: submit.ticket,
-                actionID: actionID
-            )
+            "values": values
         ])
 
         session.dataTask(with: request) { data, response, error in
