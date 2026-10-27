@@ -38,6 +38,9 @@ jobs:
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      WBK_APPROVAL_URL: https://api.drel.app
+      WBK_APPROVAL_DEVICE_KEY: approval-deploy-gate
+      WBK_APPROVAL_REGISTER_DEVICE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,6 +55,8 @@ jobs:
           fi
       - if: steps.credentials.outputs.configured == 'true'
         run: npm run deploy
+      - if: steps.credentials.outputs.configured == 'true'
+        run: bash ../../tools/verify-approval-v1.sh
       - if: steps.credentials.outputs.configured != 'true'
         run: |
           echo "Cloudflare deployment skipped: configure CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN as GitHub Actions secrets."

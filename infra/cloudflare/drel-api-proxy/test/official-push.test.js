@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createPrivateKey } from "node:crypto";
 
 import {
+  ApprovalRegistry,
   OfficialPushRegistry,
   buildPlainAPNsPayload,
   deliverPlainAPNs,
@@ -45,6 +46,64 @@ function mockStorage() {
   };
 }
 
+function request(input, init) {
+  return input instanceof Request ? input : new Request(input, init);
+}
+
+function approvalNamespace(registry) {
+  const inner = registry.fetch.bind(registry);
+  registry.fetch = async (input, init) => {
+    const source = input instanceof Request ? input : new Request(input, init);
+    const url = new URL(source.url);
+    const body = source.body ? await source.text() : undefined;
+    return inner(new Request(`https://internal${url.pathname}${url.search}`, {
+      method: source.method,
+      headers: source.headers,
+      body,
+    }));
+  };
+  return { idFromName: () => "approval-id", get: () => registry };
+}
+
+function seedDevice(registry, deviceKey = "ownerkey") {
+  return registry.fetch(new Request("https://registry/device", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ deviceKey, deviceToken: "tok" }),
+  }));
+}
+
+async function seededApprovalRegistry(env) {
+  const { state } = mockStorage();
+  const registry = new ApprovalRegistry(state);
+  const { state: deviceState } = mockStorage();
+  const devices = new OfficialPushRegistry(deviceState, env);
+  await seedDevice(devices);
+  env.APPROVAL_REGISTRY = approvalNamespace(registry);
+  env.OFFICIAL_PUSH_REGISTRY = approvalNamespace(devices);
+  const response = await registry.fetch(new Request("https://approval.internal/approval/approval-1/upsert", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      id: "approval-1",
+      requestId: "approval-1",
+      revision: 1,
+      state: "pending",
+      title: "Release?",
+      body: "Approve the deployment",
+      configuration: {
+        actions: [
+          { id: "approve", title: "Approve", resultState: "approved" },
+          { id: "reject", title: "Reject", requiresReason: true, resultState: "rejected" },
+        ],
+        responseMode: "poll",
+      },
+    }),
+  }));
+  assert.equal(response.status, 200);
+  return registry;
+}
+
 test("the flag must be exactly 1 to serve the push surface at the edge", () => {
   assert.equal(pushAtEdgeEnabled({ DREL_PUSH_AT_EDGE: "1" }), true);
   for (const value of [undefined, "", "0", "true", 1]) {
@@ -83,6 +142,117 @@ test("the plain APNs payload matches the Go sendPlain wire shape", () => {
   assert.equal(payload.url, "https://tools.example/release/42");
   assert.equal(payload.schema, "webbridgekit.message.v1");
   assert.equal(payload.drelSourceChannel, "drel.selfhosted.https://hub.example.test");
+});
+
+test("approval JSON preserves state, actionState and approval actions on the APNs wire", () => {
+  const payload = buildPlainAPNsPayload(
+    {
+      schema: "webbridgekit.message.v1",
+      type: "approval",
+      title: "Approval",
+      body: "Release?",
+      id: "approval-1",
+      requestId: "approval-1",
+      revision: 1,
+      state: "pending",
+      contentType: "approval",
+      presentation: "native",
+      approval: {
+        actions: [
+          { id: "approve", title: "Approve", style: "primary", resultState: "approved" },
+          { id: "reject", title: "Reject", style: "destructive", resultState: "rejected" },
+        ],
+        responseMode: "poll",
+      },
+    },
+    "msg-approval-1",
+    ""
+  );
+
+  assert.equal(payload.state, "pending");
+  assert.equal(payload.actionState, "pending");
+  assert.equal(payload.approval.actions.length, 2);
+  assert.equal(payload.approval.actions[0].id, "approve");
+});
+
+test("an invalid native approval is rejected before APNs is called", async () => {
+  const { state } = mockStorage();
+  const registry = new OfficialPushRegistry(state, testEnv());
+  await registry.fetch(
+    new Request("https://registry/device", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deviceKey: "approvalkey", deviceToken: "tok" }),
+    })
+  );
+  const namespace = { idFromName: () => "id", get: () => registry };
+  const env = testEnv({ OFFICIAL_PUSH_REGISTRY: namespace });
+
+  const realFetch = globalThis.fetch;
+  let deliveries = 0;
+  globalThis.fetch = async () => {
+    deliveries += 1;
+    return { ok: true, status: 200, text: async () => "" };
+  };
+  try {
+    const response = await handleOfficialPush(
+      new Request("https://edge/push", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          deviceKey: "approvalkey",
+          schema: "webbridgekit.message.v1",
+          type: "approval",
+          title: "Approval",
+          body: "Release?",
+          id: "approval-missing-state",
+          requestId: "approval-missing-state",
+          revision: 1,
+          presentation: "native",
+          approval: { actions: [{ id: "approve", title: "Approve" }] },
+        }),
+      }),
+      env
+    );
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /state/);
+    assert.equal(deliveries, 0);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("thirdParty validation requires an HTTPS submit URL and ticket", async () => {
+  for (const approval of [
+    {
+      actions: [{ id: "approve", title: "Approve", resultState: "approved" }],
+      responseMode: "thirdParty",
+    },
+    {
+      actions: [{ id: "approve", title: "Approve", resultState: "approved" }],
+      responseMode: "thirdParty",
+      submit: { url: "http://approve.example/api/review", ticket: "ticket" },
+    },
+  ]) {
+    const response = await handleOfficialPush(new Request("https://edge/push", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        deviceKey: "approvalkey",
+        schema: "webbridgekit.message.v1",
+        type: "approval",
+        title: "Approval",
+        body: "Release?",
+        id: "approval-invalid-third-party",
+        requestId: "approval-invalid-third-party",
+        revision: 1,
+        state: "pending",
+        presentation: "native",
+        approval,
+      }),
+    }), testEnv());
+    assert.equal(response.status, 400);
+  }
 });
 
 test("a passive notification carries no sound key at all", () => {
@@ -415,6 +585,114 @@ test("reserved paths never parse as push keys", async () => {
       !text.includes("no paired recipient"),
       `${path} was treated as a push key`
     );
+  }
+});
+
+test("approval state first response wins and remains queryable", async () => {
+  const env = testEnv();
+  const registry = await seededApprovalRegistry(env);
+
+  const pending = await handleOfficialPush(new Request(
+    "https://edge/api/v1/approvals/approval-1",
+    { headers: { authorization: "Bearer ownerkey" } }
+  ), env);
+  assert.equal(pending.status, 200);
+  assert.equal((await pending.json()).state, "pending");
+
+  const approve = await handleOfficialPush(new Request("https://edge/api/v1/approvals/approval-1/respond", {
+    method: "POST",
+    headers: { authorization: "Bearer ownerkey", "content-type": "application/json" },
+    body: JSON.stringify({ actionId: "approve", expectedRevision: 1, values: {} }),
+  }), env);
+  assert.equal(approve.status, 200);
+  assert.deepEqual(
+    (({ state, revision, actionId }) => ({ state, revision, actionId }))(await approve.json()),
+    { state: "approved", revision: 2, actionId: "approve" }
+  );
+
+  const late = await handleOfficialPush(new Request("https://edge/api/v1/approvals/approval-1/respond", {
+    method: "POST",
+    headers: { authorization: "Bearer ownerkey", "content-type": "application/json" },
+    body: JSON.stringify({ actionId: "reject", expectedRevision: 2, values: { reason: "late" } }),
+  }), env);
+  assert.equal(late.status, 409);
+});
+
+test("approval responses reject stale revisions and missing reasons", async () => {
+  const env = testEnv();
+  await seededApprovalRegistry(env);
+  const stale = await handleOfficialPush(new Request("https://edge/api/v1/approvals/approval-1/respond", {
+    method: "POST",
+    headers: { authorization: "Bearer ownerkey", "content-type": "application/json" },
+    body: JSON.stringify({ actionId: "approve", expectedRevision: 2, values: {} }),
+  }), env);
+  assert.equal(stale.status, 409);
+
+  const missingReason = await handleOfficialPush(new Request("https://edge/api/v1/approvals/approval-1/respond", {
+    method: "POST",
+    headers: { authorization: "Bearer ownerkey", "content-type": "application/json" },
+    body: JSON.stringify({ actionId: "reject", expectedRevision: 1, values: {} }),
+  }), env);
+  assert.equal(missingReason.status, 400);
+});
+
+test("thirdParty approvals do not create an official status record", async () => {
+  const { state: deviceState } = mockStorage();
+  const registry = new OfficialPushRegistry(deviceState, testEnv());
+  const { state: approvalState } = mockStorage();
+  const approvals = new ApprovalRegistry(approvalState);
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const namespace = approvalNamespace(registry);
+  const env = testEnv({
+    APPROVAL_REGISTRY: approvalNamespace(approvals),
+    OFFICIAL_PUSH_REGISTRY: namespace,
+    APNS_AUTH_KEY_P8: privateKey.export({ format: "pem", type: "pkcs8" }),
+  });
+  const approval = {
+    type: "approval",
+    presentation: "native",
+    id: "approval-1",
+    requestId: "approval-1",
+    revision: 1,
+    state: "pending",
+    title: "Release?",
+    body: "Approve",
+    approval: {
+      actions: [{ id: "approve", title: "Approve", resultState: "approved" }],
+      responseMode: "thirdParty",
+      submit: { url: "https://approve.example/api/review", ticket: "ticket" },
+    },
+  };
+  await registry.fetch(new Request("https://registry/device", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ deviceKey: "thirdpartykey", deviceToken: "tok" }),
+  }));
+  const inner = registry.fetch.bind(registry);
+  registry.fetch = async (input, init) => {
+    const source = request(input, init);
+    const url = new URL(source.url);
+    const body = source.body ? await source.text() : undefined;
+    return inner(new Request(`https://registry${url.pathname}${url.search}`, {
+      method: source.method,
+      headers: source.headers,
+      body,
+    }));
+  };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, status: 200, text: async () => "" });
+  try {
+    const response = await handleOfficialPush(new Request("https://edge/push", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...approval, deviceKey: "thirdpartykey" }),
+    }), env);
+    assert.equal(response.status, 200);
+    const query = await approvals.fetch(new Request("https://approval.example/approval/approval-1"));
+    assert.equal(query.status, 404);
+  } finally {
+    globalThis.fetch = realFetch;
   }
 });
 
