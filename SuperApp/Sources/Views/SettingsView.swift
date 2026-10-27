@@ -47,6 +47,7 @@ struct SettingsView: View {
         case favorites
         case history
         case notificationSettings
+        case approvalIdentity
         case pushEncryption
         case defaultStartupApp
         case appearance
@@ -265,6 +266,7 @@ struct SettingsView: View {
         case .favorites: onNavigate(.favorites)
         case .history: onNavigate(.history)
         case .notificationSettings: onNavigate(.notificationSettings)
+        case .approvalIdentity: onNavigate(.approvalIdentity)
         case .pushEncryption: onNavigate(.pushEncryption)
         case .defaultStartupApp: onNavigate(.defaultStartupApp)
         case .appearance: onNavigate(.appearance)

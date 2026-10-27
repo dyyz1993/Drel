@@ -551,6 +551,10 @@ class TabBarController: UITabBarController {
             nav.pushViewController(vc, animated: true)
         case .notificationSettings:
             NotificationSettingsOpener.open()
+        case .approvalIdentity:
+            let vc = UIHostingController(rootView: ApprovalIdentityView())
+            vc.title = "审批身份"
+            nav.pushViewController(vc, animated: true)
         case .pushEncryption:
             #if !DREL_RELEASE_MINIMAL_SETTINGS
             let vc = UIHostingController(rootView: PushEncryptionView())
