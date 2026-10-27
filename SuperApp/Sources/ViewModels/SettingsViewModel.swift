@@ -23,6 +23,7 @@ class SettingsViewModel {
         case favorites
         case history
         case notificationSettings
+        case approvalIdentity
         case pushEncryption
         case defaultStartupApp
         case appearance
@@ -203,6 +204,16 @@ class SettingsViewModel {
                 value: SelfHostedPushConfiguration.load()?.name ?? "官方 Drel",
                 iconBackgroundColor: pb,
                 iconTintColor: pt
+            )
+        )
+        notificationItems.append(
+            SettingsItem(
+                icon: nil,
+                lucideIcon: .key,
+                title: "审批身份",
+                action: .approvalIdentity,
+                iconBackgroundColor: pubg,
+                iconTintColor: put
             )
         )
         #if !DREL_RELEASE_MINIMAL_SETTINGS && !DREL_CONTAINER_ONLY
