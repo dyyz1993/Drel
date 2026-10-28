@@ -109,6 +109,12 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Fixed
 
+- Third-party approval submits now carry only the one-time ticket, request
+  identifier, action, revision and structured values. The temporary approval
+  identity screen, device key-pair and signed actor assertion were removed so
+  any service can accept a Drel approval with just a short-lived ticket. —
+  Scope: `App`, `Server` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-112-one-time-ticket/verification.md](docs/testing/results/drel-1-5-0-112-one-time-ticket/verification.md)
 - Receiving multiple unread push notifications with URLs no longer triggers
   bulk automatic browser navigation on background import; only the single
   notification explicitly tapped by the user opens its destination. — Scope:

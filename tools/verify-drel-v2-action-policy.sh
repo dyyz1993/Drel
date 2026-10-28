@@ -3,10 +3,19 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRAMEWORK="${WBK_FRAMEWORK_PATH:-$ROOT/../WebBridgeKit-Framework}"
-EXPECTED_BUILD="${DREL_V2_EXPECTED_BUILD:-97}"
+# Default to the build number the project currently declares, so the gate
+# follows the release train instead of expiring on every version bump.
+if [[ -z "${DREL_V2_EXPECTED_BUILD:-}" ]]; then
+  EXPECTED_BUILD="$(rg -A 7 '^        Drel15Release:$' "$ROOT/project.yml" \
+    | rg -o 'CURRENT_PROJECT_VERSION: "[0-9]+"' \
+    | rg -o '[0-9]+' | head -1)"
+fi
+EXPECTED_BUILD="${DREL_V2_EXPECTED_BUILD:-$EXPECTED_BUILD}"
 cd "$ROOT"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
+
+[[ -n "$EXPECTED_BUILD" ]] || fail "Drel 1.5 build number could not be resolved"
 
 rg -q '^  Drel15Release: release$' project.yml || fail "Drel 1.5 release configuration missing"
 rg -q '^  Drel15Store:$' project.yml || fail "Drel 1.5 Store scheme missing"

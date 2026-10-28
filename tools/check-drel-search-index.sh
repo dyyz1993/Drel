@@ -14,12 +14,12 @@ TAB_URL_PREFIX="https://www.google.com/search?q=site%3Adrel.app"
 
 mkdir -p "$REPORT_DIR"
 
-status="$(xbrowser chrome-bridge status 2>/dev/null || true)"
+status="$(timeout 10 xbrowser chrome-bridge status 2>/dev/null || true)"
 if ! grep -q 'running.*true' <<<"$status"; then
   printf '{"schema":"drel.search_index.v1","error":"chrome_bridge_unavailable","checked_at_utc":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$OUT"
   cp "$OUT" "$LATEST.tmp"; mv "$LATEST.tmp" "$LATEST"
   cat "$OUT"
-  exit 0
+  exit 2
 fi
 
 # Reuse the managed check tab if it exists, otherwise create it.
@@ -34,9 +34,9 @@ fi
 
 probe() {
   local engine="$1" url="$2"
-  xbrowser chrome-bridge exec --cmd navigate --args "{\"tabId\":$TAB_ID,\"url\":\"$url\"}" --tab-id "$TAB_ID" --timeout 20000 >/dev/null 2>&1 || true
+  timeout 30 xbrowser chrome-bridge exec --cmd navigate --args "{\"tabId\":$TAB_ID,\"url\":\"$url\"}" --tab-id "$TAB_ID" --timeout 20000 >/dev/null 2>&1 || true
   sleep "${3:-5}"
-  xbrowser chrome-bridge exec --cmd evaluate --args '{"tabId":'"$TAB_ID"',"expression":"JSON.stringify({url:location.href,title:document.title,text:(document.body&&document.body.innerText||\"\"),captcha:!!document.querySelector(\".passMod_dialog-body,[class*=captcha],iframe[src*=captcha],iframe[src*=wappass]\")})"}' --tab-id "$TAB_ID" --timeout 20000 2>/dev/null || true
+  timeout 30 xbrowser chrome-bridge exec --cmd evaluate --args '{"tabId":'"$TAB_ID"',"expression":"JSON.stringify({url:location.href,title:document.title,text:(document.body&&document.body.innerText||\"\"),captcha:!!document.querySelector(\".passMod_dialog-body,[class*=captcha],iframe[src*=captcha],iframe[src*=wappass]\")})"}' --tab-id "$TAB_ID" --timeout 20000 2>/dev/null || true
 }
 
 GOOGLE_RAW="$(probe google 'https://www.google.com/search?q=site%3Adrel.app&hl=en' 6)"
@@ -66,3 +66,11 @@ BAIDU_JSON="$(cat "$REPORT_DIR/baidu-parsed.tmp.json")"
 
 python3 "$ROOT/tools/render-search-index-report.py" "$OUT" "$STAMP" "$REPORT_DIR/google-parsed.tmp.json" "$REPORT_DIR/baidu-parsed.tmp.json"
 cat "$OUT"
+
+# Fail loudly when neither engine produced usable page data (e.g. silent bridge drop).
+if [[ "$(cat "$REPORT_DIR/google-parsed.tmp.json")" == "{}" && "$(cat "$REPORT_DIR/baidu-parsed.tmp.json")" == "{}" ]]; then
+  printf '{"schema":"drel.search_index.v1","error":"empty_probe_results","checked_at_utc":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT.tmp.err" 2>/dev/null || true
+  rm -f "$OUT.tmp.err"
+  echo "ERROR: both probe results empty; chrome bridge likely unavailable" >&2
+  exit 3
+fi

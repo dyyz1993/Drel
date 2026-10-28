@@ -110,6 +110,15 @@
         </section>
 
         <section>
+          <h2>Submitting an approval to a third-party service</h2>
+          <p>An approval card can also hand its decision to a service you run yourself, instead of the Drel gateway. The phone receives a short-lived ticket and a submit URL in the notification, and posts the result back as structured JSON. The third-party service keeps the policy, the replay protection and the audit trail; the phone only carries the user's answer.</p>
+          <figure class="docs-figure">
+            <img src="/assets/diagrams/multitenant-approval-system.svg" alt="Multi-tenant approval gate: GitHub Actions requests a short-lived ticket with an OIDC token; the gate verifies the OIDC token, applies the tenant policy, and hands the ticket to the Drel approval card; the card posts the ticket and the structured decision back; the gate records the state, calls the provider through an adapter, and returns the normalized result to the card, with an optional provider identity and approver ACL when the tenant policy requires it.">
+            <figcaption><strong>The gate holds the policy, the phone holds the answer.</strong> A ticket is bound to one request, one action and one revision, and it is consumed once. A tenant that needs an approver identity or a provider OAuth exchange turns those on in its own policy; the phone is not asked for business credentials.</figcaption>
+          </figure>
+        </section>
+
+        <section>
           <h2>Declared actions (Manifest v2)</h2>
           <p>Seven actions are exposed in Drel 1.5.0. Each must be declared in the signed manifest with a purpose ID, an origin list, and a scope.</p>
           <div class="docs-table">

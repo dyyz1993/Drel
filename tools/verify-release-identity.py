@@ -31,13 +31,42 @@ ROOT = Path(__file__).resolve().parent.parent
 PROJECT_YML = ROOT / "project.yml"
 CHANGELOG = ROOT / "CHANGELOG.md"
 RELEASE_ROOT = ROOT / "docs" / "release"
+APP_DELEGATE = ROOT / "SuperApp" / "Sources" / "AppDelegate.swift"
 
 # Configurations that actually reach a store or a TestFlight group.
 STORE_CONFIGS = ("Release", "Drel14Release", "Drel15Release")
 
-# The four actions the Drel Store host policy allows. The public copy must
-# not claim more than this.
-STORE_ACTION_ALLOWLIST = {"haptic", "vibrate", "share", "fullscreen"}
+# The actions the Drel 1.5 Store host policy allows. This is the fallback
+# list, used only when the AppDelegate allowlist cannot be parsed. The
+# authoritative source is the AppDelegate itself: see `store_allowlist()`.
+#
+# `clipboard` and `getLocation` are real, reviewable grant-based actions in
+# the 1.5 build, so the copy has to describe them. The review notes must
+# not claim less than the build actually does — an under-declared
+# capability is the same Guideline 2.3.1 problem as an over-claimed one.
+STORE_ACTION_ALLOWLIST = {
+    "haptic",
+    "vibrate",
+    "share",
+    "fullscreen",
+    "clipboard",
+    "getLocation",
+    "addToHomeScreen",
+}
+
+# Actions that read user data. They need a persistent, user-revocable
+# grant, and they need their own review notes row.
+GRANT_BASED_ACTIONS = {"clipboard", "getLocation"}
+
+# Actions that only produce a transient, in-session effect. A manifest
+# declaration is an allowlist for them, never standing user consent.
+DECLARATION_ONLY_ACTIONS = {
+    "haptic",
+    "vibrate",
+    "share",
+    "fullscreen",
+    "addToHomeScreen",
+}
 
 # Capabilities the public copy must never claim. Each entry lists the
 # English and the Chinese wording, because the release notes are bilingual
@@ -48,7 +77,6 @@ FORBIDDEN_CLAIMS = [
     ("bluetooth", "蓝牙"),
     ("microphone", "麦克风"),
     ("javascript-to-native bridge", "原生 bridge", "原生桥"),
-    ("location", "定位"),
     ("contacts", "通讯录"),
 ]
 
@@ -122,6 +150,42 @@ def run_git(args: list[str]) -> str:
         return result.stdout.strip()
     except (subprocess.SubprocessError, FileNotFoundError):
         return ""
+
+
+def store_allowlist() -> tuple[set[str], str]:
+    """Read the Drel 1.5 native action allowlist from the AppDelegate.
+
+    The Store build's real capability surface is the
+    `DREL_V2_MANAGED_ACTIONS_ONLY` branch of `AppDelegate.swift`. The
+    release copy has to describe exactly this set: claiming more is a
+    false claim, and claiming less hides a capability from review.
+
+    Returns the action set and a human-readable source description.
+    """
+    if not APP_DELEGATE.is_file():
+        return set(STORE_ACTION_ALLOWLIST), "fallback (AppDelegate.swift missing)"
+    text = APP_DELEGATE.read_text(encoding="utf-8")
+    match = re.search(
+        r"#elseif DREL_V2_MANAGED_ACTIONS_ONLY.*?"
+        r"nativeActionAllowlist\s*=\s*\[(.*?)\]",
+        text,
+        re.S,
+    )
+    if not match:
+        return set(STORE_ACTION_ALLOWLIST), "fallback (allowlist not found)"
+    actions = set(re.findall(r'"([A-Za-z][A-Za-z0-9]*)"', match.group(1)))
+    if not actions:
+        return set(STORE_ACTION_ALLOWLIST), "fallback (allowlist empty)"
+    return actions, "SuperApp/Sources/AppDelegate.swift"
+
+
+def mentioned_actions(text: str) -> set[str]:
+    """Return the action names a release document actually discusses."""
+    return {
+        action
+        for action in STORE_ACTION_ALLOWLIST
+        if action in text
+    }
 
 
 # A line that mentions a forbidden capability but denies offering it is fine.
@@ -281,6 +345,47 @@ def main() -> int:
                                 f"{flattened[:80]}"
                             )
                             break
+
+            # The review notes must describe every action the Store build
+            # actually allows. Under-declaring a capability is the same
+            # Guideline 2.3.1 accuracy problem as over-claiming one: a
+            # reviewer who finds an undisclosed action stops the review.
+            review_path = release_dir / "app-review-notes.md"
+            if review_path.is_file():
+                review = review_path.read_text(encoding="utf-8")
+                allowlist, source = store_allowlist()
+                missing = sorted(allowlist - mentioned_actions(review))
+                if missing:
+                    failures.append(
+                        f"[review] app-review-notes.md does not describe "
+                        f"{', '.join(missing)}, which the Store build allows "
+                        f"(source: {source}). Declare every allowed action so "
+                        f"review sees the real capability surface."
+                    )
+                lowered = review.lower()
+                for action in sorted(GRANT_BASED_ACTIONS & allowlist):
+                    index = lowered.find(action.lower())
+                    if index < 0:
+                        continue
+                    window = lowered[max(0, index - 200) :]
+                    if not any(
+                        marker in window
+                        for marker in (
+                            "grant",
+                            "permission",
+                            "revoke",
+                            "consent",
+                            "授权",
+                            "许可",
+                            "撤销",
+                            "同意",
+                        )
+                    ):
+                        failures.append(
+                            f"[review] app-review-notes.md mentions {action} "
+                            f"without explaining that it needs a persistent, "
+                            f"user-revocable grant."
+                        )
 
     # The build must be attributable to a commit.
     commit = run_git(["rev-parse", "--short", "HEAD"])
