@@ -110,13 +110,18 @@ targets:
           if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ] || [ "${CONFIGURATION}" = "Drel15Release" ]; then
             echo "Stripping test/debug HTML resources from Release bundle..."
             cd "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app" || exit 0
-            rm -f *test*.html bridge-*.html slow_resource*.html trigger_*.html \
-                  manifest_*test*.html manifest_cache_demo.html manifest_demo.html \
-                  permission-test.html execute_network_test.html ua_test.html static_test.html \
-                  2>/dev/null || true
+            # Every HTML file in Resources is a test or debug fixture. The
+            # product pages live under docs/site and are served by the
+            # website, not bundled here, so the whole set can go.
+            #
+            # This used to be a pattern list, and every page added later
+            # slipped through it. The rule is now the inverse: no pattern
+            # list to maintain, every HTML file goes.
+            find . -name "*.html" -delete 2>/dev/null || true
             find . -name "*test*.js" -not -name "WebBridge.js" -delete 2>/dev/null || true
             find . -name "*debug*.js" -delete 2>/dev/null || true
             find . -name "*test*.css" -delete 2>/dev/null || true
+            find . -name "*fixtures*.css" -delete 2>/dev/null || true
             find Frameworks -name "*debug*.js" -delete 2>/dev/null || true
             echo "Done. Test/debug resources stripped."
           else

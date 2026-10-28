@@ -6,6 +6,7 @@
 //  Copyright © 2025年 WebBridgeKit. All rights reserved.
 //
 
+#if DEBUG
 import Foundation
 import RxSwift
 import RxCocoa
@@ -581,3 +582,4 @@ private struct TestExecutionResult {
     let cacheSize: Int64
     let error: Error?
 }
+#endif
