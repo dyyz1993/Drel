@@ -76,8 +76,8 @@ targets:
           MARKETING_VERSION: "1.5.0"
           CURRENT_PROJECT_VERSION: "113"
           CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
-          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store
+          CODE_SIGN_IDENTITY: 0707C42E144EFA8577D252C53160C71E3EDA5131
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store 113
     postBuildScripts:
       - name: Retain Required SDK Privacy Prompts for Store Build
         basedOnDependencyAnalysis: false
@@ -193,8 +193,8 @@ targets:
           DEVELOPMENT_TEAM: B45VZCNYU3
           PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.nse
           CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
-          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store
+          CODE_SIGN_IDENTITY: 0707C42E144EFA8577D252C53160C71E3EDA5131
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store 113
 
   DrelTests:
     type: bundle.unit-test
