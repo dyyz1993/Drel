@@ -49,42 +49,6 @@
         <div id="logContainer"></div>
     </div>
   </main>
-    <script>
-        function addLog(type, message, data) { /* same as bridge-permission */
-            var logContainer = document.getElementById('logContainer');
-            var time = new Date().toLocaleTimeString();
-            var logClass = type === 'success' ? 'log-success' : type === 'error' ? 'log-error' : 'log-info';
-            var div = document.createElement('div'); div.className = 'log-entry';
-            div.innerHTML = '[' + time + '] [' + type.toUpperCase() + '] ' + message + (data ? ' ' + JSON.stringify(data) : '');
-            logContainer.insertBefore(div, logContainer.firstChild);
-            if (logContainer.children.length > 100) logContainer.removeChild(logContainer.lastChild);
-        }
-        function checkBridge() {
-            var hasBridge = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.BarkBridge;
-            var statusBar = document.getElementById('statusBar');
-            if (hasBridge) { statusBar.className = 'status-bar ok'; statusBar.textContent = '✅ JS Bridge 可用'; addLog('success', 'JS Bridge 检测成功'); }
-            else if (window.BarkBridge && window.BarkBridge.callNative) { statusBar.className = 'status-bar ok'; statusBar.textContent = '✅ BarkBridge 可用'; addLog('success', 'BarkBridge 检测成功'); }
-            else { statusBar.className = 'status-bar error'; statusBar.textContent = '❌ JS Bridge 不可用'; addLog('error', 'JS Bridge 不可用'); }
-            return hasBridge || (window.BarkBridge && typeof window.BarkBridge.callNative === 'function');
-        }
-        function callNative(action, params) {
-            addLog('info', '调用: ' + action, params);
-            try {
-                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.BarkBridge) {
-                    window.webkit.messageHandlers.BarkBridge.postMessage({ action: action, params: params || {} });
-                    addLog('info', '请求已发送 (webkit)');
-                } else if (window.BarkBridge && window.BarkBridge.callNative) {
-                    window.BarkBridge.callNative(action, params || {}).then(function(r) { addLog('success', '成功', r); }).catch(function(e) { addLog('error', '失败: ' + (e.message||e)); });
-                    addLog('info', '请求已发送 (BarkBridge)');
-                } else { addLog('error', 'Bridge 不可用'); }
-            } catch(e) { addLog('error', '调用失败: ' + e.message); }
-        }
-        window.BarkBridge = window.BarkBridge || {};
-        window.BarkBridge.receiveResult = function(result) {
-            if (result.success) addLog('success', '成功', result.data);
-            else addLog('error', '失败: ' + (result.error || 'Unknown'));
-        };
-        setTimeout(checkBridge, 100);
-    </script>
+  <script src="bridge-fixtures.js"></script>
 </body>
 </html>
