@@ -9,7 +9,7 @@ final class ApprovalResponseClientTests: XCTestCase {
         super.tearDown()
     }
 
-    func testSubmitPostsDrelBodyToExactThirdPartyURL() throws {
+    func testSubmitPostsOnlyOneTimeTicketFieldsToExactThirdPartyURL() throws {
         let session = makeSession()
         ApprovalURLProtocolStub.handler = { _ in
             (200, #"{"requestId":"request-1","state":"approved","revision":2}"#)
@@ -39,6 +39,11 @@ final class ApprovalResponseClientTests: XCTestCase {
         XCTAssertEqual(object["actionId"] as? String, "approve")
         XCTAssertEqual(object["expectedRevision"] as? Int, 1)
         XCTAssertEqual((object["values"] as? [String: String])?["reason"], "ship it")
+        XCTAssertEqual(
+            object.keys.sorted(),
+            ["actionId", "expectedRevision", "requestId", "ticket", "values"]
+        )
+        // Regression: the generic client has no device key, signature, or actor assertion.
         XCTAssertNil(object["actorAssertion"])
     }
 
