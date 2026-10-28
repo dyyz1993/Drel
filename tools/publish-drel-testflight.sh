@@ -103,8 +103,12 @@ xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
   || bad "归档失败，详见 build/archive-$BUILD.log"
 ok "归档完成：$ARCHIVE"
 
-say "归档校验（开发签名契约）"
-DREL_V2_EXPECTED_BUILD="$BUILD" DREL_V2_ARCHIVE_SIGNING=development \
+say "归档校验（签名契约）"
+ARCHIVE_SIGNING_MODE=development
+if [[ "$ARCHIVE_SIGNING" == "project" ]]; then
+  ARCHIVE_SIGNING_MODE=distribution
+fi
+DREL_V2_EXPECTED_BUILD="$BUILD" DREL_V2_ARCHIVE_SIGNING="$ARCHIVE_SIGNING_MODE" \
   bash tools/verify-drel-v2-store-archive.sh "$ARCHIVE" >/dev/null 2>&1 \
   || bad "归档契约校验失败"
 ok "版本号/签名/隐私文案/定位文案/推送权限 全部符合"
