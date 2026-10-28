@@ -367,8 +367,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
         let origin = ProcessInfo.processInfo.environment["WBK_PWA_PERMISSION_ORIGIN"] ?? "http://localhost:8081"
         let route = includesV2Actions
-            ? "/test_resources/pwa-permission/v2-actions.html"
-            : "/test_resources/pwa-permission/index.html"
+            ? FixturePaths.localPermissionV2Actions
+            : FixturePaths.Local.pwaPermission.indexPath
         let startURL = includesV2Actions
             ? "\(origin)\(route)?revision=20261018-fullscreen-v2"
             : "\(origin)\(route)"
@@ -498,27 +498,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             case "task":
                 appID = "com.webbridgekit.fixture.agent-console"
                 name = "Agent Console Fixture"
-                route = "/test_resources/pwa-agent-console/index.html"
-                routes = [route, "/test_resources/pwa-agent-console/approval.html"]
+                route = FixturePaths.Local.pwaAgentConsole.indexPath
+                routes = [route, FixturePaths.Local.pwaAgentConsole.approvalPath]
                 parameters = ["taskId": "run-20260810", "status": "completed"]
                 notificationTitle = "运行任务已完成"
                 notificationBody = "点击查看任务输出并继续处理"
             case "approval":
                 appID = "com.webbridgekit.fixture.agent-console"
                 name = "Agent Console Fixture"
-                route = "/test_resources/pwa-agent-console/approval.html"
-                routes = ["/test_resources/pwa-agent-console/index.html", route]
+                route = FixturePaths.Local.pwaAgentConsole.approvalPath
+                routes = [FixturePaths.Local.pwaAgentConsole.indexPath, route]
                 parameters = ["requestId": "approval-42", "source": "remote-task"]
                 notificationTitle = "需要你的确认"
                 notificationBody = "打开审批页面后仍需手动确认"
             default:
                 appID = "com.webbridgekit.fixture.chat"
                 name = "Chat Fixture"
-                route = processInfo.environment["WBK_PWA_FIXTURE_ROUTE"] ?? "/test_resources/pwa-notification/index.html"
+                route = processInfo.environment["WBK_PWA_FIXTURE_ROUTE"] ?? FixturePaths.Local.pwaNotification.indexPath
                 routes = Array(Set([
                     route,
-                    "/test_resources/pwa-notification/index.html",
-                    "/test_resources/pwa-notification/approval.html"
+                    FixturePaths.Local.pwaNotification.indexPath,
+                    FixturePaths.Local.pwaNotification.approvalPath
                 ])).sorted()
                 parameters = ["conversationId": "user-42", "messageId": "message-7"]
                 notificationTitle = "收到一条新消息"

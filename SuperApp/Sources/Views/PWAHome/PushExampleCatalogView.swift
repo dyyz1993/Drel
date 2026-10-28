@@ -139,7 +139,7 @@ extension PushExample {
                 // 路由必须在网关清单的白名单内，且是 startURL 主机上真实
                 // 存在的路径（resolver 会用它替换 startURL 的 path），否则
                 // 横幅点击会被路由校验拒绝或落到 404 白屏。
-                URLQueryItem(name: "route", value: "/test_resources/pwa-notification/index.html")
+                URLQueryItem(name: "route", value: FixturePaths.Local.pwaNotification.indexPath)
             ]
         ),
         PushExample(
