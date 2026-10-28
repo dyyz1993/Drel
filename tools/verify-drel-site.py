@@ -46,6 +46,18 @@ DEMO_APP_PAGE_HINT = "v1/index.html"
 # Directories under /test/ that are demos rather than plain landing pages.
 DEMO_ROOT = "test"
 
+# The production gateway signs the action demo and App Review uses it to
+# exercise the exact Store allowlist. Keep the action names on the wire.
+ACTION_DEMO_ACTIONS = [
+    "addToHomeScreen",
+    "clipboard",
+    "fullscreen",
+    "getLocation",
+    "haptic",
+    "share",
+    "vibrate",
+]
+
 
 class Site:
     def __init__(self, root: Path):
@@ -326,6 +338,40 @@ def check_diagrams(site: Site, failures: list[str], notes: list[str]) -> int:
     return checked
 
 
+def check_action_demo_contract(site: Site, failures: list[str]) -> int:
+    """The action demo must declare exactly the Store's seven wire actions."""
+    manifest_path = site.root / "test" / "actions" / "gateway-manifest.json"
+    if not manifest_path.is_file():
+        failures.append("[actions] test/actions/gateway-manifest.json is missing")
+        return 0
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        failures.append(f"[actions] gateway-manifest.json is not valid JSON: {error}")
+        return 0
+
+    declared = sorted(
+        item.get("action")
+        for item in manifest.get("capabilities_v2", [])
+        if isinstance(item, dict) and isinstance(item.get("action"), str)
+    )
+    expected = sorted(ACTION_DEMO_ACTIONS)
+    if declared != expected:
+        missing = sorted(set(expected) - set(declared))
+        unexpected = sorted(set(declared) - set(expected))
+        failures.append(
+            "[actions] gateway-manifest.json capabilities_v2 must match the "
+            f"Store action wire names; missing={missing}, unexpected={unexpected}"
+        )
+
+    if manifest.get("cache", {}).get("version") != "3":
+        failures.append(
+            "[actions] gateway-manifest.json cache.version must be 3 for the "
+            "getLocation wire-name correction"
+        )
+    return len(declared)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dir", default="build/drel-site-staging")
@@ -347,6 +393,7 @@ def main() -> int:
     header_rules = check_headers_rules(site, failures, notes)
     package_files = check_package_integrity(site, failures, notes)
     diagrams = check_diagrams(site, failures, notes)
+    action_contract = check_action_demo_contract(site, failures)
 
     print(f"Site root: {root}")
     print(f"Links checked:       {links}")
@@ -355,6 +402,7 @@ def main() -> int:
     print(f"Header rules checked:{header_rules:>4}")
     print(f"Package files hashed:{package_files:>4}")
     print(f"Diagram references:  {diagrams:>4}")
+    print(f"Action declarations: {action_contract:>4}")
 
     if failures:
         print()
