@@ -109,6 +109,22 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Fixed
 
+- The app clears expired manifest records and the seeded development fixtures
+  on launch, so an upgraded install no longer shows leftover Tetris, notes,
+  news, and shop entries in Storage. The manifest store now actually consults
+  its expiry predicate, and saves happen after the lock so cleanup cannot
+  deadlock. — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-113-cleanup/verification.md](docs/testing/results/drel-1-5-0-113-cleanup/verification.md)
+- Store builds strip every bundled HTML fixture and fixture stylesheet. The
+  six Drel 1.0 Bridge pages now live only on the website under their versioned
+  `/test/bridge/v1/` path; the app had never loaded the bundle duplicates.
+  — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-113-cleanup/verification.md](docs/testing/results/drel-1-5-0-113-cleanup/verification.md)
+- The action demo manifest now declares the location action with its actual
+  wire name, `getLocation`, and the site gate verifies all seven declared
+  actions so review testing cannot drift from the Store allowlist. —
+  Scope: `Website` — Verified: `server-test` — Evidence:
+  [docs/testing/results/drel-1-5-0-113-cleanup/verification.md](docs/testing/results/drel-1-5-0-113-cleanup/verification.md)
 - Third-party approval submits now carry only the one-time ticket, request
   identifier, action, revision and structured values. The temporary approval
   identity screen, device key-pair and signed actor assertion were removed so
