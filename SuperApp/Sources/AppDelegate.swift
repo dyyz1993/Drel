@@ -106,6 +106,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         Self.configurePermissionCenterOpener()
         Self.syncRuntimeGatewayIdentity()
         Self.cleanupDeadSeedFavorites()
+        Self.cleanupSeededManifestCache()
 
         if let serverURL = ServerConfigManager.shared.getActiveBaseURL() {
             CrashLogManager.shared.serverBaseURL = serverURL
@@ -937,6 +938,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             WebBridgeLogger.shared.info("Dead seed favorites cleanup: removed \(removed) entries")
             UserDefaults.standard.set(true, forKey: key)
         }
+    }
+
+    /// 清掉开发期播种的 Manifest 缓存条目。
+    ///
+    /// Manifest 缓存是 `Library/Caches/ManifestCache/` 下的普通 plist，不是
+    /// Realm：App 升级时它不会被迁移或清空。曾经装过开发版（Debug 构建会
+    /// 播种八个假应用）的用户，升级到商店版后仍会在缓存里看到"俄罗斯方块"
+    /// "优购商城"这些条目，而且它们的资源 URL 早已 404，点进去是空白页。
+    ///
+    /// 只清一次：标记写进 UserDefaults，后续启动不再重复扫描。
+    private static func cleanupSeededManifestCache() {
+        let key = "AppDelegate_DidPurgeSeededManifestCache_v1"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+
+        // Synchronous on purpose: the manifest cache is a few kilobytes, and a
+        // background hop can be cut short when the app is backgrounded right
+        // after launch, which would leave the seeded entries on disk.
+        let removed = ManifestStore.shared.purgeSeededFixtures()
+        WebBridgeLogger.shared.info(
+            "Seeded manifest cleanup finished: removed \(removed.count) entries"
+        )
+        UserDefaults.standard.set(true, forKey: key)
     }
 
     private static func cleanupInvalidHistoryURLs() {

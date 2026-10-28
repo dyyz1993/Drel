@@ -614,8 +614,9 @@ extension TestDataSeeder {
 
     static func _seedManifestCachesImpl() {
         let store = ManifestStore.shared
-        let allKeys = store.getAllPageKeys()
-        guard allKeys.isEmpty else { return }
+        // Use the unfiltered count: getAllPageKeys hides expired entries, and
+        // an expired cache would look empty here and be seeded again.
+        guard store.totalManifestCount == 0 else { return }
 
         let entries: [(key: String, manifest: Manifest)] = [
             ("weather-beijing", Manifest(
