@@ -810,3 +810,193 @@ ticket 短时有效、服务端原子消费、绑定 requestId/action/revision�
   DrelTests/ApprovalResponseClientTests 4/4; tools/verify-approval-v1.sh 12/12;
   Server swift test 84/84; drel-release-gate npm test 32/32 and typecheck passed
 - Disposition: retain; Application: applied
+
+---
+
+## [LRN-20261028-002] best_practice
+
+**Logged**: 2026-10-28T17:00:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: infra
+
+### Summary
+
+在临时 git worktree 里用 `git config user.name` 改身份会写进**仓库级**配置，
+不是 worktree 级；并行任务在主工作区提交时会被错误署名。
+
+### Details
+
+为试验 PR 合并，我建了 `/tmp/drel-merge-*` 临时 worktree，并在里面执行
+`git config user.email "merge-test@drel.local"`。该命令作用于
+`.git/config`（共享于所有 worktree），于是主工作区随后的正常提交
+`1ee94bb` 也被署名为 `merge test <merge-test@drel.local>`。
+仓库历史里其它提交都是 `xuyingzhou <xuyingzhou@example.com>`，
+只有这一个被污染——说明问题确实来自共享配置而不是提交者本意。
+
+### Suggested Action
+
+需要临时身份时用一次性环境变量，不写仓库配置：
+`git -c user.name=... -c user.email=... commit ...`。
+若已在共享配置里改过，结束前必须
+`git config --unset user.name && git config --unset user.email` 并恢复原值。
+发现异常署名时，在**未推送**的前提下用
+`git commit --amend --reset-author --no-edit` 修正。
+
+### Metadata
+
+- Source: error
+- Related Files: .git/config, .learnings/LEARNINGS.md
+- Tags: git, worktree, config, commit-author, parallel-work
+- Pattern-Key: git.worktree_config_leak
+- Recurrence-Count: 1
+- First-Seen: 2026-10-28
+- Last-Seen: 2026-10-28
+
+### Context Maintenance
+
+- Decay-Type: toolchain
+- Decay-Rate: slow
+- Authority: `git log --format='%an <%ae>'` 的作者分布 + `git config user.name` 实读
+- Owner: Drel
+- Revalidation: 使用临时 worktree 做合并/试验时复查
+- Validation: verified; Last-Validated: 2026-10-28; Evidence:
+  身份恢复为 `xuyingzhou <xuyingzhou@example.com>`；`110a748` 署名已修正；
+  临时 worktree 已 remove + prune
+- Disposition: retain; Application: applied
+
+---
+
+## [LRN-20261028-003] best_practice
+
+**Logged**: 2026-10-28T17:00:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: release
+
+### Summary
+
+对外审核材料必须与 Store 包的**真实能力面**逐项对齐；少宣称和多宣称
+同样违反 App Review Guideline 2.3.1，而且少宣称更危险——审核员发现未申报
+能力会直接质疑是否有意隐藏。
+
+### Details
+
+1.5.0 的 Store 白名单实际是 7 个动作（haptic/vibrate/share/fullscreen/
+clipboard/getLocation/addToHomeScreen），但 `app-review-notes.md` 与
+`RELEASE-NOTES.md` 仍写"只有四个""定位未开放"，与代码矛盾。
+根因是 `tools/verify-release-identity.py` 里的
+`STORE_ACTION_ALLOWLIST` 是个**死常量**——定义了却从未被引用，
+门禁只查"禁止词"（ FORBIDDEN_CLAIMS ），不查"实际能力"。
+于是文案落后于实现时没有任何检查会失败。
+同期官网 `docs/site/docs/bridge/index.html` 反而如实写了
+"Seven actions are exposed in Drel 1.5.0"，
+说明只有对外审核材料脱节。
+
+### Suggested Action
+
+发布材料门禁必须做**双向**校验：
+(1) 从 `SuperApp/Sources/AppDelegate.swift` 的
+`DREL_V2_MANAGED_ACTIONS_ONLY` 分支解析真实白名单；
+(2) 要求审核说明与发布说明**逐一覆盖**每个动作（少一个就失败）；
+(3) 对读用户数据的动作（clipboard/getLocation）额外要求说明
+"持久、可撤销的授权"；(4) 禁止词表只针对真正未开放的能力。
+另外，隐私政策页是提交给 Apple 的公开 URL，必须与当前版本能力面同步——
+本次发现它还停留在 1.0 时代（"does not inject the native Bridge"、
+"custom gateway import is not part of this Store release"）。
+
+### Metadata
+
+- Source: error
+- Related Files: tools/verify-release-identity.py, tools/verify-drel-v2-action-policy.sh, docs/release/1.5.0/app-review-notes.md, docs/release/1.5.0/RELEASE-NOTES.md, docs/site/privacy/index.html, SuperApp/Sources/AppDelegate.swift
+- Tags: release, app-review, allowlist, guideline-2.3.1, privacy-policy, copy-drift
+- Pattern-Key: release.review_copy_capability_drift
+- Recurrence-Count: 1
+- First-Seen: 2026-10-28
+- Last-Seen: 2026-10-28
+
+### Context Maintenance
+
+- Decay-Type: dependency
+- Decay-Rate: fast
+- Authority: `SuperApp/Sources/AppDelegate.swift` 白名单 + App Store Connect 版本记录
+- Owner: Drel
+- Revalidation: 每次变更原生动作白名单或提交新版本前
+- Validation: verified; Last-Validated: 2026-10-28; Evidence:
+  `tools/verify-release-identity.py --marketing 1.5.0 --build 112` PASS
+  （双向覆盖 7 个动作 + grant 语义检查）；
+  `tools/verify-drel-v2-action-policy.sh` PASS（自动跟随 project.yml 版本号）；
+  `tools/verify-release-notes.py` / `verify-docs-links.py` / `verify-repo-hygiene.py` /
+  `ci-lint.sh` 17/17 / `verify-drel-site.py` 全 PASS
+- Disposition: retain; Application: applied
+
+---
+
+## [LRN-20261028-004] best_practice
+
+**Logged**: 2026-10-28T21:00:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: release
+
+### Summary
+
+Caches 目录下的普通 plist 不像 Realm 那样随 App 升级迁移或清空；而且
+"定义了过期判断"不等于"真的执行了过期判断"。两者叠加，会让开发期数据
+在商店版里长期可见。
+
+### Details
+
+用户在 Drel 1.5.0 (112) 上仍能看到"俄罗斯方块""优选商城""每日新闻"等
+八个假应用。排查结论是两层原因叠加：
+
+1. `ManifestStore` 定义了 `isExpired`（7 天），但 `getManifest(for:)`、
+   `getAllPageKeys()`、`getAllManifests()` **都不检查它**——全仓只有
+   `ManifestDownloader` 真正用过。过期条目因此永远不会被过滤掉。
+   另有一处 `manifest.lastUpdated ?? Date()` 的兜底：无时间戳的条目
+   会被当成"刚刚写入"，永远不过期。
+2. Manifest 缓存是 `Library/Caches/ManifestCache/manifest_cache.plist`，
+   **不是 Realm**。App 升级（bundle id 不变）不会迁移或清空它，所以
+   曾经装过 Debug 版（`DREL_CONTAINER_ONLY` 只在三个 Release 配置里
+   定义，Debug 会真的播种）的用户，升级到商店版后依然带着那批数据。
+
+还有一个隐蔽的时序问题：`purgeSeededFixtures()` 若在
+`serialQueue.sync` 内部调用 `scheduleAsyncSave()`（后者内部又
+`serialQueue.sync`），**重入同一 serial 队列必然死锁**，清理会静默
+不生效。必须把保存调用移到锁外。
+
+### Suggested Action
+
+- 定义了 `isExpired` 就必须在所有读取入口执行它；不要只写不用。
+- 缓存类数据的"兜底时间戳"不能用 `Date()`（等于宣称它是最新的），
+  缺时间戳应视为最旧。
+- 存放在 Caches 下的 plist 不会随升级迁移：发布前必须想清楚"老用户的
+  这份数据要不要留"，必要时写一次性清理（幂等标记放 UserDefaults）。
+- 清理函数里凡是要取锁的调用，一律移到锁外执行。
+- 判定"是不是测试数据"要用双重信号（固定 app ID + 特征 URL），
+  避免误删真实用户数据。
+
+### Metadata
+
+- Source: user_correction
+- Related Files: Sources/Cache/ManifestStore.swift, Sources/Cache/ManifestStorage/ManifestPersistence.swift, SuperApp/Sources/AppDelegate.swift, SuperApp/Sources/Managers/TestDataSeeder+Entities.swift
+- Tags: cache, expiry, seeded-fixture, app-upgrade, deadlock, serial-queue
+- Pattern-Key: cache.expiry_and_upgrade_residue
+- Recurrence-Count: 1
+- First-Seen: 2026-10-28
+- Last-Seen: 2026-10-28
+
+### Context Maintenance
+
+- Decay-Type: dependency
+- Decay-Rate: slow
+- Authority: Framework `ManifestStore` 源码 + 模拟器升级实验（8 条 → 0 条）
+- Owner: Drel + WebBridgeKit-Framework
+- Revalidation: 改动 ManifestStore 读写路径或缓存存储位置时复查
+- Validation: verified; Last-Validated: 2026-10-28; Evidence:
+  模拟器实测 Debug 播种 8 条 → 升级到 Store 版后 manifest_cache.plist
+  与 html_cache.plist 均为 0 条，全容器搜 8 个种子名字 0 命中；
+  DrelTests 31/31；Framework MessageTests 261/261；CacheTests 562 项
+  中 561 通过（唯一失败 `testPresetCatalogRecommendedItems` 为既有失败，
+  `PresetURLCatalog` 自建仓起未改，与本次无关）
+- Disposition: retain; Application: applied
