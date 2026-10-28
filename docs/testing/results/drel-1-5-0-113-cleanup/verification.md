@@ -2,9 +2,8 @@
 
 Date: 2026-10-29
 
-Status: local and simulator verification in progress. Build 113 has not yet
-completed TestFlight processing or App Store review at the time this file was
-created.
+Status: local, simulator, signing, and TestFlight verification passed. App Store
+review has not yet been submitted at the time this file was created.
 
 ## Scope
 
@@ -30,11 +29,34 @@ created.
 | Bridge fixture pages | PASS, 12/12 viewport/theme runs | 6 pages × light/dark; 390px and 1280px had no horizontal overflow or failed requests |
 | Bridge debug trace | PASS | Mocked call showed request, response, duration, per-call copy, and copy-all |
 | Diagram freshness | PASS, 8/8 | `bash tools/build-drel-diagrams.sh --check` |
+| Distribution archive | PASS | `Drel15Store` / `Drel15Release`, commit `856e886` |
+| Distribution signature | PASS | Apple Distribution / team `B45VZCNYU3` |
+| Store entitlements | PASS | production APNs, communication notifications, `get-task-allow=false` |
+| TestFlight build 113 | PASS, `VALID` | ASC build ID `957fd228-fc84-4947-b216-51df36b8fc95` |
+| IPA SHA-256 | PASS | `753c0707e48010c7ffb861aaf08988ae09a7ed981274418e637fd7d423711deb` |
 
 The Bridge browser matrix is stored in
 `build/reports/bridge-v1-113/http-matrix.json`; screenshots are under
 `build/reports/bridge-v1-113/`. These are local verification artifacts and are
 not release package contents.
+
+## Signing recovery
+
+The original login keychain search list contained an invalid `login-db` entry
+and the Apple Development / Distribution certificates did not have usable local
+private keys. A new Distribution certificate was created without revoking the
+existing certificates. Two active versioned profiles were created:
+
+```text
+WebBridgeKit App Store 113      AMD4S65KD9  profile 791515df-807b-47b4-a40a-b7715dbc7dcc
+WebBridgeKit NSE App Store 113  AZW526CUNK  profile ba05b0d3-8984-4a11-8986-1d60b65ecfc8
+```
+
+The signing identity is stored in
+`~/Library/Keychains/drel-release.keychain-db`; its password is stored as a
+dedicated generic-password item in the login keychain. Neither private material
+nor its password is committed to the repository. The user search list was
+restored to the login and system keychains after the build.
 
 ## Production dependency
 
@@ -54,7 +76,6 @@ signed-gateway demo precondition.
 1. Publish the corrected action manifest to the official gateway.
 2. Verify the signed `getLocation` declaration is returned by
    `/api/v1/html-apps/dev.drel.action-demo`.
-3. Archive and upload build 113; wait for ASC `VALID`.
-4. Create the 1.5.0 App Store Connect version, attach build 113, and run the
+3. Create the 1.5.0 App Store Connect version, attach build 113, and run the
    physical-device TestFlight walkthrough.
-5. Submit only after the signed demo and walkthrough are both available.
+4. Submit only after the signed demo and walkthrough are both available.

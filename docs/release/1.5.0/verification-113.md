@@ -3,14 +3,16 @@
 Date: 2026-10-29
 
 Build 113 is the release candidate that carries the Store-package and
-upgrade-residue cleanup made after build 112. Version and build metadata were
-verified from the built simulator package.
+upgrade-residue cleanup made after build 112. It is processed as `VALID` in
+App Store Connect and available in TestFlight.
 
 ## Package identity
 
 ```text
 CFBundleShortVersionString = 1.5.0
 CFBundleVersion = 113
+TestFlight build ID = 957fd228-fc84-4947-b216-51df36b8fc95
+IPA SHA-256 = 753c0707e48010c7ffb861aaf08988ae09a7ed981274418e637fd7d423711deb
 ```
 
 ## Local gates
@@ -25,6 +27,8 @@ verify-release-notes.py:   PASS
 verify-docs-links.py:      PASS
 verify-drel-site.py:       PASS
 Worker npm test:           42/42 passed
+Store package HTML:        0 files
+Store package fixture CSS: 0 files
 ```
 
 The command log, exact paths, and remaining production prerequisites are in
@@ -32,6 +36,10 @@ The command log, exact paths, and remaining production prerequisites are in
 
 ## Release state
 
-This document proves the local release candidate only. It does not prove a
-TestFlight upload, App Store Connect processing, signed production-gateway
-availability, App Store review, or App Store release.
+The distribution signature is an Apple Distribution identity for team
+`B45VZCNYU3`. The app has production APNs, communication notifications enabled,
+and `get-task-allow=false`.
+
+This document proves local gates and TestFlight processing. It does not prove
+signed production-gateway availability, physical-device review exercise, App
+Store review, or App Store release.
