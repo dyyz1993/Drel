@@ -54,7 +54,7 @@ class TokenManager {
             // 模拟解析结果
             // 假设解析出了一个 AppID 和对应的 URL
             let mockAppID = "com.example.app"
-            let mockURL = "https://api.drel.app/test_resources/bridge-hub.html"
+            let mockURL = "https://drel.app/test/bridge/v1/bridge-interaction.html"
 
             self.handleResolvedResult(appId: mockAppID, urlString: mockURL)
         }

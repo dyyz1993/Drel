@@ -11,6 +11,9 @@ bash "$ROOT/tools/build-drel-data-template-site.sh" "$STAGE"
 bash "$ROOT/tools/build-drel-app-development-skill-site.sh" "$SKILL_STAGE"
 cp -R "$SKILL_STAGE/skills/." "$STAGE/skills/"
 bash "$ROOT/tools/build-drel-action-demo-site.sh" "$STAGE"
+# The Drel 1.0 Bridge test fixtures, published under an explicit version
+# path so the historical contract stays inspectable.
+bash "$ROOT/tools/build-drel-bridge-test-pages-site.sh" "$STAGE"
 # Landing pages and the /test/ index. Must run last so it also covers the
 # directories the demo builders create.
 bash "$ROOT/tools/build-drel-demo-pages.sh" "$STAGE"

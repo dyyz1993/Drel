@@ -215,11 +215,11 @@ class ManifestCacheTestViewController: UIViewController, UIGestureRecognizerDele
 
         updateStats()
 
-        // 设置默认 URL - 指向本地测试服务器（使用实际 IP）
+        // 设置默认 URL - 指向已发布的 Drel 1.0 Bridge 测试夹具
         #if !DREL_CONTAINER_ONLY
-        urlTextField.text = "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-hub.html"
+        urlTextField.text = "https://drel.app/test/bridge/v1/bridge-interaction.html"
         #else
-        urlTextField.text = "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-hub.html"
+        urlTextField.text = "https://drel.app/test/bridge/v1/bridge-interaction.html"
         #endif
 
         addLog("Manifest 缓存测试页面已加载")
@@ -426,7 +426,7 @@ class ManifestCacheTestViewController: UIViewController, UIGestureRecognizerDele
         switch urlPresetSegment.selectedSegmentIndex {
         case 0:
             // Manifest 测试
-            urlTextField.text = "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-hub.html"
+            urlTextField.text = "https://drel.app/test/bridge/v1/bridge-interaction.html"
             addLog("[SYNC] 已选择: Manifest 测试 URL")
         case 1:
             // 百度

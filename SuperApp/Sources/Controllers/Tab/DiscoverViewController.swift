@@ -368,7 +368,7 @@ class DiscoverViewController: UIViewController {
         let recommendedItems: [DiscoverItem] = [
             DiscoverItem(
                 name: "Bridge 交互",
-                url: "https://api.drel.app/test_resources/bridge-interaction.html",
+                url: "https://drel.app/test/bridge/v1/bridge-interaction.html",
                 cacheStatus: .cached,
                 cacheSize: "1.8 MB",
                 lastAccessed: nil,
@@ -376,7 +376,7 @@ class DiscoverViewController: UIViewController {
             ),
             DiscoverItem(
                 name: "Bridge 设备",
-                url: "https://api.drel.app/test_resources/bridge-device.html",
+                url: "https://drel.app/test/bridge/v1/bridge-device.html",
                 cacheStatus: .cached,
                 cacheSize: "0.9 MB",
                 lastAccessed: nil,

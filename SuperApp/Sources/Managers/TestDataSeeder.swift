@@ -205,6 +205,11 @@ struct TestDataSeeder {
 
     private static let baseURL = "https://api.drel.app"
     private static let staticBaseURL = "https://ae8fcb.legacy-infra.example.invalid:8443"
+    /// The published Drel 1.0 Bridge test fixtures. The
+    /// `ae8fcb.../test_resources/bridge-*.html` URLs these entries used to
+    /// point at are gone; the fixtures now live on the website under an
+    /// explicit version path.
+    private static let bridgeFixtureBaseURL = "https://drel.app/test/bridge/v1"
 
     private static func seedFavorites() {
         let fk = "TestDataSeeder_Favorites_Sealed"
@@ -228,7 +233,7 @@ struct TestDataSeeder {
                     ("fav-cache-003", staticBaseURL + "/test_resources/cache-showcase.html", "缓存引擎", true, 2, true, "smart", "2026-05-13T10:00:00Z"),
                     ("fav-msg-004", staticBaseURL + "/test_resources/message-showcase.html", "消息引擎", true, 3, true, "smart", "2026-05-13T11:00:00Z"),
                     ("fav-ws-005", staticBaseURL + "/test_resources/websocket-showcase.html", "WebSocket", false, 4, true, "smart", "2026-05-13T12:00:00Z"),
-                    ("fav-bridge-006", staticBaseURL + "/test_resources/bridge-hub.html", "Bridge 测试", false, 5, false, "live", "2026-05-13T13:00:00Z"),
+                    ("fav-bridge-006", bridgeFixtureBaseURL + "/bridge-interaction.html", "Bridge 测试", false, 5, false, "live", "2026-05-13T13:00:00Z"),
                     ("fav-admin-007", baseURL + "/admin", "管理后台", false, 6, false, "live", "2026-05-13T14:00:00Z"),
                     ("fav-health-008", baseURL + "/health", "健康检查", false, 7, false, "live", "2026-05-13T15:00:00Z"),
                     ("fav-dev-009", "http://192.0.2.10:5173", "Dev Server", false, 8, false, "live", "2026-05-14T00:00:00Z"),
@@ -282,13 +287,13 @@ struct TestDataSeeder {
 
             try realm.write {
                 let histories: [(id: String, url: String, title: String, cached: Bool, size: Int64, pinned: Bool, favorite: Bool, visits: Int, ruleId: String?, ruleName: String?, excluded: Bool, agoSeconds: TimeInterval)] = [
-                    ("hist-weather-001", "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-interaction.html", "Bridge 交互测试", true, 184320, true, true, 35, nil, nil, false, 3600),
-                    ("hist-shop-002", "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-media.html", "Bridge 媒体测试", true, 1155072, true, true, 28, nil, nil, false, 5400),
-                    ("hist-notes-003", "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-device.html", "Bridge 设备测试", true, 92160, false, true, 42, nil, nil, false, 7200),
+                    ("hist-weather-001", "https://drel.app/test/bridge/v1/bridge-interaction.html", "Bridge 交互测试", true, 184320, true, true, 35, nil, nil, false, 3600),
+                    ("hist-shop-002", "https://drel.app/test/bridge/v1/bridge-media.html", "Bridge 媒体测试", true, 1155072, true, true, 28, nil, nil, false, 5400),
+                    ("hist-notes-003", "https://drel.app/test/bridge/v1/bridge-device.html", "Bridge 设备测试", true, 92160, false, true, 42, nil, nil, false, 7200),
                     ("hist-admin-004", "https://api.drel.app/admin", "管理后台", true, 163840, true, true, 15, nil, nil, false, 10800),
-                    ("hist-news-005", "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-permission.html", "Bridge 权限测试", true, 40960, false, false, 30, nil, nil, false, 86400),
+                    ("hist-news-005", "https://drel.app/test/bridge/v1/bridge-permission.html", "Bridge 权限测试", true, 40960, false, false, 30, nil, nil, false, 86400),
                     ("hist-dashboard-006", "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/engine-dashboard.html", "引擎总览", true, 2179072, false, true, 22, nil, nil, false, 14400),
-                    ("hist-docs-007", "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/bridge-cache.html", "Bridge 缓存测试", true, 204800, false, true, 45, nil, nil, false, 21600),
+                    ("hist-docs-007", "https://drel.app/test/bridge/v1/bridge-cache.html", "Bridge 缓存测试", true, 204800, false, true, 45, nil, nil, false, 21600),
                     ("hist-local-008", "http://localhost:8080/health", "本地服务", false, 0, false, false, 1, nil, nil, false, 28800)
                 ]
 
