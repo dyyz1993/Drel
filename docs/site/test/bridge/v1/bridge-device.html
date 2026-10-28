@@ -1,37 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="bridge-fixtures.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, sans-serif; padding: 16px; background: #f5f5f5; margin: 0; }
-        h1 { color: #333; margin: 0 0 16px 0; font-size: 22px; }
-        .status-bar { background: white; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; }
-        .status-bar.ok { background: #d4edda; color: #155724; }
-        .status-bar.error { background: #f8d7da; color: #721c24; }
-        .test-section { background: white; padding: 16px; border-radius: 8px; margin-bottom: 12px; }
-        .test-section h3 { margin: 0 0 12px 0; font-size: 16px; }
-        .test-section p { margin: 0 0 8px 0; font-size: 13px; color: #666; }
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        button { padding: 12px; border: none; border-radius: 8px; color: white; font-size: 14px; cursor: pointer; width: 100%; font-weight: 500; }
-        button:active { opacity: 0.7; }
-        button:disabled { opacity: 0.5; }
-        .btn-primary { background: #667eea; }
-        .btn-success { background: #34C759; }
-        .btn-warning { background: #FF9500; }
-        .btn-danger { background: #FF3B30; }
-        .btn-purple { background: #AF52DE; }
-        .btn-teal { background: #5AC8FA; color: #333; }
-        .btn-gray { background: #8E8E93; }
-        .log-section { background: #1e1e1e; color: #f0f0f0; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 250px; overflow-y: auto; margin-top: 12px; }
-        .log-entry { padding: 3px 0; border-bottom: 1px solid #333; }
-        .log-success { color: #4ade80; }
-        .log-error { color: #f87171; }
-        .log-info { color: #60a5fa; }
-    </style>
 </head>
 <body>
+  <main>
+
     <h1>📱 设备功能</h1>
     <div id="statusBar" class="status-bar">检测中...</div>
 
@@ -72,7 +48,7 @@
     <div class="log-section">
         <div id="logContainer"></div>
     </div>
-
+  </main>
     <script>
         function addLog(type, message, data) { /* same as bridge-permission */
             var logContainer = document.getElementById('logContainer');
