@@ -24,32 +24,32 @@ extension TestDataSeeder {
 
             try realm.write {
                 let entries: [(key: String, url: String, mime: String, orig: Int64, comp: Int64, filePath: String)] = [
-                    ("weather_index_html", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html", "text/html", 24576, 8192, "/cache/weather/index.html"),
-                    ("weather_main_css", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html", "text/css", 32768, 6144, "/cache/weather/styles/main.css"),
-                    ("weather_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html", "application/javascript", 102400, 30720, "/cache/weather/scripts/weather.js"),
-                    ("weather_sunny_svg", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html", "image/svg+xml", 4096, 2048, "/cache/weather/images/sunny.svg"),
-                    ("weather_cities_json", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html", "application/json", 16384, 4096, "/cache/weather/data/cities.json"),
-                    ("notes_index_html", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-device.html", "text/html", 16384, 5120, "/cache/notes/index.html"),
-                    ("notes_editor_css", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-device.html", "text/css", 24576, 4096, "/cache/notes/editor.css"),
-                    ("notes_marked_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-device.html", "application/javascript", 45056, 16384, "/cache/notes/marked.min.js"),
-                    ("notes_highlight_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-device.html", "application/javascript", 65536, 24576, "/cache/notes/highlight.js"),
-                    ("notes_editor_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-device.html", "application/javascript", 32768, 10240, "/cache/notes/editor.js"),
-                    ("shop_vendor_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-media.html", "application/javascript", 524288, 153600, "/cache/shop/vendor.js"),
-                    ("shop_app_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-media.html", "application/javascript", 204800, 61440, "/cache/shop/app.js"),
-                    ("shop_banner1_webp", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-media.html", "image/webp", 81920, 77824, "/cache/shop/banner1.webp"),
-                    ("shop_iconfont_woff2", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-media.html", "font/woff2", 45056, 43008, "/cache/shop/iconfont.woff2"),
-                    ("shop_categories_json", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-media.html", "application/json", 32768, 8192, "/cache/shop/categories.json"),
-                    ("game_bgm_mp3", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-navigation.html", "audio/mpeg", 1048576, 1048576, "/cache/game/bgm.mp3"),
-                    ("game_clear_wav", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-navigation.html", "audio/wav", 20480, 20480, "/cache/game/clear.wav"),
-                    ("game_sprites_png", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-navigation.html", "image/png", 65536, 65536, "/cache/game/sprites.png"),
-                    ("game_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-navigation.html", "application/javascript", 40960, 15360, "/cache/game/game.js"),
-                    ("news_index_html", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-permission.html", "text/html", 12288, 4096, "/cache/news/index.html"),
-                    ("news_feed_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-permission.html", "application/javascript", 20480, 8192, "/cache/news/feed.js"),
-                    ("news_styles_css", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-permission.html", "text/css", 8192, 2048, "/cache/news/styles.css"),
-                    ("docs_index_html", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-cache.html", "text/html", 32768, 10240, "/cache/docs/index.html"),
-                    ("docs_theme_css", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-cache.html", "text/css", 40960, 12288, "/cache/docs/theme.css"),
-                    ("docs_search_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-cache.html", "application/javascript", 61440, 20480, "/cache/docs/search.js"),
-                    ("docs_nav_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-cache.html", "application/javascript", 32768, 10240, "/cache/docs/navigation.js"),
+                    ("weather_index_html", "https://drel.app/test/bridge/v1/bridge-interaction.html", "text/html", 24576, 8192, "/cache/weather/index.html"),
+                    ("weather_main_css", "https://drel.app/test/bridge/v1/bridge-interaction.html", "text/css", 32768, 6144, "/cache/weather/styles/main.css"),
+                    ("weather_js", "https://drel.app/test/bridge/v1/bridge-interaction.html", "application/javascript", 102400, 30720, "/cache/weather/scripts/weather.js"),
+                    ("weather_sunny_svg", "https://drel.app/test/bridge/v1/bridge-interaction.html", "image/svg+xml", 4096, 2048, "/cache/weather/images/sunny.svg"),
+                    ("weather_cities_json", "https://drel.app/test/bridge/v1/bridge-interaction.html", "application/json", 16384, 4096, "/cache/weather/data/cities.json"),
+                    ("notes_index_html", "https://drel.app/test/bridge/v1/bridge-device.html", "text/html", 16384, 5120, "/cache/notes/index.html"),
+                    ("notes_editor_css", "https://drel.app/test/bridge/v1/bridge-device.html", "text/css", 24576, 4096, "/cache/notes/editor.css"),
+                    ("notes_marked_js", "https://drel.app/test/bridge/v1/bridge-device.html", "application/javascript", 45056, 16384, "/cache/notes/marked.min.js"),
+                    ("notes_highlight_js", "https://drel.app/test/bridge/v1/bridge-device.html", "application/javascript", 65536, 24576, "/cache/notes/highlight.js"),
+                    ("notes_editor_js", "https://drel.app/test/bridge/v1/bridge-device.html", "application/javascript", 32768, 10240, "/cache/notes/editor.js"),
+                    ("shop_vendor_js", "https://drel.app/test/bridge/v1/bridge-media.html", "application/javascript", 524288, 153600, "/cache/shop/vendor.js"),
+                    ("shop_app_js", "https://drel.app/test/bridge/v1/bridge-media.html", "application/javascript", 204800, 61440, "/cache/shop/app.js"),
+                    ("shop_banner1_webp", "https://drel.app/test/bridge/v1/bridge-media.html", "image/webp", 81920, 77824, "/cache/shop/banner1.webp"),
+                    ("shop_iconfont_woff2", "https://drel.app/test/bridge/v1/bridge-media.html", "font/woff2", 45056, 43008, "/cache/shop/iconfont.woff2"),
+                    ("shop_categories_json", "https://drel.app/test/bridge/v1/bridge-media.html", "application/json", 32768, 8192, "/cache/shop/categories.json"),
+                    ("game_bgm_mp3", "https://drel.app/test/bridge/v1/bridge-navigation.html", "audio/mpeg", 1048576, 1048576, "/cache/game/bgm.mp3"),
+                    ("game_clear_wav", "https://drel.app/test/bridge/v1/bridge-navigation.html", "audio/wav", 20480, 20480, "/cache/game/clear.wav"),
+                    ("game_sprites_png", "https://drel.app/test/bridge/v1/bridge-navigation.html", "image/png", 65536, 65536, "/cache/game/sprites.png"),
+                    ("game_js", "https://drel.app/test/bridge/v1/bridge-navigation.html", "application/javascript", 40960, 15360, "/cache/game/game.js"),
+                    ("news_index_html", "https://drel.app/test/bridge/v1/bridge-permission.html", "text/html", 12288, 4096, "/cache/news/index.html"),
+                    ("news_feed_js", "https://drel.app/test/bridge/v1/bridge-permission.html", "application/javascript", 20480, 8192, "/cache/news/feed.js"),
+                    ("news_styles_css", "https://drel.app/test/bridge/v1/bridge-permission.html", "text/css", 8192, 2048, "/cache/news/styles.css"),
+                    ("docs_index_html", "https://drel.app/test/bridge/v1/bridge-cache.html", "text/html", 32768, 10240, "/cache/docs/index.html"),
+                    ("docs_theme_css", "https://drel.app/test/bridge/v1/bridge-cache.html", "text/css", 40960, 12288, "/cache/docs/theme.css"),
+                    ("docs_search_js", "https://drel.app/test/bridge/v1/bridge-cache.html", "application/javascript", 61440, 20480, "/cache/docs/search.js"),
+                    ("docs_nav_js", "https://drel.app/test/bridge/v1/bridge-cache.html", "application/javascript", 32768, 10240, "/cache/docs/navigation.js"),
                     ("admin_index_html", "https://api.drel.app/admin", "text/html", 20480, 6144, "/cache/admin/index.html"),
                     ("admin_app_css", "https://api.drel.app/admin", "text/css", 40960, 14336, "/cache/admin/app.css"),
                     ("admin_app_js", "https://api.drel.app/admin", "application/javascript", 81920, 30720, "/cache/admin/app.js"),
@@ -129,7 +129,7 @@ extension TestDataSeeder {
                     badge: 1,
                     group: "chat",
                     threadId: "pi-chat",
-                    targetURL: "https://pi-chat.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html",
+                    targetURL: "https://drel.app/test/bridge/v1/bridge-interaction.html",
                     createdAt: halfHourAgo
                 ),
                 isRead: false,
@@ -149,7 +149,7 @@ extension TestDataSeeder {
                     badge: 3,
                     group: "weather-updates",
                     threadId: "weather-beijing",
-                    targetURL: "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html",
+                    targetURL: "https://drel.app/test/bridge/v1/bridge-interaction.html",
                     createdAt: hour1Ago
                 ),
                 isRead: true,
@@ -226,7 +226,7 @@ extension TestDataSeeder {
                     sound: "critical.caf",
                     badge: 1,
                     group: "security-alerts",
-                    targetURL: "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html",
+                    targetURL: "https://drel.app/test/bridge/v1/bridge-interaction.html",
                     userInfo: ["alertType": "abnormal_login", "ip": "203.0.113.42", "location": "上海"],
                     createdAt: now.addingTimeInterval(-1800)
                 ),
@@ -246,7 +246,7 @@ extension TestDataSeeder {
                     sound: "default",
                     group: "weather-updates",
                     threadId: "weather-shanghai",
-                    targetURL: "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html",
+                    targetURL: "https://drel.app/test/bridge/v1/bridge-interaction.html",
                     createdAt: day1Ago
                 ),
                 isRead: true,
@@ -620,7 +620,7 @@ extension TestDataSeeder {
 
         let entries: [(key: String, manifest: Manifest)] = [
             ("weather-beijing", Manifest(
-                resources: ["index.html": "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-interaction.html"],
+                resources: ["index.html": "https://drel.app/test/bridge/v1/bridge-interaction.html"],
                 version: "2.1.0",
                 appid: "weather-app",
                 name: "北京天气",
@@ -629,7 +629,7 @@ extension TestDataSeeder {
                 lastAccessed: Date()
             )),
             ("notes-editor", Manifest(
-                resources: ["index.html": "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-device.html"],
+                resources: ["index.html": "https://drel.app/test/bridge/v1/bridge-device.html"],
                 version: "1.5.3",
                 appid: "markdown-notes",
                 name: "Markdown 笔记",
@@ -637,7 +637,7 @@ extension TestDataSeeder {
                 lastAccessed: Date().addingTimeInterval(-3600)
             )),
             ("shop-mall", Manifest(
-                resources: ["index.html": "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-media.html"],
+                resources: ["index.html": "https://drel.app/test/bridge/v1/bridge-media.html"],
                 version: "3.8.1",
                 appid: "shop-mall-app",
                 name: "优购商城",
@@ -645,7 +645,7 @@ extension TestDataSeeder {
                 lastAccessed: Date().addingTimeInterval(-7200)
             )),
             ("game-tetris", Manifest(
-                resources: ["index.html": "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-navigation.html"],
+                resources: ["index.html": "https://drel.app/test/bridge/v1/bridge-navigation.html"],
                 version: "1.2.0",
                 appid: "game-tetris",
                 name: "俄罗斯方块",
@@ -653,7 +653,7 @@ extension TestDataSeeder {
                 lastAccessed: Date().addingTimeInterval(-86400)
             )),
             ("news-daily", Manifest(
-                resources: ["index.html": "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-permission.html"],
+                resources: ["index.html": "https://drel.app/test/bridge/v1/bridge-permission.html"],
                 version: "4.0.0",
                 appid: "news-daily",
                 name: "每日新闻",
@@ -661,7 +661,7 @@ extension TestDataSeeder {
                 lastAccessed: Date().addingTimeInterval(-172800)
             )),
             ("docs-swift", Manifest(
-                resources: ["index.html": "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/bridge-cache.html"],
+                resources: ["index.html": "https://drel.app/test/bridge/v1/bridge-cache.html"],
                 version: "5.10",
                 appid: "swift-docs",
                 name: "Swift 文档",

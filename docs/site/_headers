@@ -67,6 +67,13 @@
 /test/actions/v1/*
   Cache-Control: public, max-age=31536000, immutable
 
+/test/bridge/manifest.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+  Cache-Control: public, max-age=300, must-revalidate
+
+/test/bridge/v1/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /test/template/manifest.webmanifest
   Content-Type: application/manifest+json; charset=utf-8
   Cache-Control: public, max-age=300, must-revalidate
