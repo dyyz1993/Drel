@@ -148,7 +148,11 @@ p {
   gap: 10px;
 }
 
-@media (max-width: 380px) {
+/* The action names are long — "getPermissionStatus(location)" needs about
+   240px of text width, and two columns on a phone leave around 150px
+   each. Below this width the grid becomes a single column so the names
+   stay whole and readable instead of breaking mid-word. */
+@media (max-width: 640px) {
   .btn-grid {
     grid-template-columns: 1fr;
   }
@@ -157,6 +161,7 @@ p {
 button {
   min-height: 50px;
   width: 100%;
+  min-width: 0;
   border: 0;
   border-radius: 16px;
   padding: 12px;
@@ -166,6 +171,10 @@ button {
   color: #fff;
   background: var(--accent);
   cursor: pointer;
+  /* A grid track sized 1fr will not shrink below its content unless the
+     button opts out of that minimum. */
+  overflow-wrap: break-word;
+  line-height: 1.25;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
