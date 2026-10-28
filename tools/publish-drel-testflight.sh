@@ -34,6 +34,8 @@ fi
 EXPORT_OPTS="${WBK_EXPORT_OPTS:-/tmp/drel-export-options.plist}"
 DD="${WBK_RELEASE_DD:-/tmp/wbk-dd-publish}"
 SKIP_UPLOAD="${WBK_SKIP_UPLOAD:-0}"
+ARCHIVE_SIGNING="${WBK_ARCHIVE_SIGNING:-development}"
+SIGNING_KEYCHAIN="${WBK_SIGNING_KEYCHAIN:-}"
 
 say() { printf '\n\033[0;34m== %s ==\033[0m\n' "$*"; }
 ok()  { printf '\033[0;32m[OK]\033[0m %s\n' "$*"; }
@@ -76,10 +78,27 @@ python3 tools/verify-repo-hygiene.py || bad "仓库卫生校验失败"
 ok "规范门禁通过"
 
 say "归档 Drel 1.5.0 ($BUILD)"
+ARCHIVE_SIGN_ARGS=()
+if [[ "$ARCHIVE_SIGNING" == "project" ]]; then
+  # Distribution-profile builds use the per-target identities and profiles in
+  # project.yml. This path is required when the development identity has no
+  # local private key but a versioned App Store profile is available.
+  :
+elif [[ "$ARCHIVE_SIGNING" == "development" ]]; then
+  ARCHIVE_SIGN_ARGS+=(
+    'CODE_SIGN_STYLE=Automatic'
+    'CODE_SIGN_IDENTITY=Apple Development'
+    'PROVISIONING_PROFILE_SPECIFIER='
+  )
+else
+  bad "WBK_ARCHIVE_SIGNING must be 'development' or 'project'"
+fi
+if [[ -n "$SIGNING_KEYCHAIN" ]]; then
+  ARCHIVE_SIGN_ARGS+=("OTHER_CODE_SIGN_FLAGS=--keychain $SIGNING_KEYCHAIN")
+fi
 xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
-  -allowProvisioningUpdates 'CODE_SIGN_STYLE=Automatic' 'CODE_SIGN_IDENTITY=Apple Development' \
-  'PROVISIONING_PROFILE_SPECIFIER=' \
+  -allowProvisioningUpdates "${ARCHIVE_SIGN_ARGS[@]}" \
   MARKETING_VERSION=1.5.0 CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1 \
   || bad "归档失败，详见 build/archive-$BUILD.log"
 ok "归档完成：$ARCHIVE"
