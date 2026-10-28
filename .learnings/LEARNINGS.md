@@ -1073,3 +1073,38 @@ Drel 的夹具路径曾散落在 seeder、debug 面板、showcase 屏幕里，�
   注入违规内联路径时脚本正确 FAIL，恢复后 PASS；`ci-lint.sh` 18/18；
   DrelTests 31/31；BUILD SUCCEEDED
 - Disposition: retain; Application: applied
+
+---
+
+## L-20261028-05 产物新鲜度门禁要比较内容，不能比较字节
+
+**Context**: `bash tools/build-drel-diagrams.sh --check` 报 4 张图 STALE
+（key-trust-sequence / offline-install / push-sequence / release-flow），
+但 `.mmd` 源文件根本没改。排查发现 puppeteer 的
+`chrome-headless-shell` 缓存目录存在而可执行文件缺失（一次中断的下载），
+渲染直接失败；改用本机 Chromium 后能渲染，却与仓库已提交的 SVG 不一致。
+
+**Why**: SVG 里的 `viewBox`、节点 `x/y/width/height`、`max-width` 全部由
+浏览器的**字体度量**决定，同一份 `.mmd` 在不同 Chromium 构建里会差几个
+像素（实测同一图 1288.5px vs 1408px，节点宽 174px vs 196px）。而 12 个
+节点标签两边完全一致——内容没变，只是排版量不同。用字节相等判断
+"源文件是否过期"，得到的是渲染器指纹，不是内容新鲜度。
+
+**How to apply**:
+- 产物新鲜度门禁比较**内容**（元素顺序 + 文本 + 结构），把几何坐标、
+  尺寸、`style` 归一化掉；`tools/normalize-svg.py` 就是这个归一化器。
+- 渲染器不可用时，回退到本机浏览器要在脚本输出里明说，否则下一次没人
+  知道产物是哪个渲染器出的。
+- 判据改完必须做**反向验证**：故意改源文件一个字，确认门禁报 STALE，
+  否则只是把门禁关掉了。
+
+**Context Maintenance**
+- Decay-Type: dependency
+- Decay-Rate: slow
+- Authority: `tools/build-drel-diagrams.sh --check` + `tools/normalize-svg.py`
+- Owner: Drel
+- Revalidation: 换渲染器、换 mermaid-cli 版本，或新增产物类型时复查
+- Validation: verified; Last-Validated: 2026-10-28; Evidence:
+  `--check` 8/8 current；改 `push-sequence.mmd` 一个词后精确报
+  `STALE push-sequence.svg`、其余 7 张仍 current，还原后 8/8 current
+- Disposition: retain; Application: applied
