@@ -290,3 +290,57 @@ V1 数组为空。导致每次冷启动网关刷新后，所有 V2 动作的「�
 检查授权是否被声明时同时检查 `capabilities`（V1）和 `capabilitiesV2`（V2 动作声明）。
 
 **Status**: resolved
+
+## [ERR-20261028-001] infra
+
+**Logged**: 2026-10-28
+
+**Symptom**: Drel PR #4 的 GitHub Actions job 全部在 1–2 秒内失败，
+`steps` 为空，看起来像 workflow 配置错误或 runner 启动失败。
+
+**Root Cause**: GitHub 账号的私有仓库 Actions 额度已用尽，且 Actions budget
+为 `$0.00 / $0.00`，状态 `Usage blocked`。Check-run annotation 明确给出：
+`The job was not started because recent account payments have failed or your
+spending limit needs to be increased.`
+
+**Resolution**: 未完成。需要在 GitHub Billing 添加付款方式并把 Actions budget
+调到大于 0，或等待 2,000 分钟额度重置；不能通过改 workflow 或本地测试冒充 CI 绿。
+
+**Status**: in_progress
+
+**Context Maintenance**
+- Decay-Type: dependency
+- Decay-Rate: fast（额度会按月重置）
+- Authority: GitHub Check Runs annotations + Billing 页面实读; Owner: GitHub 账号 dyyz1993
+- Revalidation: 重跑前检查 Actions included usage 和 budget 是否仍为 0
+- Validation: verified; Last-Validated: 2026-10-28;
+  Evidence: build/reports/drel-ci-billing-20261028
+- Disposition: retain; Application: blocked on account billing
+
+
+## [ERR-20261028-002] infra
+
+**Logged**: 2026-10-28
+
+**Symptom**: `tools/check-drel-search-index.sh` 连续两轮退出码 0 但 Google/Baidu
+解析结果均为 `{}`（state=unknown），单轮耗时 >5 分钟；`xbrowser chrome-bridge
+status` 输出为空。
+
+**Root Cause**: Chrome bridge 服务不可用时 `status` 命令静默失败，脚本把空
+probe 当作正常结果渲染，无失败退出码；每步 xbrowser 调用无 shell 级超时，
+死等到底层超时。
+
+**Resolution**: status/navigate/evaluate 均加 `timeout`（10s/30s）；bridge
+不可用时 exit 2，两引擎 probe 结果为空时 exit 3 并输出 stderr 错误。
+
+**Status**: resolved
+
+**Context Maintenance**
+- Decay-Type: dependency
+- Decay-Rate: fast（bridge 服务状态随时变化）
+- Authority: build/reports/search-index/*.raw.txt 空结果 + status 空输出;
+  Owner: xbrowser chrome-bridge
+- Revalidation: 每轮 heartbeat 检查 exit code 与 latest.json error 字段
+- Validation: verified; Last-Validated: 2026-10-28;
+  Evidence: 修改后脚本运行 exit=2 且 1 秒内返回
+- Disposition: retain; Application: 所有依赖 chrome-bridge 的检查脚本

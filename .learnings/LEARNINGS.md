@@ -791,11 +791,11 @@ ticket 短时有效、服务端原子消费、绑定 requestId/action/revision�
 
 ### Metadata
 
-- Source: error
-- Related Files: SuperApp/Sources/Views/Settings/ApprovalIdentityView.swift, src/actor.ts, src/multitenant.ts
+- Source: user_correction
+- Related Files: SuperApp/Sources/Services/ApprovalResponseClient.swift, DrelTests/ApprovalResponseClientTests.swift, docs/api/approval-v1.md, docs/plans/2026-10-27-multitenant-approval-gate-design.md, drel-release-gate/src/multitenant.ts
 - Tags: approval, actor-assertion, ed25519, multi-tenant, policy-version
 - Pattern-Key: approval.actor_identity_binding
-- Recurrence-Count: 2
+- Recurrence-Count: 3
 - First-Seen: 2026-10-28
 - Last-Seen: 2026-10-28
 
@@ -806,6 +806,7 @@ ticket 短时有效、服务端原子消费、绑定 requestId/action/revision�
 - Authority: 用户明确纠正“不要把公钥/密钥做成所有用户的默认接入门槛”；
   Owner: Drel + drel-release-gate
 - Revalidation: 审批提交合同或 tenant 安全模式变化时复查
-- Validation: verified; Last-Validated: 2026-10-28; Evidence: 用户指出默认
-  bearer ticket 已满足通用场景；本轮 actor assertion 闭环仅作为可选模式证据
-- Disposition: revise; Application: proposed
+- Validation: verified; Last-Validated: 2026-10-28; Evidence:
+  DrelTests/ApprovalResponseClientTests 4/4; tools/verify-approval-v1.sh 12/12;
+  Server swift test 84/84; drel-release-gate npm test 32/32 and typecheck passed
+- Disposition: retain; Application: applied
