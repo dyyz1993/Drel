@@ -13,6 +13,7 @@ CFBundleShortVersionString = 1.5.0
 CFBundleVersion = 113
 TestFlight build ID = 957fd228-fc84-4947-b216-51df36b8fc95
 IPA SHA-256 = 753c0707e48010c7ffb861aaf08988ae09a7ed981274418e637fd7d423711deb
+App Store version ID = 5f394085-1ddb-41f4-bef1-263ba39112a0
 ```
 
 ## Local gates
@@ -43,3 +44,6 @@ and `get-task-allow=false`.
 This document proves local gates and TestFlight processing. It does not prove
 signed production-gateway availability, physical-device review exercise, App
 Store review, or App Store release.
+
+The App Store version record and its current submission blockers are tracked
+in [app-store-version.md](app-store-version.md).

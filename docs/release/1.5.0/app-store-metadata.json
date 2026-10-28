@@ -1,0 +1,18 @@
+{
+  "zh-Hans": {
+    "description": "Drel 是面向 iPhone 开发者的推送通知工具，也是运行可信 HTML 应用的安全容器。\n\n• 复制个人推送地址，用脚本、浏览器、自动化或自己的服务发出通知\n• 点击包含 HTTPS 目标地址的通知，直接打开指定页面\n• 在收件箱查看你选择打开的通知\n• 为已签名且经你信任的 HTML 应用启用固定、可审计的受限原生操作\n• 剪贴板和位置权限单独授权，并可随时在权限中心撤销\n\n1.5.0 为可信应用提供七种原生操作：触感、震动、分享、沉浸全屏、剪贴板、位置和添加到主页。网页必须在用户前台点按后调用；未声明的操作、后台调用和不受信任页面会被拒绝。Drel 提供的是固定清单，不是通用 JavaScript 到原生 Bridge，也不会远程新增原生能力。\n\nDrel 面向使用自有服务的开发者。它不是公开应用市场，也不是通用浏览器。\n\nBuilt with WebBridgeKit.",
+    "keywords": "开发者,推送,通知,Webhook,HTML,开发者工具",
+    "marketingUrl": "https://drel.app/",
+    "promotionalText": "受控的 HTML 应用原生操作现已上线；剪贴板与位置权限可单独授权、随时撤销。",
+    "supportUrl": "https://drel.app/support/",
+    "whatsNew": "Drel 1.5.0 更新\n\n• 原生操作声明：可信 HTML 应用可在签名 Manifest 中声明触感、震动、分享、沉浸全屏、添加到主页、剪贴板和位置\n• 更清晰的操作边界：声明只是能力清单，不等于长期授权，也不代表用户已同意交出隐私数据\n• 前台手势触发：网页必须在用户点按后的短时间内调用，后台或未声明操作会被拒绝\n• 分享更透明：每次分享都打开 iOS 系统分享面板，由你检查内容并选择去向\n• 沉浸全屏更安全：仅隐藏导航和状态栏，屏幕边缘保留可拖动的返回控件\n• 剪贴板与位置由你授权：可信应用需要读取剪贴板或位置时，Drel 会单独征求你的同意\n• 授权随时可撤：已授予的剪贴板与位置权限集中在权限中心，一键撤销后立即失效\n• 能力范围保持克制：扫码、相册、蓝牙、麦克风、通讯录等敏感能力仍未开放"
+  },
+  "en-US": {
+    "description": "Drel is a push-notification utility for iPhone developers and a secure container for trusted HTML apps.\n\n• Copy a personal push address and send from a script, browser, automation, or your own service\n• Open an HTTPS destination directly from the notification you tap\n• Review the notifications you choose to open in Inbox\n• Enable a fixed, auditable set of native actions for signed HTML apps you explicitly trust\n• Grant clipboard and location access separately, and revoke either one from the permission center\n\nVersion 1.5.0 provides seven actions to trusted apps: haptic feedback, vibration, sharing, immersive fullscreen, clipboard, location, and add-to-Home-Screen. Pages must call an action after a foreground tap; undeclared actions, background calls, and untrusted pages are rejected. Drel exposes a fixed allowlist, not a general JavaScript-to-native Bridge, and cannot add native capabilities remotely.\n\nDrel is built for developers using their own services. It is not a public app marketplace or a general-purpose browser.\n\nBuilt with WebBridgeKit.",
+    "keywords": "developer,push,notification,webhook,HTML,WebBridgeKit",
+    "marketingUrl": "https://drel.app/",
+    "promotionalText": "Controlled native actions for trusted HTML apps are here, with separately revocable clipboard and location grants.",
+    "supportUrl": "https://drel.app/support/",
+    "whatsNew": "What’s new in Drel 1.5.0\n\n• Declared native actions: trusted HTML apps can declare haptic, vibrate, share, immersive fullscreen, add-to-home-screen, clipboard, and location in an Ed25519-signed manifest\n• Clearer boundaries: a declaration is an action inventory, not a long-term grant of user privacy\n• Foreground-gesture requirement: pages must call an action shortly after a user tap; undeclared or background calls are rejected\n• Transparent sharing: every share opens the native iOS share sheet so you review the content and choose the destination\n• Safer fullscreen: only host navigation and status bars are hidden; the draggable edge return control remains available\n• Clipboard and location need your permission: when a trusted app asks to read the clipboard or your position, Drel asks you separately\n• Revoke any time: granted clipboard and location permissions live in one permission center, and revoking one takes effect immediately\n• Restrained capability scope: camera scanning, photos, Bluetooth, microphone, contacts, and other sensitive actions remain unavailable"
+  }
+}
