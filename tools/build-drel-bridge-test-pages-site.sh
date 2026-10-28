@@ -50,19 +50,25 @@ mkdir -p "$OUT_DIR"
 /usr/bin/python3 -c 'import shutil,sys; shutil.rmtree(sys.argv[1], ignore_errors=True)' "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 
-# The fixtures share one stylesheet. It is published under a name that
-# carries its content hash, so the page can cache it for a year and a
-# style change still reaches the browsers that cached the old one.
-CSS_NAME="$(/usr/bin/python3 - "$SOURCE/bridge-fixtures.css" <<'PY'
+# The fixtures share a stylesheet and a debug script. Both are published
+# under names that carry their content hash, so the page can cache them for
+# a year and a later change still reaches browsers that cached the old copy.
+hashed_name() {
+  /usr/bin/python3 - "$1" "$2" <<'PY'
 import hashlib
 import pathlib
 import sys
 
-data = pathlib.Path(sys.argv[1]).read_bytes()
-print(f"bridge-fixtures-{hashlib.sha256(data).hexdigest()[:8]}.css")
+source, extension = sys.argv[1:3]
+data = pathlib.Path(source).read_bytes()
+print(f"bridge-fixtures-{hashlib.sha256(data).hexdigest()[:8]}.{extension}")
 PY
-)"
+}
+
+CSS_NAME="$(hashed_name "$SOURCE/bridge-fixtures.css" css)"
+JS_NAME="$(hashed_name "$SOURCE/bridge-fixtures.js" js)"
 cp "$SOURCE/bridge-fixtures.css" "$OUT_DIR/$CSS_NAME"
+cp "$SOURCE/bridge-fixtures.js" "$OUT_DIR/$JS_NAME"
 
 for page in "${PAGES[@]}"; do
   src="$SOURCE/$page.html"
@@ -70,15 +76,16 @@ for page in "${PAGES[@]}"; do
 
   # Inject the version marker into the page title and a visible banner, so
   # the fixture states which Drel generation it belongs to.
-  /usr/bin/python3 - "$src" "$OUT_DIR/$page.html" "$FIXTURE_VERSION" "$BRIDGE_GENERATION" "$CSS_NAME" <<'PY'
+  /usr/bin/python3 - "$src" "$OUT_DIR/$page.html" "$FIXTURE_VERSION" "$BRIDGE_GENERATION" "$CSS_NAME" "$JS_NAME" <<'PY'
 import re
 import sys
 
-src, dest, version, generation, css_name = sys.argv[1:6]
+src, dest, version, generation, css_name, js_name = sys.argv[1:7]
 html = open(src, encoding="utf-8").read()
 
-# Point the page at the hashed stylesheet.
+# Point the page at the hashed assets.
 html = html.replace('href="bridge-fixtures.css"', f'href="{css_name}"')
+html = html.replace('src="bridge-fixtures.js"', f'src="{js_name}"')
 
 # These fixtures never carried a <title>. Build one from the page's own
 # heading so every fixture gets a distinct, versioned browser title.

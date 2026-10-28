@@ -206,17 +206,92 @@ button.btn-gray { background: var(--accent-ink); }
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 11px;
   line-height: 1.6;
-  max-height: 260px;
+  max-height: min(420px, 60vh);
   overflow-y: auto;
   text-align: left;
 }
 
-.log-entry {
-  padding: 3px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  word-break: break-all;
+.log-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
-.log-success { color: #4ade80; }
-.log-error { color: #f87171; }
-.log-info { color: #60a5fa; }
+.log-toolbar button,
+.log-copy {
+  min-height: 34px;
+  width: auto;
+  padding: 6px 10px;
+  border-radius: 11px;
+  font-size: 12px;
+}
+
+.log-toolbar button {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.log-toolbar button:active,
+.log-copy:active {
+  transform: none;
+  opacity: .78;
+}
+
+.log-item {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.log-item:last-child { border-bottom: 0; }
+
+.log-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-item-head strong {
+  color: #e6ebf5;
+  font-size: 12px;
+}
+
+.log-state {
+  color: #8f9bad;
+  font-size: 11px;
+}
+
+.log-item.success .log-state { color: #4ade80; }
+.log-item.error .log-state { color: #f87171; }
+
+.log-copy {
+  margin-left: auto;
+  background: rgba(96, 165, 250, .22);
+  color: #bcd7ff;
+}
+
+.log-field { margin: 7px 0 0; }
+
+.log-field span {
+  display: block;
+  color: #8f9bad;
+  font-size: 10px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.log-field pre {
+  margin: 3px 0 0;
+  padding: 8px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .23);
+  color: #d9e2f2;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.copy-helper {
+  position: fixed;
+  left: -9999px;
+}
