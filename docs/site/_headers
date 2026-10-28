@@ -72,6 +72,9 @@
   Cache-Control: public, max-age=300, must-revalidate
 
 /test/bridge/v1/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+/test/bridge/v1/bridge-fixtures-*.css
   Cache-Control: public, max-age=31536000, immutable
 
 /test/template/manifest.webmanifest

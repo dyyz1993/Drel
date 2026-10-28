@@ -44,9 +44,25 @@ PAGES=(bridge-permission bridge-device bridge-media bridge-interaction bridge-na
 OUT_DIR="$STAGE/test/bridge/$BRIDGE_GENERATION"
 mkdir -p "$OUT_DIR"
 
-# The fixtures share one stylesheet. It is copied next to the pages so the
-# relative `href="bridge-fixtures.css"` resolves next to the page.
-cp "$SOURCE/bridge-fixtures.css" "$OUT_DIR/bridge-fixtures.css"
+# Start from an empty directory: the stylesheet is published under a
+# hashed name, so a style change would otherwise leave the previous
+# hash behind as an orphan.
+/usr/bin/python3 -c 'import shutil,sys; shutil.rmtree(sys.argv[1], ignore_errors=True)' "$OUT_DIR"
+mkdir -p "$OUT_DIR"
+
+# The fixtures share one stylesheet. It is published under a name that
+# carries its content hash, so the page can cache it for a year and a
+# style change still reaches the browsers that cached the old one.
+CSS_NAME="$(/usr/bin/python3 - "$SOURCE/bridge-fixtures.css" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+data = pathlib.Path(sys.argv[1]).read_bytes()
+print(f"bridge-fixtures-{hashlib.sha256(data).hexdigest()[:8]}.css")
+PY
+)"
+cp "$SOURCE/bridge-fixtures.css" "$OUT_DIR/$CSS_NAME"
 
 for page in "${PAGES[@]}"; do
   src="$SOURCE/$page.html"
@@ -54,12 +70,15 @@ for page in "${PAGES[@]}"; do
 
   # Inject the version marker into the page title and a visible banner, so
   # the fixture states which Drel generation it belongs to.
-  /usr/bin/python3 - "$src" "$OUT_DIR/$page.html" "$FIXTURE_VERSION" "$BRIDGE_GENERATION" <<'PY'
+  /usr/bin/python3 - "$src" "$OUT_DIR/$page.html" "$FIXTURE_VERSION" "$BRIDGE_GENERATION" "$CSS_NAME" <<'PY'
 import re
 import sys
 
-src, dest, version, generation = sys.argv[1:5]
+src, dest, version, generation, css_name = sys.argv[1:6]
 html = open(src, encoding="utf-8").read()
+
+# Point the page at the hashed stylesheet.
+html = html.replace('href="bridge-fixtures.css"', f'href="{css_name}"')
 
 # These fixtures never carried a <title>. Build one from the page's own
 # heading so every fixture gets a distinct, versioned browser title.
