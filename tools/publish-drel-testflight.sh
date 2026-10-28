@@ -17,6 +17,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+mkdir -p "$ROOT/build"
 
 APP_ID="${WBK_APP_ID:-6802806992}"
 KEY_ID="${WBK_ASC_KEY_ID:-4NXJ8HL7K9}"
