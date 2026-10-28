@@ -36,6 +36,16 @@ DD="${WBK_RELEASE_DD:-/tmp/wbk-dd-publish}"
 SKIP_UPLOAD="${WBK_SKIP_UPLOAD:-0}"
 ARCHIVE_SIGNING="${WBK_ARCHIVE_SIGNING:-development}"
 SIGNING_KEYCHAIN="${WBK_SIGNING_KEYCHAIN:-}"
+SIGNING_KEYCHAIN_PASSWORD_SERVICE="${WBK_SIGNING_KEYCHAIN_PASSWORD_SERVICE:-drel-release-keychain}"
+SIGNING_KEYCHAIN_PASSWORD_ACCOUNT="${WBK_SIGNING_KEYCHAIN_PASSWORD_ACCOUNT:-codex-drel-release}"
+ORIGINAL_KEYCHAINS=()
+
+restore_keychains() {
+  if (( ${#ORIGINAL_KEYCHAINS[@]} > 0 )); then
+    security list-keychains -d user -s "${ORIGINAL_KEYCHAINS[@]}" >/dev/null
+  fi
+}
+trap restore_keychains EXIT
 
 say() { printf '\n\033[0;34m== %s ==\033[0m\n' "$*"; }
 ok()  { printf '\033[0;32m[OK]\033[0m %s\n' "$*"; }
@@ -94,6 +104,18 @@ else
   bad "WBK_ARCHIVE_SIGNING must be 'development' or 'project'"
 fi
 if [[ -n "$SIGNING_KEYCHAIN" ]]; then
+  [[ -f "$SIGNING_KEYCHAIN" ]] || bad "signing keychain not found: $SIGNING_KEYCHAIN"
+  KEYCHAIN_PASSWORD=$(security find-generic-password \
+    -a "$SIGNING_KEYCHAIN_PASSWORD_ACCOUNT" \
+    -s "$SIGNING_KEYCHAIN_PASSWORD_SERVICE" -w 2>/dev/null) \
+    || bad "signing keychain password is not available from Keychain"
+  security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$SIGNING_KEYCHAIN" >/dev/null \
+    || bad "could not unlock the signing keychain"
+  unset KEYCHAIN_PASSWORD
+  while IFS= read -r keychain; do
+    ORIGINAL_KEYCHAINS+=("$keychain")
+  done < <(security list-keychains -d user | sed -E 's/^[[:space:]]*"//; s/"$//')
+  security list-keychains -d user -s "$SIGNING_KEYCHAIN" "${ORIGINAL_KEYCHAINS[@]}" >/dev/null
   ARCHIVE_SIGN_ARGS+=("OTHER_CODE_SIGN_FLAGS=--keychain $SIGNING_KEYCHAIN")
 fi
 xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
