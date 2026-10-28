@@ -107,6 +107,17 @@ else
     ((PASS++)) || true
 fi
 
+# 16. Fixture paths
+echo ""
+echo "=== Fixture Paths ==="
+if bash tools/verify-fixture-paths.sh; then
+    echo "  PASS  Fixture paths"
+    ((PASS++)) || true
+else
+    echo "  FAIL  Fixture paths"
+    ((FAIL++)) || true
+fi
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 

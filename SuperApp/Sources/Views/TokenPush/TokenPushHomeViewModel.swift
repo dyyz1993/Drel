@@ -148,7 +148,7 @@ final class TokenPushHomeViewModel: ObservableObject {
     {
       "title": "WebBridgeKit",
       "body": "打开缓存页面",
-      "url": "http://localhost:8081/test_resources/cache-demo.html",
+      "url": FixturePaths.localCacheValidation,
       "mode": "normal",
       "group": "WebBridgeKit",
       "sound": "default",

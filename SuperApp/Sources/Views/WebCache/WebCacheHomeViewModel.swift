@@ -38,7 +38,7 @@ enum WebCacheHomeAction {
 }
 
 final class WebCacheHomeViewModel: ObservableObject {
-    @Published var urlText = "http://localhost:8081/test_resources/cache-demo.html"
+    @Published var urlText = FixturePaths.localCacheValidation
     @Published var selectedMode: WebCacheMode = .cacheFirst
     @Published var resultState: ResultPanel.State = .idle
     @Published var resultDetail = ""

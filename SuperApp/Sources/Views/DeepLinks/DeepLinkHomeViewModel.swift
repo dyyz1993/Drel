@@ -22,7 +22,7 @@ struct DeepLinkTemplate: Identifiable, Equatable {
 final class DeepLinkHomeViewModel: ObservableObject {
     @Published var templates: [DeepLinkTemplate] = DeepLinkHomeViewModel.makeTemplates()
     @Published var selectedTemplateID = "open-cache-demo"
-    @Published var targetURLText = "http://localhost:8081/test_resources/cache-showcase.html"
+    @Published var targetURLText = FixturePaths.localCacheValidation
     @Published var commandToken = "demo-token"
     @Published var tabIndexText = "0"
     @Published var displayMode: WebBrowserParams.DisplayMode = .normal
@@ -165,7 +165,7 @@ final class DeepLinkHomeViewModel: ObservableObject {
                 title: "缓存测试页",
                 subtitle: "打开本地静态服务中的缓存 demo",
                 icon: .hardDrive,
-                targetURL: "http://localhost:8081/test_resources/cache-showcase.html",
+                targetURL: FixturePaths.localCacheValidation,
                 mode: .normal,
                 tabIndex: nil
             ),
@@ -192,7 +192,7 @@ final class DeepLinkHomeViewModel: ObservableObject {
                 title: "切到 Settings",
                 subtitle: "生成 webbridgekit://tab?index=3，Debug/Links 已收纳到这里",
                 icon: .settings,
-                targetURL: "http://localhost:8081/test_resources/cache-demo.html",
+                targetURL: FixturePaths.localCacheValidation,
                 mode: .normal,
                 tabIndex: 3
             )

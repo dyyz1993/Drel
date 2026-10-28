@@ -54,10 +54,10 @@ extension TestDataSeeder {
                     ("admin_app_css", "https://api.drel.app/admin", "text/css", 40960, 14336, "/cache/admin/app.css"),
                     ("admin_app_js", "https://api.drel.app/admin", "application/javascript", 81920, 30720, "/cache/admin/app.js"),
                     ("admin_charts_js", "https://api.drel.app/admin", "application/javascript", 57344, 20480, "/cache/admin/charts.js"),
-                    ("dashboard_index_html", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/engine-dashboard.html", "text/html", 28672, 8192, "/cache/dashboard/index.html"),
-                    ("dashboard_app_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/engine-dashboard.html", "application/javascript", 184320, 61440, "/cache/dashboard/app.js"),
-                    ("dashboard_chart_js", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/engine-dashboard.html", "application/javascript", 102400, 30720, "/cache/dashboard/chart.js"),
-                    ("dashboard_data_css", "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/engine-dashboard.html", "text/css", 24576, 6144, "/cache/dashboard/data.css")
+                    ("dashboard_index_html", FixturePaths.Published.template.url, "text/html", 28672, 8192, "/cache/dashboard/index.html"),
+                    ("dashboard_app_js", FixturePaths.Published.template.url, "application/javascript", 184320, 61440, "/cache/dashboard/app.js"),
+                    ("dashboard_chart_js", FixturePaths.Published.template.url, "application/javascript", 102400, 30720, "/cache/dashboard/chart.js"),
+                    ("dashboard_data_css", FixturePaths.Published.template.url, "text/css", 24576, 6144, "/cache/dashboard/data.css")
                 ]
 
                 let now = Date()
@@ -455,7 +455,7 @@ extension TestDataSeeder {
                     category: "design",
                     priority: .normal,
                     group: "design-reviews",
-                    imageURL: "http://localhost:8081/test_resources/images/photo1.jpg",
+                    imageURL: FixturePaths.websiteBaseURL + "/assets/drel-mark.svg",
                     contentType: .image,
                     createdAt: now.addingTimeInterval(-420)
                 ),
@@ -495,7 +495,7 @@ extension TestDataSeeder {
                     group: "team-chat-linmo",
                     threadId: "chat-linmo",
                     targetAppId: "com.webbridgekit.fixture.chat",
-                    route: "/test_resources/pwa-notification/index.html",
+                    route: FixturePaths.Local.pwaNotification.indexPath,
                     targetMode: "immersive",
                     soundVolume: 6,
                     isArchive: true,
@@ -556,9 +556,9 @@ extension TestDataSeeder {
                     sound: "alarm.caf",
                     group: "agent-approvals",
                     targetAppId: "com.webbridgekit.fixture.agent-console",
-                    route: "/test_resources/pwa-agent-console/approval.html",
+                    route: FixturePaths.Local.pwaAgentConsole.approvalPath,
                     targetMode: "modal",
-                    imageURL: "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/images/logo.png",
+                    imageURL: FixturePaths.websiteBaseURL + "/assets/drel-mark.svg",
                     interruptionLevel: .timeSensitive,
                     soundVolume: 8,
                     copyText: "approval-42",
@@ -677,7 +677,7 @@ extension TestDataSeeder {
                 lastAccessed: Date().addingTimeInterval(-432000)
             )),
             ("analytics-dashboard", Manifest(
-                resources: ["index.html": "https://ae8fcb.shanbox.19930810.xyz:8443/test_resources/engine-dashboard.html"],
+                resources: ["index.html": FixturePaths.Published.template.url],
                 version: "1.3.7",
                 appid: "analytics-app",
                 name: "数据分析",

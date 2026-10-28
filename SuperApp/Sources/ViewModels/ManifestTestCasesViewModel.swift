@@ -48,7 +48,7 @@ class ManifestTestCasesViewModel: ViewModel, WKScriptMessageHandler {
     // 公开访问 Relay，供 View Controller 使用
     var testCases: BehaviorRelay<[ManifestTestCase]> { return testCasesRelay }
 
-    private let baseURL = "https://api.drel.app/test_resources/cases/"
+    private let baseURL = FixturePaths.localBasePath + "/"
 
     // 预定义的测试用例
     private lazy var defaultTestCases: [ManifestTestCase] = {
