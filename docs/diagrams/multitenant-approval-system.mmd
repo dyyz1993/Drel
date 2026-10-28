@@ -9,8 +9,8 @@ flowchart LR
         TicketAPI["Ticket API"]
         Verify["OIDC + ticket verifier"]
         Tenant["Tenant / project policy"]
-        Identity["Identity broker"]
-        ACL["Approver ACL"]
+        Identity["Optional provider OAuth/OIDC"]
+        ACL["Optional approver ACL"]
         State["Approval state + idempotency"]
         Adapter["Provider adapter"]
         Audit["Append-only audit"]
@@ -18,7 +18,6 @@ flowchart LR
 
     subgraph Client["Drel"]
         Msg["Native approval card"]
-        Device["Device assertion"]
     end
 
     GHA -->|"OIDC token + run"| TicketAPI
@@ -27,11 +26,11 @@ flowchart LR
     Verify --> GHAPI
     Verify --> Tenant
     Tenant -->|"short-lived ticket"| Msg
-    Msg --> Device
-    Device -->|"ticket + actor assertion"| Verify
-    Verify --> Identity
-    Identity --> ACL
-    ACL --> State
+    Msg -->|"ticket + structured JSON"| Verify
+    Verify --> State
+    Verify -.->|"only if policy requires identity"| Identity
+    Identity -.-> ACL
+    ACL -.-> State
     State --> Adapter
     Adapter --> GHAPI
     State --> Audit

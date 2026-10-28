@@ -1,18 +1,19 @@
 # Drel Multi-tenant Approval Gate Design
 
-Status: Proposed  
+Status: Accepted
 Date: 2026-10-27  
 Owner: Drel approval / release infrastructure  
 Related: `docs/api/approval-v1.md`, `docs/diagrams/approval-third-party-sequence.mmd`
 
 ## 0. Decision Record
 
-- **Proposed decision:** Evolve the current single-tenant release gate into a
+- **Accepted decision:** Evolve the current single-tenant release gate into a
   multi-tenant, provider-adaptable approval service.
-- **Security baseline:** Require both a valid request ticket and a verified
-  approver identity for human approval.
-- **Compatibility:** Keep the current `approval.submit = {url, ticket}` shape
-  while adding a request-reference/fresh-action-ticket mode.
+- **Security baseline:** A short-lived, one-time ticket scoped to one request
+  and action authorizes exactly one decision. Human identity confirmation is
+  optional and provider-owned.
+- **Compatibility:** Keep `approval.submit = {url, ticket}` as the default and
+  only required wire shape; request references are a future additive mode.
 - **First provider:** GitHub Actions protected environments.
 - **Non-change:** This document does not modify code, deploy infrastructure, or
   change the current live approval route.
@@ -32,17 +33,18 @@ one ticket secret, and an owner-token fallback.
 The target is a multi-tenant approval service that can support many projects
 and providers, while keeping Drel provider-agnostic. Drel only renders a
 message and sends a decision to the URL in the message. The trusted service owns
-ticket validation, approver identity, provider authorization, idempotency, and
-audit.
+ticket validation, one-time consumption, provider authorization, idempotency,
+and audit.
 
 The most important architectural rule is:
 
-> A ticket identifies the CI request being approved. It does not identify the
-> person approving it.
+> A short-lived, one-time ticket is the capability to decide exactly one CI
+> request. It does not need to identify the person approving it.
 
-Therefore, a ticket alone must not authorize a human release action in the
-multi-tenant version. The native Drel action must also carry a verified actor
-identity, or fall back to a hosted GitHub OAuth approval step.
+Therefore, possession of a valid ticket authorizes one scoped action in the
+default model. If a provider requires proof of a human identity, that provider
+adds its own OAuth/OIDC confirmation at `submit.url`; Drel does not carry a
+device key or actor assertion.
 
 ## 2. Goals
 
@@ -73,12 +75,12 @@ identity, or fall back to a hosted GitHub OAuth approval step.
 ### 4.1 Assets
 
 - GitHub App private key and installation tokens.
-- User OAuth access tokens.
+- Optional user OAuth access tokens for provider-owned identity confirmation.
 - Ticket signing keys.
 - CI repository, workflow, run, commit, and environment identity.
-- Approver identity and group membership.
+- Optional approver identity and group membership.
 - Approval decisions and audit history.
-- Drel device identity and notification delivery.
+- Notification delivery; any future Drel device identity is opt-in.
 
 ### 4.2 Trust boundaries
 
@@ -101,8 +103,8 @@ identity, or fall back to a hosted GitHub OAuth approval step.
 |---|---|
 | Forged CI request | GitHub OIDC signature, issuer/audience validation, run cross-check |
 | Replayed approval | One-time nonce, Durable Object transaction, idempotency key |
-| Ticket copied from message | Short TTL, request binding, device/user assertion, no raw ticket logs |
-| Stolen device | Device key alone is insufficient for high-risk actions; require Drel account/approver identity |
+| Ticket copied from message | Short TTL, request binding, one-time nonce, optional provider-owned OAuth/OIDC, no raw ticket logs |
+| Stolen device | The ticket authorizes one scoped action and expires quickly; the provider can require its own OAuth/OIDC for high-risk environments |
 | Cross-tenant access | Tenant-scoped storage keys, project policy, OIDC repository check |
 | Malicious template | Schema validation, action allowlist, HTTPS-only submit URL, size limits |
 | Owner PAT compromise | Remove owner PAT from the general path; use short-lived user authorization |
@@ -120,10 +122,10 @@ The Mermaid source is [multitenant-approval-system.mmd](../diagrams/multitenant-
 
 | Component | Responsibility |
 |---|---|
-| Public API | Versioned CI, approval, identity, and health endpoints |
+| Public API | Versioned CI, approval, and health endpoints, plus optional provider-owned identity flows |
 | OIDC verifier | Verify provider OIDC tokens and normalize CI identity |
 | Ticket issuer/verifier | Sign short-lived, scoped, one-use request tickets |
-| Optional identity broker | Provider-hosted OAuth/OIDC confirmation when explicitly required |
+| Optional identity broker | Provider-hosted OAuth/OIDC confirmation only when a project explicitly requires it |
 | Policy engine | Tenant, project, environment, ticket scope, expiry, revision, and one-time use |
 | Approval state machine | `pending → authorized → executing → approved/rejected/expired/error` |
 | Provider adapters | Translate a normalized decision into a provider operation |
@@ -139,6 +141,9 @@ Use two explicit levels:
 
 A tenant can contain multiple projects; a project can have multiple protected
 environments. Never use `owner/repo` alone as the primary key.
+
+The `identities` and `approver_policies` records are optional high-assurance
+extensions. The default one-time-ticket contract does not require either table.
 
 ```text
 tenant
@@ -423,8 +428,9 @@ Recommended split:
 
 - **App installation token:** read run, workflow, environment, protection
   policy, pending deployment, and repository metadata.
-- **User-to-server OAuth token or hosted OAuth session:** perform the actual
-  human decision on `pending_deployments`.
+- **Optional user-to-server OAuth token or hosted OAuth session:** perform the
+  human decision on `pending_deployments` only when the project explicitly
+  requires provider-owned identity confirmation.
 - **Gate:** verifies that the same user is allowed by policy before using the
   user authorization.
 
@@ -821,7 +827,7 @@ The multi-tenant design is implementable only when these tests can pass:
 |---|---|---|
 | ADR-001 | A short-lived one-time ticket authorizes exactly one decision; no Drel device identity is required by default | Accepted |
 | ADR-002 | GitHub OIDC is the CI authentication mechanism; no shared CI password | Proposed |
-| ADR-003 | GitHub App installation tokens are machine credentials; user OAuth performs human approval | Proposed |
+| ADR-003 | GitHub App installation tokens are machine credentials; any human identity check is optional and provider-owned | Accepted |
 | ADR-004 | Tenant + project + environment is the scope; repository alone is insufficient | Proposed |
 | ADR-005 | Provider adapters implement normalized decisions; Drel stays provider-agnostic | Proposed |
 | ADR-006 | Audit is append-only and written before success | Proposed |
@@ -866,7 +872,7 @@ the public multi-tenant security model.
 | Argo CD | Kubernetes/SSO identity | Sync window / operation approval | Later |
 | Generic webhook | mTLS or signed request | Project-owned approval callback | Later |
 
-## Appendix B — Drel Identity Linking UX
+## Appendix B — Optional Provider Identity UX (not the default path)
 
 ### Unlinked identity
 

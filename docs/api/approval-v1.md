@@ -100,6 +100,10 @@ Drel 的审批状态，也不自行判断 ticket 是否过期或已使用。点�
 }
 ```
 
+请求体固定为上述五个字段。Drel 不发送 `deviceKey`、审批公钥、`Authorization`
+或 `actorAssertion`；如果接收方需要确认真人身份，应由 `submit.url` 自己提供
+OAuth/OIDC 或登录确认，而不是增加 Drel 的默认接入门槛。
+
 `requestId`、动作范围、过期时间、一次性重放保护、GitHub 状态校验与最终业务
 操作全部由该 URL 的接收方负责。响应至少应返回客户端使用的
 `{"requestId":"approval-42","state":"approved","revision":2}`。
