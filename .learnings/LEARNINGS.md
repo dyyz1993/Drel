@@ -1000,3 +1000,76 @@ Caches 目录下的普通 plist 不像 Realm 那样随 App 升级迁移或清空
   中 561 通过（唯一失败 `testPresetCatalogRecommendedItems` 为既有失败，
   `PresetURLCatalog` 自建仓起未改，与本次无关）
 - Disposition: retain; Application: applied
+
+---
+
+## [LRN-20261028-005] best_practice
+
+**Logged**: 2026-10-28T21:50:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: release
+
+### Summary
+
+夹具 URL 必须集中声明，并且路径本身要能说明"这是哪个夹具、哪一代"。
+散落的内联字符串既没人能审计，也早就漂成了死链。
+
+### Details
+
+Drel 的夹具路径曾散落在 seeder、debug 面板、showcase 屏幕里，共 17 个
+`test_resources/...` 引用。逐个核实后发现 **11 个目标根本不存在**：
+
+- `cache-demo.html`、`cache-showcase.html`、`images/photo1.jpg`、`cases/`
+  —— 从未进过仓库，debug 面板点开就是 404；
+- `ae8fcb.shanbox.19930810.xyz:8443/test_resources/*` —— 那台静态机早已
+  不再提供这些文件，种子缓存、历史、收藏、Discover 列表全部渲染成坏卡片；
+- `bridge-hub.html` —— 从来没有过这个文件。
+
+真正还活着的只有三个 pwa-* 本地夹具（`pwa-permission` /
+`pwa-notification` / `pwa-agent-console`），而它们是 UI 测试装置
+（`--register-pwa-*` 启动参数 + `localhost:8081`），不是公开示例。
+
+规范化的落点：
+
+- 源码侧 `test_resources/<name>/<generation>/`（与站点既有的
+  `action-demo/v1`、`data-template/v1` 一致）；
+- 站点侧 `/test/<name>/<generation>/`，版本号进 URL、进 `<title>`、
+  进页头横幅；
+- 历史夹具按其所属代次发布（Bridge 夹具属 Drel 1.0），并在页面里说明
+  "大部分动作不在当前商店版白名单内"，避免被误读成当前版本的活 demo。
+
+`FixturePaths.swift` 收口全部路径，`tools/verify-fixture-paths.sh`
+把它变成门禁：`FixturePaths.swift` 之外不允许出现内联夹具路径、声明
+的本地夹具必须存在、站点构建必须真的发布了这些夹具。脚本挂进
+`ci-lint.sh`。
+
+### Suggested Action
+
+- 新增夹具时先在 `FixturePaths` 声明，再用它引用，不要写内联字符串。
+- 夹具按代次分目录；历史夹具保持原样并标注版本，不要改写成当前版本
+  的样子——那是记录，不是 demo。
+- 任何"看起来应该存在"的路径，先验证它真的存在再写进代码。
+
+### Metadata
+
+- Source: user_correction
+- Related Files: SuperApp/Sources/Configuration/FixturePaths.swift, tools/verify-fixture-paths.sh, tools/ci-lint.sh, SuperApp/Sources/Managers/TestDataSeeder.swift, SuperApp/Sources/Managers/TestDataSeeder+Entities.swift, SuperApp/Sources/AppDelegate.swift
+- Tags: fixture, path, dead-link, seed-data, versioned-fixture, release-gate
+- Pattern-Key: release.fixture_path_layout
+- Recurrence-Count: 1
+- First-Seen: 2026-10-28
+- Last-Seen: 2026-10-28
+
+### Context Maintenance
+
+- Decay-Type: dependency
+- Decay-Rate: slow
+- Authority: `tools/verify-fixture-paths.sh` + 仓库 `test_resources/` 实际内容
+- Owner: Drel
+- Revalidation: 新增或移动夹具、改动 `FixturePaths` 时复查
+- Validation: verified; Last-Validated: 2026-10-28; Evidence:
+  `tools/verify-fixture-paths.sh` PASS（4 个本地声明全部存在，0 处内联路径）；
+  注入违规内联路径时脚本正确 FAIL，恢复后 PASS；`ci-lint.sh` 18/18；
+  DrelTests 31/31；BUILD SUCCEEDED
+- Disposition: retain; Application: applied
