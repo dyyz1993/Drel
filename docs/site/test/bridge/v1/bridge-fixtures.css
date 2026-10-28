@@ -1,0 +1,213 @@
+/*
+ *  bridge-fixtures.css
+ *  WebBridgeKit
+ *
+ *  Shared styling for the Bridge test fixtures. These pages ship with Drel
+ *  1.0 and are published on the website under /test/bridge/v1/, so they use
+ *  the same visual language as the rest of the site rather than the ad-hoc
+ *  per-page styles they carried before.
+ *
+ *  The pages are a record of the v1 action set, not a live demo of the
+ *  current store build: the banner in each page says so.
+ */
+
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --bg-top: #f5f7fb;
+  --bg-bottom: #eef1f8;
+  --ink: #172033;
+  --muted: #4b5565;
+  --card: rgba(255, 255, 255, 0.82);
+  --line: rgba(23, 32, 51, 0.08);
+  --accent: #4d50d8;
+  --accent-ink: #253045;
+  --shadow: 0 18px 50px rgba(23, 32, 51, 0.08);
+  --ok: #34c759;
+  --warn: #ff9500;
+  --danger: #e5484d;
+  --violet: #af52de;
+  --teal: #5ac8fa;
+  --pink: #ff2d55;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-top: #101623;
+    --bg-bottom: #181f2e;
+    --ink: #f2f5fa;
+    --muted: #a9b2c1;
+    --card: rgba(24, 31, 46, 0.9);
+    --line: rgba(255, 255, 255, 0.09);
+    --accent-ink: #e7ebf5;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(170deg, var(--bg-top), var(--bg-bottom));
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: max(24px, env(safe-area-inset-top)) 20px 48px;
+}
+
+h1 {
+  margin: 6px 0 4px;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 6px 0 16px;
+  color: var(--muted);
+}
+
+/* The version marker: which Drel generation this fixture belongs to. */
+.fixture-note {
+  margin: 14px 0 18px;
+  padding: 11px 15px;
+  border-radius: 14px;
+  background: rgba(255, 149, 0, 0.09);
+  border: 1px solid rgba(255, 149, 0, 0.24);
+  color: #7a4b12;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fixture-note {
+    background: rgba(255, 149, 0, 0.12);
+    border-color: rgba(255, 149, 0, 0.28);
+    color: #f0c896;
+  }
+}
+
+/* Bridge availability: detected at runtime, shown as a status strip. */
+.status-bar {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: var(--shadow);
+}
+
+.status-bar.ok {
+  color: #1d7a3a;
+  border-color: rgba(52, 199, 89, 0.34);
+}
+
+.status-bar.error {
+  color: #a82a2f;
+  border-color: rgba(229, 72, 77, 0.34);
+}
+
+@media (prefers-color-scheme: dark) {
+  .status-bar.ok { color: #7ee2a0; }
+  .status-bar.error { color: #ff9ea2; }
+}
+
+.test-section {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 18px;
+  margin: 14px 0;
+  box-shadow: var(--shadow);
+}
+
+.test-section p {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.btn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 380px) {
+  .btn-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+button {
+  min-height: 50px;
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  padding: 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+button:active {
+  transform: scale(0.985);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.btn-success { background: var(--ok); }
+button.btn-warning { background: var(--warn); }
+button.btn-danger { background: var(--danger); }
+button.btn-purple { background: var(--violet); }
+button.btn-pink { background: var(--pink); }
+button.btn-teal { background: var(--teal); color: #16202e; }
+button.btn-gray { background: var(--accent-ink); }
+
+/* The action log: a running trace of what the page asked the host. */
+.log-section {
+  margin-top: 14px;
+  padding: 13px;
+  border-radius: 16px;
+  background: #101623;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e6ebf5;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  max-height: 260px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.log-entry {
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  word-break: break-all;
+}
+
+.log-success { color: #4ade80; }
+.log-error { color: #f87171; }
+.log-info { color: #60a5fa; }

@@ -13,9 +13,16 @@ set -euo pipefail
 # actions the 1.5 store build allows. Publishing them under an explicit
 # version path keeps the historical contract inspectable without implying
 # that the current store build can run them.
+#
+# The pages live under `docs/site/test/bridge/v1/`. They used to sit in
+# `SuperApp/Resources/`, but nothing in the app ever loaded them from the
+# bundle: the app reaches them through their published URL, and the release
+# build strips every HTML file from the bundle anyway. Keeping the only copy
+# with the website removed a dead duplicate and one more file for the app
+# to carry.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SOURCE="$ROOT/SuperApp/Resources"
+SOURCE="$ROOT/docs/site/test/bridge/v1"
 STAGE="${1:-$ROOT/build/drel-site-staging}"
 
 # The Drel version whose App bundle carried these fixtures.
@@ -36,6 +43,10 @@ PAGES=(bridge-permission bridge-device bridge-media bridge-interaction bridge-na
 # the generation's pages.
 OUT_DIR="$STAGE/test/bridge/$BRIDGE_GENERATION"
 mkdir -p "$OUT_DIR"
+
+# The fixtures share one stylesheet. It is copied next to the pages so the
+# relative `href="bridge-fixtures.css"` resolves next to the page.
+cp "$SOURCE/bridge-fixtures.css" "$OUT_DIR/bridge-fixtures.css"
 
 for page in "${PAGES[@]}"; do
   src="$SOURCE/$page.html"
@@ -67,11 +78,9 @@ else:
 
 # A short notice above the existing heading. The fixtures stay otherwise
 # untouched: they are a record of the v1 contract, not a live demo of the
-# current store build.
+# current store build. The styling comes from the shared stylesheet.
 banner = (
-    '<div style="max-width:760px;margin:0 auto 14px;padding:10px 14px;'
-    'border-radius:10px;background:#fff4e5;color:#7a4b12;font-size:13px;'
-    'line-height:1.5;border:1px solid #f0d6b0">'
+    '<div class="fixture-note">'
     f"Drel {version} ({generation}) Bridge 测试夹具 · "
     "本页保留的是 1.0 时代的完整 Bridge 动作集，"
     "其中大部分动作不在当前商店版（1.5）的七个动作白名单内。"
