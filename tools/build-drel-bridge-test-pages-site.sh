@@ -87,6 +87,16 @@ html = open(src, encoding="utf-8").read()
 html = html.replace('href="bridge-fixtures.css"', f'href="{css_name}"')
 html = html.replace('src="bridge-fixtures.js"', f'src="{js_name}"')
 
+# These legacy fixtures had no icon, so browsers requested /favicon.ico and
+# reported a 404 alongside real debug output. Point them at the site icon.
+if 'rel="icon"' not in html:
+    html = html.replace(
+        f'<link rel="stylesheet" href="{css_name}">',
+        f'<link rel="icon" href="/assets/drel-mark.svg" type="image/svg+xml">\n'
+        f'  <link rel="stylesheet" href="{css_name}">',
+        1,
+    )
+
 # These fixtures never carried a <title>. Build one from the page's own
 # heading so every fixture gets a distinct, versioned browser title.
 heading = re.search(r"<h1[^>]*>(.*?)</h1>", html, re.S)
