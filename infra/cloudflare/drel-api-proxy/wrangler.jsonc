@@ -19,7 +19,7 @@
     // 2026.10.29-keybind: /api/v1/html-apps accepts deviceKey-bound private
     // registration without the admin key (paired-key check, 20/key cap,
     // private manifests visible only to ?key=<deviceKey> listings).
-    "DREL_EDGE_VERSION": "2026.10.29-keybind"
+    "DREL_EDGE_VERSION": "2026.10.30-canonical"
   },
   "durable_objects": {
     "bindings": [
