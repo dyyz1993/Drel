@@ -1120,26 +1120,39 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
 
     private func openHTMLApp(appID: String) {
         if let route = message.payload.route {
-            do {
-                let target = try launchResolver.resolve(
-                    appID: appID,
-                    route: route,
-                    parameters: message.payload.userInfo ?? [:],
-                    source: .notification
-                )
-                var payload = target.context.bridgePayload
-                payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-                payload["webbridgekitPageURL"] = target.pageURL.absoluteString
-                let params = DrelMessageOpenPolicy.browserParams(
-                    for: target.loaderURL,
-                    mode: DrelMessageOpenPolicy.registeredAppMode(for: message.payload),
-                    payload: payload,
-                    useManifestLoader: false,
-                    preferCachedContent: target.offlineMode == .partial
-                )
-                WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
-            } catch {
-                showAlert(title: L10n.tr("message.detail.open_app_failed"), message: error.localizedDescription)
+            // 与横幅点按（PushRouter.openTrustedHTMLApp）同路径：先经协调器
+            // 按需拉取网关清单并激活，再解析打开。清单未同步时同步 resolve
+            // 必然失败并误报「无法打开」，用户被迫二次点按。
+            DrelPushAppCatalogCoordinator.shared.activateIfTrusted(appID: appID, route: route) { [weak self] accepted in
+                guard let self else { return }
+                guard accepted else {
+                    self.showAlert(
+                        title: L10n.tr("message.detail.open_app_failed"),
+                        message: L10n.tr("message.detail.open_app_untrusted")
+                    )
+                    return
+                }
+                do {
+                    let target = try self.launchResolver.resolve(
+                        appID: appID,
+                        route: route,
+                        parameters: self.message.payload.userInfo ?? [:],
+                        source: .notification
+                    )
+                    var payload = target.context.bridgePayload
+                    payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
+                    payload["webbridgekitPageURL"] = target.pageURL.absoluteString
+                    let params = DrelMessageOpenPolicy.browserParams(
+                        for: target.loaderURL,
+                        mode: DrelMessageOpenPolicy.registeredAppMode(for: self.message.payload),
+                        payload: payload,
+                        useManifestLoader: false,
+                        preferCachedContent: target.offlineMode == .partial
+                    )
+                    WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
+                } catch {
+                    self.showAlert(title: L10n.tr("message.detail.open_app_failed"), message: error.localizedDescription)
+                }
             }
             return
         }
