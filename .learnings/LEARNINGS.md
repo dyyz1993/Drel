@@ -1108,3 +1108,116 @@ Drel 的夹具路径曾散落在 seeder、debug 面板、showcase 屏幕里，�
   `--check` 8/8 current；改 `push-sequence.mmd` 一个词后精确报
   `STALE push-sequence.svg`、其余 7 张仍 current，还原后 8/8 current
 - Disposition: retain; Application: applied
+
+## [LRN-20261029-001] correction
+
+**Logged**: 2026-10-29
+**Priority**: medium
+**Status**: pending
+**Area**: docs
+
+### Summary
+商店创意素材需根据用户要求调用图像生成能力，不应擅自以程序绘图替代。
+
+### Details
+Drel App Store 素材初稿以程序排版生成；用户明确纠正应调用画图能力。后续用户多次纠正：先检索真实案例，定义展示目的和布局；模型虚构的 logo 和 UI 不可用于产品素材。
+
+### Suggested Action
+先研究展示位置和真实案例，明确用途、内容与布局，再制作；使用官方品牌资产及真实、适合公开展示的产品截图，禁止模型虚构 logo 或 UI。
+
+### Metadata
+- Source: user_feedback
+- Related Files: build/reports/drel-asc-title-assets/
+- Tags: app-store, creative-assets, image-generation
+- Pattern-Key: drel.store-creative.image-generation
+- Recurrence-Count: 3
+- First-Seen: 2026-10-29
+- Last-Seen: 2026-10-29
+
+### Context Maintenance
+- Decay-Type: decision
+- Decay-Rate: slow；用户明确的素材制作偏好
+- Authority: 用户；Owner: 产品负责人
+- Revalidation: 用户改变要求时重新确认
+- Validation: verified；Last-Validated: 2026-10-29；Evidence: 用户纠正
+- Disposition: retain；Application: applied
+
+---
+
+## [LRN-20261029-002] best_practice
+
+**Logged**: 2026-10-29T15:09:33+08:00
+**Priority**: medium
+**Status**: resolved
+**Area**: release
+
+### Summary
+
+用户现有 Chrome 已登录 ASC 时，优先用 xbrowser chrome-bridge 复用登录态；
+隐藏文件输入可通过 CDP `DOM.setFileInputFiles` 完成上传，避免弹系统文件框。
+
+### Details
+
+本次先探活 `xbrowser chrome-bridge status`（running=true、clients=1），
+再创建受控标签页。ASC 页面使用 React 隐藏 `input[type=file]`；点击“+”
+打开菜单后，用 `DOM.querySelector` 取得 input nodeId，再调用
+`DOM.setFileInputFiles`。两张素材均由 ASC 正确识别：标题图为 3840×1646、
+21:9、产品页面顶部区域；英文搜索图为 2400×1600、3:2、搜索结果；两者
+均进入“添加以供审核”，没有自动提交审核。
+
+### Suggested Action
+
+- 需要复用已登录 ASC 时，先检查 chrome-bridge status，并在受控任务标签页操作。
+- 不要点击隐藏 file input 或依赖系统文件选择框。
+- 不把文件上传等同于提交审核；处理完成后停在不含外部后果的姿态，并读回状态。
+- ASC SPA 的首次渲染可能晚于 navigate 完成，读回页面时允许等待数据渲染。
+
+### Metadata
+
+- Source: conversation
+- Related Files: build/reports/drel-asc-title-assets/make_en_search.py,
+  build/reports/drel-asc-title-assets/en-US-search-v2.png,
+  build/reports/drel-asc-title-assets/asc-upload-evidence.png
+- Tags: app-store-connect, xbrowser, chrome-bridge, file-upload, creative-assets
+- Pattern-Key: release.asc.chrome_bridge_hidden_file_upload
+- Recurrence-Count: 1
+- First-Seen: 2026-10-29
+- Last-Seen: 2026-10-29
+
+### Context Maintenance
+
+- Decay-Type: dependency
+- Decay-Rate: medium；ASC SPA 和浏览器扩展协议可能变化
+- Authority: 用户现有 Chrome 登录态 + ASC 页面实时读回
+- Owner: Drel 发布流程
+- Revalidation: 上传入口、ASC 页面结构或 xbrowser/chrome-bridge 大版本变化时复查
+- Validation: verified; Last-Validated: 2026-10-29; Evidence:
+  `xbrowser chrome-bridge status` = running/client connected；
+  ASC Asset Library 显示两张素材均完成处理并分别匹配 21:9 / 3:2 展示位置；
+  `asc-upload-evidence.png` 保存页面证据
+- Disposition: retain; Application: applied
+
+## [LRN-20261029-003] user_feedback
+
+**Logged**: 2026-10-29
+**Priority**: low
+**Status**: pending
+**Area**: presentation
+
+### Summary
+会话内给用户看的时序/流程图应直接用纯 HTML/CSS 绘制，不依赖 CDN 渲染库（mermaid.js 等）；用户看不清 mermaid 片段渲染结果，主动要求「可以是 HTML 的时序图」。
+
+### Details
+用 mermaid CDN 片段做会话内时序图，用户反馈「时序图给我看呗，我才能看清楚啊」。会话内可视化的可用性取决于宿主渲染环境，外部渲染库存在加载/主题/失败兜底三重不确定性；纯 HTML/CSS（lifeline 用虚线 div、箭头用 border+三角、alt/opt 用边框块+标签 chip）零依赖、跟随主题变量，稳态可显示。
+
+### Suggested Action
+仓库文档图仍走 `docs/diagrams/*.mmd`（见 L-20261023-01，两场景不冲突）；会话内交互展示图一律纯 HTML/CSS 手绘，避免任何外部 JS 依赖。
+
+### Metadata
+- Source: user_feedback
+- Tags: visualization, sequence-diagram, inline-html
+- Pattern-Key: drel.presentation.inline-diagram-no-cdn
+- See Also: L-20261023-01（仓库文档图用 Mermaid DSL）
+- Recurrence-Count: 1
+- First-Seen: 2026-10-29
+- Last-Seen: 2026-10-29

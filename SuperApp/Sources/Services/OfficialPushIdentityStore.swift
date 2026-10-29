@@ -68,6 +68,19 @@ final class OfficialPushIdentityStore {
         return identity
     }
 
+    /// Read-only peek for callers that scope requests to this identity.
+    /// Never creates or migrates one, so gateway catalog refreshes stay
+    /// side-effect free.
+    func currentIfAvailable() -> String? {
+        if let cached = UserDefaults.standard.string(forKey: userDefaultsKey), !cached.isEmpty {
+            return cached
+        }
+        if let stored = try? keychainStorage.load(), !stored.isEmpty {
+            return stored
+        }
+        return nil
+    }
+
     /// Moves an installation from either the legacy 43-character URL-safe
     /// base64 key or the first grouped short format to the compact 16-character
     /// identity. The server keeps the legacy registration alongside the

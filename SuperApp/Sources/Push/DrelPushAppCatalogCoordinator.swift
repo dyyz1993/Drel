@@ -95,10 +95,37 @@ final class DrelPushAppCatalogCoordinator {
     }
 
     private func gateway(for appID: String) -> HTMLAppGatewayConfiguration {
+        let base: HTMLAppGatewayConfiguration
         if appID.hasPrefix("dev.drel.") {
-            return DrelGatewayConfiguration.official
+            base = DrelGatewayConfiguration.official
+        } else {
+            base = gatewayRegistry.activeGateway() ?? DrelGatewayConfiguration.official
         }
-        return gatewayRegistry.activeGateway() ?? DrelGatewayConfiguration.official
+        return Self.deviceKeyScopedGateway(base)
+    }
+
+    /// 官方网关的清单拉取按本机推送标识加 `?key=` 作用域，使该 Key 注册的
+    /// 私有清单进入本机视角（服务端 2026.10.29-keybind 起支持；私有清单对
+    /// 匿名拉取不可见）。自建网关目录没有按 Key 隔离，不注入。先剥掉旧
+    /// query 再注入当前标识，Key 重新生成后不会沿用残留的旧值。
+    static func deviceKeyScopedGateway(_ gateway: HTMLAppGatewayConfiguration) -> HTMLAppGatewayConfiguration {
+        guard gateway.baseURL.lowercased() == DrelGatewayConfiguration.official.baseURL.lowercased(),
+              let key = OfficialPushIdentityStore.shared.currentIfAvailable(), !key.isEmpty,
+              var components = URLComponents(string: gateway.manifestPath) else {
+            return gateway
+        }
+        components.query = nil
+        components.queryItems = [URLQueryItem(name: "key", value: key)]
+        guard let scoped = components.string else { return gateway }
+        return HTMLAppGatewayConfiguration(
+            id: gateway.id,
+            name: gateway.name,
+            baseURL: gateway.baseURL,
+            healthPath: gateway.healthPath,
+            manifestPath: scoped,
+            publicKeyID: gateway.publicKeyID,
+            publicKey: gateway.publicKey
+        )
     }
 
     private func finish(_ completion: @escaping (Bool) -> Void, accepted: Bool) {

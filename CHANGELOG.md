@@ -77,6 +77,16 @@ reviewing and revoking grants, and a one-command permission regression gate.
   paths answer a clean 404 after the legacy upstream was unbound. — Scope:
   `Push`, `Server` — Verified: `server-test` — Evidence:
   [docs/testing/results/drel-1-5-0-110-brand-merge/verification.md](docs/testing/results/drel-1-5-0-110-brand-merge/verification.md)
+- Key-scoped private HTML app registration: a paired device key can
+  register app manifests on the official gateway without the admin key.
+  Private manifests never appear in anonymous catalog listings, are visible
+  only through `GET /api/v1/html-apps?key=<deviceKey>`, shadow a same-id
+  global manifest for the owning key only, and are capped at 20 per key.
+  The app scopes its official-gateway catalog fetch with the device push
+  identity, so private apps activate through the same on-demand push path
+  as global ones. — Scope: `Gateway`, `App` — Verified: `server-test`,
+  `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-119-keybind/verification.md](docs/testing/results/drel-1-5-0-119-keybind/verification.md)
 
 ### Changed
 
@@ -191,6 +201,12 @@ reviewing and revoking grants, and a one-command permission regression gate.
 - Home navigation adapts to iOS scenes. — Scope: `App` — Verified:
   `simulator` — Evidence:
   [docs/release/1.5.0/verification.md](docs/release/1.5.0/verification.md)
+- Opening an app from an inbox message detail now routes through the push
+  catalog coordinator: the gateway manifest is fetched and the activation
+  recorded before the app resolves and opens, so a first open no longer
+  dead-ends with `应用未注册` when the local catalog has not synced yet.
+  — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-119-keybind/verification.md](docs/testing/results/drel-1-5-0-119-keybind/verification.md)
 
 ### Security
 

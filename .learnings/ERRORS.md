@@ -335,6 +335,11 @@ probe 当作正常结果渲染，无失败退出码；每步 xbrowser 调用无 
 
 **Status**: resolved
 
+**Recurrence**: 2026-10-28 sitemap heartbeat: bridge navigate initially succeeded, but CDP evaluation returned an empty result after timeout even after a bridge restart. Current quota is unknown; the polling attempt must not count as a zero-quota observation.
+- Pattern-Key: xbrowser.chrome_bridge.empty_or_timeout
+- Recurrence-Count: 2
+- Last-Seen: 2026-10-28
+
 **Context Maintenance**
 - Decay-Type: dependency
 - Decay-Rate: fast（bridge 服务状态随时变化）
@@ -344,3 +349,24 @@ probe 当作正常结果渲染，无失败退出码；每步 xbrowser 调用无 
 - Validation: verified; Last-Validated: 2026-10-28;
   Evidence: 修改后脚本运行 exit=2 且 1 秒内返回
 - Disposition: retain; Application: 所有依赖 chrome-bridge 的检查脚本
+
+## [ERR-20261029-001] infra
+
+**Logged**: 2026-10-29
+
+**Symptom**: `WBK_GATEWAY_URL=https://api.drel.app bash tools/verify-open-gateway.sh`
+报 `missing appId com.webbridgekit.fixture.chat`，5 项里 2 项失败（清单 + 按 ID 查询）。
+
+**Root Cause**: 脚本默认 `EXPECTED_APP_ID=com.webbridgekit.fixture.chat`，是为
+tx 网关（cloak.xbrowser.dev:5801）与本地 Go 网关设计的固定夹具；api.drel.app
+上从未注册过该应用（改动部署前的匿名清单即可佐证），与当日 keybind 部署无关。
+
+**Resolution**: 对 api.drel.app 跑该门时覆盖
+`WBK_GATEWAY_APP_ID=<该网关上真实存在的 appId>`（如 dev.vot.workspace），
+5/5 全绿。可选改进：脚本在 404 时提示检查目标网关与 EXPECTED_APP_ID 是否匹配。
+
+**Metadata**
+- Pattern-Key: drel.verify.open-gateway-target-mismatch
+- Recurrence-Count: 1
+- First-Seen: 2026-10-29
+- Last-Seen: 2026-10-29
