@@ -41,6 +41,10 @@ final class GatewayOnboardingTests: XCTestCase {
         let manage = app.buttons["pwaHome.manageApps"]
         XCTAssertTrue(manage.waitForExistence(timeout: 5))
         manage.tap()
+        let serviceManagement = app.buttons["管理应用服务"]
+        if serviceManagement.waitForExistence(timeout: 2) {
+            serviceManagement.tap()
+        }
         XCTAssertTrue(app.descendants(matching: .any)
             .matching(identifier: "gateway.table")
             .firstMatch.waitForExistence(timeout: 5))

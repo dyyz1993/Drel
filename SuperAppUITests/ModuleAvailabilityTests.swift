@@ -82,6 +82,10 @@ final class ModuleAvailabilityTests: XCTestCase {
     func testPWAAppCenterGatewayAndGuideAreReachable() {
         assertTab("tab.apps", opens: "pwaCenter.table")
         tapElement("pwaHome.manageApps")
+        let serviceManagement = app.buttons["管理应用服务"]
+        if serviceManagement.waitForExistence(timeout: 2) {
+            serviceManagement.tap()
+        }
         assertExists("gateway.table")
         goBack()
 
@@ -449,6 +453,10 @@ final class ModuleAvailabilityTests: XCTestCase {
         // and is intentionally not this screen.
         assertTab("tab.apps", opens: "pwaCenter.table")
         tapElement("pwaHome.manageApps")
+        let serviceManagement = app.buttons["管理应用服务"]
+        if serviceManagement.waitForExistence(timeout: 2) {
+            serviceManagement.tap()
+        }
         assertExists("gateway.table")
         assertExists("gateway.current")
         assertExists("gateway.scan")

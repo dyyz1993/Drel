@@ -110,6 +110,10 @@ final class NextPhaseAcceptanceTests: XCTestCase {
         openTab("tab.apps")
         XCTAssertTrue(element("pwaHome.manageApps").waitForExistence(timeout: 5))
         element("pwaHome.manageApps").tap()
+        let serviceManagement = app.buttons["管理应用服务"]
+        if serviceManagement.waitForExistence(timeout: 2) {
+            serviceManagement.tap()
+        }
         XCTAssertTrue(element("gateway.table").waitForExistence(timeout: 5))
     }
 
