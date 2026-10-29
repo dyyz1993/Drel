@@ -332,7 +332,9 @@ final class PWAAppCenterViewController: UIViewController {
         // Keep the verified catalog current for push-route validation, but do
         // not render it directly. An app becomes visible only after a trusted
         // push has targeted it and recorded a user-local activation.
-        let gateway = gatewayRegistry.activeGateway() ?? DrelGatewayConfiguration.official
+        let gateway = DrelPushAppCatalogCoordinator.deviceKeyScopedGateway(
+            gatewayRegistry.activeGateway() ?? DrelGatewayConfiguration.official
+        )
         // 一次瞬时失败不应永久钉死在「不可用」：冷却期后允许在首页再现时重试。
         if officialGatewayUnavailable,
            let last = lastGatewayFailureAt,

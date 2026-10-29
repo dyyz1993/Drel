@@ -15,7 +15,11 @@
     // Unmatched paths answer a clean 404; restoring this variable re-enables
     // the legacy proxy in one deploy if a rollback is ever needed.
     // "UPSTREAM_ORIGIN": "https://wbk.legacy-infra.example.invalid:8443",
-    "DREL_MANAGED_PUSH_MAX_DELIVERIES_PER_MINUTE": "60"
+    "DREL_MANAGED_PUSH_MAX_DELIVERIES_PER_MINUTE": "60",
+    // 2026.10.29-keybind: /api/v1/html-apps accepts deviceKey-bound private
+    // registration without the admin key (paired-key check, 20/key cap,
+    // private manifests visible only to ?key=<deviceKey> listings).
+    "DREL_EDGE_VERSION": "2026.10.29-keybind"
   },
   "durable_objects": {
     "bindings": [

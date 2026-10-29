@@ -183,7 +183,21 @@ export class GatewayManifestRegistry {
     const appID = appIDMatch ? appIDMatch[1] : null;
 
     if (path === "/api/v1/html-apps" && request.method === "GET") {
-      const manifests = await this.readAll();
+      let manifests = await this.readAll();
+      // A key-scoped listing additionally returns the manifests that key
+      // registered privately; an anonymous listing never leaks them. A
+      // private registration of an existing app id shadows the global copy
+      // for that key only.
+      const deviceKey = scopedDeviceKey(url.searchParams.get("key"));
+      if (deviceKey) {
+        const byAppID = new Map(manifests.map((m) => [m.appId, m]));
+        for (const manifest of await this.readPrivate(deviceKey)) {
+          byAppID.set(manifest.appId, manifest);
+        }
+        manifests = [...byAppID.values()].sort((left, right) =>
+          String(left.appId).localeCompare(String(right.appId))
+        );
+      }
       const signed = [];
       for (const manifest of manifests) {
         signed.push(await signGatewayManifest(this.env, manifest));
@@ -191,36 +205,82 @@ export class GatewayManifestRegistry {
       return json({ manifests: signed });
     }
     if (path === "/api/v1/html-apps" && request.method === "POST") {
-      if (!adminAuthorized(request, this.env)) {
-        return failure(401, "Invalid or missing API key");
-      }
       if (!gatewaySignerIsReady(this.env)) {
         return failure(503, "Gateway signing key is not configured");
       }
-      let manifest;
+      let body;
       try {
-        manifest = await request.json();
+        body = await request.json();
       } catch {
         return failure(400, "Invalid JSON body");
       }
+      const rawKey = typeof body?.deviceKey === "string" ? body.deviceKey.trim() : "";
+      const isAdmin = adminAuthorized(request, this.env);
+      if (!isAdmin && !rawKey) {
+        return failure(401, "Invalid or missing API key");
+      }
+      if (rawKey && !DEVICE_KEY_PATTERN.test(rawKey)) {
+        return failure(400, "deviceKey format is invalid");
+      }
+      const deviceKey = rawKey;
+      if (!isAdmin && deviceKey) {
+        const pairFailure = await this.ensurePairedDevice(deviceKey);
+        if (pairFailure) return pairFailure;
+      }
+      // The binding key is transport metadata, never part of the signed
+      // document: the phone verifies the same manifest bytes either way.
+      const manifest = {};
+      for (const [key, value] of Object.entries(body)) {
+        if (key !== "signature" && key !== "deviceKey") manifest[key] = value;
+      }
       const problem = validateManifest(manifest);
       if (problem) return failure(400, problem);
-      const unsigned = {};
-      for (const [key, value] of Object.entries(manifest)) {
-        if (key !== "signature") unsigned[key] = value;
+      if (deviceKey) {
+        const index =
+          (await this.state.storage.get(`private-index:${deviceKey}`)) ?? [];
+        if (!index.includes(manifest.appId) && index.length >= PRIVATE_MANIFEST_LIMIT) {
+          return failure(429, `per-key manifest limit reached (${PRIVATE_MANIFEST_LIMIT})`);
+        }
+        await this.state.storage.put(`private:${deviceKey}:${manifest.appId}`, manifest);
+        await this.rememberPrivate(deviceKey, manifest.appId);
+      } else {
+        await this.state.storage.put(`manifest:${manifest.appId}`, manifest);
+        await this.remember(manifest.appId);
       }
-      await this.state.storage.put(`manifest:${manifest.appId}`, unsigned);
-      await this.remember(manifest.appId);
-      return json(await signGatewayManifest(this.env, unsigned));
+      return json(await signGatewayManifest(this.env, manifest));
     }
     if (appID && request.method === "GET") {
-      const manifest = await this.state.storage.get(`manifest:${appID}`);
+      const deviceKey = scopedDeviceKey(url.searchParams.get("key"));
+      const manifest =
+        (deviceKey
+          ? await this.state.storage.get(`private:${deviceKey}:${appID}`)
+          : undefined) ??
+        (await this.state.storage.get(`manifest:${appID}`));
       if (!manifest) return failure(404, `HTML app manifest not found: ${appID}`);
       return json(await signGatewayManifest(this.env, manifest));
     }
     if (appID && request.method === "DELETE") {
+      const deviceKey = scopedDeviceKey(url.searchParams.get("key"));
       if (!adminAuthorized(request, this.env)) {
-        return failure(401, "Invalid or missing API key");
+        if (!deviceKey) {
+          return failure(401, "Invalid or missing API key");
+        }
+        const key = `private:${deviceKey}:${appID}`;
+        if ((await this.state.storage.get(key)) === undefined) {
+          return failure(404, `HTML app manifest not found: ${appID}`);
+        }
+        await this.state.storage.delete(key);
+        await this.forgetPrivate(deviceKey, appID);
+        return new Response(null, { status: 204 });
+      }
+      if (deviceKey) {
+        const key = `private:${deviceKey}:${appID}`;
+        if ((await this.state.storage.get(key)) === undefined) {
+          return failure(404, `HTML app manifest not found: ${appID}`);
+        }
+        await this.state.storage.delete(key);
+        await this.forgetPrivate(deviceKey, appID);
+        return new Response(null, { status: 204 });
       }
       const key = `manifest:${appID}`;
       // The SQL-backed Durable Object storage has no `has()`; reading the
@@ -264,6 +324,53 @@ export class GatewayManifestRegistry {
       await this.state.storage.put("manifest-index", next);
     }
   }
+
+  async readPrivate(deviceKey) {
+    const index = (await this.state.storage.get(`private-index:${deviceKey}`)) ?? [];
+    const manifests = [];
+    for (const appID of index) {
+      const manifest = await this.state.storage.get(`private:${deviceKey}:${appID}`);
+      if (manifest) manifests.push(manifest);
+    }
+    return manifests;
+  }
+
+  async rememberPrivate(deviceKey, appID) {
+    const index = (await this.state.storage.get(`private-index:${deviceKey}`)) ?? [];
+    if (!index.includes(appID)) {
+      index.push(appID);
+      await this.state.storage.put(`private-index:${deviceKey}`, index);
+    }
+  }
+
+  async forgetPrivate(deviceKey, appID) {
+    const index = (await this.state.storage.get(`private-index:${deviceKey}`)) ?? [];
+    const next = index.filter((entry) => entry !== appID);
+    if (next.length !== index.length) {
+      await this.state.storage.put(`private-index:${deviceKey}`, next);
+    }
+  }
+
+  /**
+   * A private registration is only allowed for a key that actually paired
+   * with this deployment, so random strings cannot fill the registry. When
+   * the device registry binding is absent (self-host minimal, unit tests)
+   * the check is skipped and the key format remains the only gate.
+   */
+  async ensurePairedDevice(deviceKey) {
+    const namespace = this.env.OFFICIAL_PUSH_REGISTRY;
+    if (!namespace) return null;
+    try {
+      const stub = namespace.get(namespace.idFromName("official-push-v1"));
+      const response = await stub.fetch(
+        `https://official-push/device?key=${encodeURIComponent(deviceKey)}`
+      );
+      if (response.ok) return null;
+      return failure(404, "unknown deviceKey: pair the device before registering apps");
+    } catch {
+      return failure(502, "device registry unavailable");
+    }
+  }
 }
 
 function validateManifest(manifest) {
@@ -278,6 +385,20 @@ function validateManifest(manifest) {
     return "startURL is required";
   }
   return null;
+}
+
+/**
+ * Device-key binding for private manifests. Keys look like
+ * `yfkp7esct2xead7d`: opaque, URL-safe, generated by the push registry.
+ */
+const DEVICE_KEY_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
+const PRIVATE_MANIFEST_LIMIT = 20;
+
+/** Normalize a key-scoping parameter; invalid shapes read as "no key". */
+function scopedDeviceKey(value) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return DEVICE_KEY_PATTERN.test(trimmed) ? trimmed : "";
 }
 
 function adminAuthorized(request, env) {

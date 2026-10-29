@@ -301,3 +301,269 @@ test("the manifest list falls back to official manifests when durable storage fa
   assert.equal(body.manifests.length, OFFICIAL_MANIFESTS.length);
   assert.equal(body.manifests[0].signature.algorithm, "ed25519");
 });
+
+/* ── Key-bound private manifests (FR-20261029-01) ─────────────────── */
+
+function makePrivateRegistryStorage() {
+  const storage = new Map();
+  return {
+    state: {
+      storage: {
+        get: (k) => storage.get(k),
+        put: async (k, v) => storage.set(k, v),
+        delete: async (k) => storage.delete(k),
+        has: async (k) => storage.has(k),
+        list: async ({ prefix } = {}) =>
+          Object.fromEntries([...storage].filter(([k]) => !prefix || k.startsWith(prefix))),
+      },
+    },
+  };
+}
+
+function pairRegistryBinding(status) {
+  return {
+    idFromName: () => "official-push-v1",
+    get: () => ({
+      fetch: async () =>
+        new Response(status === 200 ? "{}" : "not found", { status }),
+    }),
+  };
+}
+
+function privateManifest(appId) {
+  return {
+    ...MANIFEST,
+    appId,
+    name: `Private ${appId}`,
+  };
+}
+
+test("a paired device key registers private manifests without the admin key", async () => {
+  const env = { ...testEnv(), OFFICIAL_PUSH_REGISTRY: pairRegistryBinding(200) };
+  const { state } = makePrivateRegistryStorage();
+  const registry = new GatewayManifestRegistry(state, env);
+
+  const registered = await registry.fetch(
+    new Request("https://hub.example.test/api/v1/html-apps", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ...privateManifest("dev.private.demo"),
+        deviceKey: "user-a-key-0001",
+      }),
+    })
+  );
+  assert.equal(registered.status, 200);
+  const saved = await registered.json();
+  assert.equal(saved.appId, "dev.private.demo");
+  // The binding key is transport metadata and must never be signed.
+  assert.equal("deviceKey" in saved, false);
+
+  const anonymous = await (
+    await registry.fetch(new Request("https://hub.example.test/api/v1/html-apps"))
+  ).json();
+  assert.equal(
+    anonymous.manifests.some((m) => m.appId === "dev.private.demo"),
+    false
+  );
+
+  const owner = await (
+    await registry.fetch(
+      new Request("https://hub.example.test/api/v1/html-apps?key=user-a-key-0001")
+    )
+  ).json();
+  assert.equal(
+    owner.manifests.some((m) => m.appId === "dev.private.demo"),
+    true
+  );
+
+  const stranger = await (
+    await registry.fetch(
+      new Request("https://hub.example.test/api/v1/html-apps?key=user-b-key-0002")
+    )
+  ).json();
+  assert.equal(
+    stranger.manifests.some((m) => m.appId === "dev.private.demo"),
+    false
+  );
+});
+
+test("an unpaired device key is rejected when the device registry is bound", async () => {
+  const env = { ...testEnv(), OFFICIAL_PUSH_REGISTRY: pairRegistryBinding(404) };
+  const { state } = makePrivateRegistryStorage();
+  const registry = new GatewayManifestRegistry(state, env);
+
+  const response = await registry.fetch(
+    new Request("https://hub.example.test/api/v1/html-apps", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ...privateManifest("dev.private.demo"),
+        deviceKey: "user-a-key-0001",
+      }),
+    })
+  );
+  assert.equal(response.status, 404);
+  assert.match((await response.json()).error, /pair the device/);
+});
+
+test("a malformed device key is rejected with 400 before pairing", async () => {
+  const env = testEnv();
+  const { state } = makePrivateRegistryStorage();
+  const registry = new GatewayManifestRegistry(state, env);
+
+  for (const badKey of ["short", "has space!", "x".repeat(65)]) {
+    const response = await registry.fetch(
+      new Request("https://hub.example.test/api/v1/html-apps", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...privateManifest("dev.private.demo"),
+          deviceKey: badKey,
+        }),
+      })
+    );
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /deviceKey format/);
+  }
+});
+
+test("a private registration shadows the global copy for that key only", async () => {
+  const env = testEnv();
+  const { state } = makePrivateRegistryStorage();
+  const registry = new GatewayManifestRegistry(state, env);
+
+  // Global registration under the admin key.
+  await registry.fetch(
+    new Request("https://hub.example.test/api/v1/html-apps", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer worker-admin-key",
+      },
+      body: JSON.stringify(MANIFEST),
+    })
+  );
+  // The same app id, privately bound to key A, pointing elsewhere.
+  await registry.fetch(
+    new Request("https://hub.example.test/api/v1/html-apps", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ...MANIFEST,
+        startURL: "https://private.example.com/app/index.html",
+        deviceKey: "user-a-key-0001",
+      }),
+    })
+  );
+
+  const scoped = await (
+    await registry.fetch(
+      new Request("https://hub.example.test/api/v1/html-apps?key=user-a-key-0001")
+    )
+  ).json();
+  const scopedCopies = scoped.manifests.filter((m) => m.appId === MANIFEST.appId);
+  assert.equal(scopedCopies.length, 1);
+  assert.equal(scopedCopies[0].startURL, "https://private.example.com/app/index.html");
+
+  const anonymous = await (
+    await registry.fetch(new Request("https://hub.example.test/api/v1/html-apps"))
+  ).json();
+  assert.equal(anonymous.manifests.length, 1);
+  assert.equal(anonymous.manifests[0].startURL, MANIFEST.startURL);
+
+  const singleScoped = await (
+    await registry.fetch(
+      new Request(
+        `https://hub.example.test/api/v1/html-apps/${MANIFEST.appId}?key=user-a-key-0001`
+      )
+    )
+  ).json();
+  assert.equal(singleScoped.startURL, "https://private.example.com/app/index.html");
+});
+
+test("the per-key private manifest limit is enforced", async () => {
+  const env = testEnv();
+  const { state } = makePrivateRegistryStorage();
+  const registry = new GatewayManifestRegistry(state, env);
+
+  const register = (appId) =>
+    registry.fetch(
+      new Request("https://hub.example.test/api/v1/html-apps", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...privateManifest(appId),
+          deviceKey: "user-a-key-0001",
+        }),
+      })
+    );
+
+  for (let index = 1; index <= 20; index += 1) {
+    const response = await register(`dev.private.app${index}`);
+    assert.equal(response.status, 200, `register #${index} should succeed`);
+  }
+  const overflow = await register("dev.private.overflow");
+  assert.equal(overflow.status, 429);
+});
+
+test("a key holder deletes only their own private copy", async () => {
+  const env = testEnv();
+  const { state } = makePrivateRegistryStorage();
+  const registry = new GatewayManifestRegistry(state, env);
+
+  await registry.fetch(
+    new Request("https://hub.example.test/api/v1/html-apps", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ...privateManifest("dev.private.demo"),
+        deviceKey: "user-a-key-0001",
+      }),
+    })
+  );
+  await registry.fetch(
+    new Request("https://hub.example.test/api/v1/html-apps", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer worker-admin-key",
+      },
+      body: JSON.stringify(MANIFEST),
+    })
+  );
+
+  const removed = await registry.fetch(
+    new Request(
+      "https://hub.example.test/api/v1/html-apps/dev.private.demo?key=user-a-key-0001",
+      { method: "DELETE" }
+    )
+  );
+  assert.equal(removed.status, 204);
+
+  const owner = await (
+    await registry.fetch(
+      new Request("https://hub.example.test/api/v1/html-apps?key=user-a-key-0001")
+    )
+  ).json();
+  assert.equal(
+    owner.manifests.some((m) => m.appId === "dev.private.demo"),
+    false
+  );
+  // The unrelated global registration survives the private delete.
+  const anonymous = await (
+    await registry.fetch(new Request("https://hub.example.test/api/v1/html-apps"))
+  ).json();
+  assert.equal(
+    anonymous.manifests.some((m) => m.appId === MANIFEST.appId),
+    true
+  );
+
+  // Deleting someone else's appId without the key still requires auth.
+  const forbidden = await registry.fetch(
+    new Request(`https://hub.example.test/api/v1/html-apps/${MANIFEST.appId}`, {
+      method: "DELETE",
+    })
+  );
+  assert.equal(forbidden.status, 401);
+});
