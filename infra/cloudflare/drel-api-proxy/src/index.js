@@ -13,7 +13,9 @@ import {
   GatewayManifestRegistry,
   gatewaySignerIsReady,
   gatewayPublicKey,
+  signGatewayManifest,
 } from "./gateway.js";
+import { OFFICIAL_MANIFESTS } from "./official-manifests.js";
 import {
   ApprovalRegistry,
   OfficialPushRegistry,
@@ -23,6 +25,36 @@ import {
 } from "./official-push.js";
 
 export { ManagedPushRegistry, GatewayManifestRegistry, OfficialPushRegistry, ApprovalRegistry };
+
+const OFFICIAL_MANIFESTS_BY_APP_ID = new Map(
+  OFFICIAL_MANIFESTS.map((manifest) => [manifest.appId, manifest])
+);
+
+async function signedOfficialManifests(env) {
+  return Promise.all(
+    OFFICIAL_MANIFESTS.map((manifest) => signGatewayManifest(env, manifest))
+  );
+}
+
+function mergeOfficialManifests(manifests, signedOfficial) {
+  const merged = new Map(
+    signedOfficial.map((manifest) => [manifest.appId, manifest])
+  );
+  for (const manifest of manifests) {
+    if (!merged.has(manifest.appId)) merged.set(manifest.appId, manifest);
+  }
+  return [...merged.values()].sort((left, right) =>
+    String(left.appId).localeCompare(String(right.appId))
+  );
+}
+
+function gatewayJSON(body, init = {}) {
+  const headers = new Headers(init.headers);
+  headers.set("cache-control", "no-store");
+  headers.set("x-content-type-options", "nosniff");
+  headers.set("x-drel-api-proxy", "edge");
+  return Response.json(body, { ...init, headers });
+}
 
 function upstreamURL(requestURL, origin) {
   const inbound = new URL(requestURL);
@@ -140,14 +172,14 @@ export default {
  * Returns null when the route is not a gateway route, so the caller can fall
  * through to the upstream proxy.
  */
-async function handleGateway(request, env) {
+export async function handleGateway(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
 
   if (path === "/api/v1/gateway" && request.method === "GET") {
     if (!gatewaySignerIsReady(env)) return null;
     const baseURL = env.GATEWAY_PUBLIC_BASE_URL || new URL(request.url).origin;
-    return Response.json({
+    return gatewayJSON({
       id: env.GATEWAY_ID || "drel-gateway",
       name: env.GATEWAY_NAME || "Drel Gateway",
       baseURL,
@@ -160,12 +192,51 @@ async function handleGateway(request, env) {
 
   if (path === "/api/v1/html-apps" || path.startsWith("/api/v1/html-apps/")) {
     if (!gatewaySignerIsReady(env)) return null;
+    const requestedAppID = path.startsWith("/api/v1/html-apps/")
+      ? decodeURIComponent(path.slice("/api/v1/html-apps/".length))
+      : null;
+    const official = requestedAppID
+      ? OFFICIAL_MANIFESTS_BY_APP_ID.get(requestedAppID)
+      : null;
+    if (official && request.method === "GET") {
+      return gatewayJSON(await signGatewayManifest(env, official));
+    }
+
     const namespace = env.GATEWAY_MANIFEST_REGISTRY;
-    if (!namespace) return null;
+    if (!namespace) {
+      if (path === "/api/v1/html-apps" && request.method === "GET") {
+        return gatewayJSON({
+          manifests: await signedOfficialManifests(env),
+        });
+      }
+      return null;
+    }
     // A Durable Object namespace is addressed by a DurableObjectId, not by a
     // plain string.
     const id = namespace.idFromName("html-app-gateway-v1");
-    return namespace.get(id).fetch(request);
+    try {
+      const response = await namespace.get(id).fetch(request);
+      if (path === "/api/v1/html-apps" && request.method === "GET") {
+        if (!response.ok) {
+          return gatewayJSON({
+            manifests: await signedOfficialManifests(env),
+          });
+        }
+        const body = await response.json();
+        const signedOfficial = await signedOfficialManifests(env);
+        return gatewayJSON({
+          manifests: mergeOfficialManifests(body.manifests ?? [], signedOfficial),
+        });
+      }
+      return response;
+    } catch {
+      if (path === "/api/v1/html-apps" && request.method === "GET") {
+        return gatewayJSON({
+          manifests: await signedOfficialManifests(env),
+        });
+      }
+      return null;
+    }
   }
 
   return null;

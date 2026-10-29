@@ -8,6 +8,8 @@ import {
   gatewaySignerIsReady,
   signGatewayManifest,
 } from "../src/gateway.js";
+import { handleGateway } from "../src/index.js";
+import { OFFICIAL_MANIFESTS } from "../src/official-manifests.js";
 
 const encoder = new TextEncoder();
 
@@ -238,4 +240,64 @@ test("the registry rejects an unauthorized write and accepts an authorized one",
     new Request("https://hub.example.test/api/v1/html-apps/com.example.orders")
   );
   assert.equal(gone.status, 404);
+});
+
+test("the official action demo is signed without reading or writing durable storage", async () => {
+  const env = testEnv();
+  let durableCalls = 0;
+  env.GATEWAY_MANIFEST_REGISTRY = {
+    idFromName: () => "unused",
+    get: () => ({
+      fetch: async () => {
+        durableCalls += 1;
+        throw new Error("durable storage unavailable");
+      },
+    }),
+  };
+
+  const response = await handleGateway(
+    new Request(
+      "https://hub.example.test/api/v1/html-apps/dev.drel.action-demo"
+    ),
+    env
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(durableCalls, 0);
+
+  const manifest = await response.json();
+  assert.equal(manifest.appId, "dev.drel.action-demo");
+  assert.equal(manifest.cache.version, "3");
+  assert.equal(manifest.signature.algorithm, "ed25519");
+  assert.deepEqual(
+    manifest.capabilities_v2.map((capability) => capability.action).sort(),
+    [
+      "addToHomeScreen",
+      "clipboard",
+      "fullscreen",
+      "getLocation",
+      "haptic",
+      "share",
+      "vibrate",
+    ]
+  );
+});
+
+test("the manifest list falls back to official manifests when durable storage fails", async () => {
+  const env = testEnv();
+  env.GATEWAY_MANIFEST_REGISTRY = {
+    idFromName: () => "unused",
+    get: () => ({
+      fetch: async () => new Response("Durable Objects unavailable", { status: 500 }),
+    }),
+  };
+
+  const response = await handleGateway(
+    new Request("https://hub.example.test/api/v1/html-apps"),
+    env
+  );
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.manifests.length, OFFICIAL_MANIFESTS.length);
+  assert.equal(body.manifests[0].signature.algorithm, "ed25519");
 });
