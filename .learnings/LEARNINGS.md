@@ -1221,3 +1221,38 @@ Drel App Store 素材初稿以程序排版生成；用户明确纠正应调用�
 - Recurrence-Count: 1
 - First-Seen: 2026-10-29
 - Last-Seen: 2026-10-29
+
+## [LRN-20261030-004] user_feedback
+
+**Logged**: 2026-10-30
+**Priority**: high
+**Status**: pending
+**Area**: testing
+
+### Summary
+开发完成必须先在模拟器自测完整用户链路再交真机验收；已固化为
+`tools/verify-drel-activation-simulator.sh`（推送激活 E2E 门禁）。
+
+### Details
+用户反馈「你能不能开发完了之后，自己用模拟器调试一下」——build 119 交付时
+未先跑激活链路，用户当了第一测试人并踩中签名 round-trip 根因
+（ERR-20261030-002）。构建门禁脚本过程中沉淀三个模拟器陷阱：
+(1) `simctl install` 重装同 bundle 会使 `simctl push` 前台投递失效（推送只进
+通知中心、不触发 willPresent），已装应用必须复用不重装；
+(2) UserDefaults 由 cfprefd 缓存，App 运行中读容器 plist 是旧数据，必须先
+terminate 再读；
+(3) plist 里受信清单是 bytes blob、激活账本是字符串数组，断言要兼容两种形态。
+
+### Suggested Action
+涉及推送激活/首页卡片的改动，交付前跑
+`bash tools/verify-drel-activation-simulator.sh <appId> <udid>`（2 passed 才算过）。
+
+### Metadata
+- Source: user_feedback
+- Related Files: tools/verify-drel-activation-simulator.sh
+- Tags: simulator, e2e, push-activation, gate
+- Pattern-Key: drel.testing.simulator-activation-e2e
+- See Also: ERR-20261030-002
+- Recurrence-Count: 1
+- First-Seen: 2026-10-30
+- Last-Seen: 2026-10-30
