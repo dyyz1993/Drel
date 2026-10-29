@@ -1,4 +1,4 @@
-Drel 1.5.0 (Build 113) Review Notes
+Drel 1.5.0 (Build 118) Review Notes
 
 SUMMARY
 Drel is a developer push-notification utility and a secure container for HTML apps that the user explicitly trusts. Version 1.5.0 adds a fixed Manifest v2 action runtime for trusted apps.

@@ -5,6 +5,9 @@ Date: 2026-10-29
 Status: local, simulator, signing, and TestFlight verification passed. App Store
 review has not yet been submitted at the time this file was created.
 
+Build 113 remains the cleanup baseline. The final submission candidate is
+build 118; see `docs/release/1.5.0/verification-118.md`.
+
 ## Scope
 
 - Remove expired and seeded development manifests from upgraded installs.
@@ -34,6 +37,8 @@ review has not yet been submitted at the time this file was created.
 | Store entitlements | PASS | production APNs, communication notifications, `get-task-allow=false` |
 | TestFlight build 113 | PASS, `VALID` | ASC build ID `957fd228-fc84-4947-b216-51df36b8fc95` |
 | IPA SHA-256 | PASS | `753c0707e48010c7ffb861aaf08988ae09a7ed981274418e637fd7d423711deb` |
+| Physical installed build | PASS | [Build version](iphone-113-build-version.jpg) |
+| Physical storage cleanup | PASS | [Storage screen](iphone-113-storage-clean.jpg) |
 
 The Bridge browser matrix is stored in
 `build/reports/bridge-v1-113/http-matrix.json`; screenshots are under
@@ -71,11 +76,8 @@ be published and verified after reset, or after the Cloudflare Workers plan is
 upgraded. A static unsigned reference manifest does not satisfy App Review's
 signed-gateway demo precondition.
 
-## Remaining release steps
+## Historical next steps
 
-1. Publish the corrected action manifest to the official gateway.
-2. Verify the signed `getLocation` declaration is returned by
-   `/api/v1/html-apps/dev.drel.action-demo`.
-3. Create the 1.5.0 App Store Connect version, attach build 113, and run the
-   physical-device TestFlight walkthrough.
-4. Submit only after the signed demo and walkthrough are both available.
+These steps were completed during the build-114 through build-118 release
+hardening. Build 118 carries the final signed gateway and physical-device
+evidence.
