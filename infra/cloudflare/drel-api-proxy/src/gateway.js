@@ -233,6 +233,7 @@ export class GatewayManifestRegistry {
       for (const [key, value] of Object.entries(body)) {
         if (key !== "signature" && key !== "deviceKey") manifest[key] = value;
       }
+      normalizeManifestForWireRoundTrip(manifest);
       const problem = validateManifest(manifest);
       if (problem) return failure(400, problem);
       if (deviceKey) {
@@ -393,6 +394,31 @@ function validateManifest(manifest) {
  */
 const DEVICE_KEY_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 const PRIVATE_MANIFEST_LIMIT = 20;
+
+/**
+ * The phone verifies a manifest signature against bytes rebuilt from its
+ * Swift model, and that rebuild materializes defaults for optional fields
+ * (`capabilities_v2` -> [], `cache.restoresLastState` -> true). A wire
+ * document that OMITS those fields therefore never verifies, even though
+ * the server-side signature is correct. Registration normalizes the
+ * document so absent defaults become explicit before signing: the signed
+ * bytes then equal the phone's rebuilt bytes byte for byte.
+ */
+function normalizeManifestForWireRoundTrip(manifest) {
+  if (manifest.schemaVersion === undefined) manifest.schemaVersion = "1";
+  if (!Array.isArray(manifest.capabilities)) manifest.capabilities = [];
+  if (!Array.isArray(manifest.capabilities_v2)) manifest.capabilities_v2 = [];
+  if (
+    manifest.cache &&
+    typeof manifest.cache === "object" &&
+    !Array.isArray(manifest.cache)
+  ) {
+    if (manifest.cache.restoresLastState === undefined) {
+      manifest.cache.restoresLastState = true;
+    }
+  }
+  return manifest;
+}
 
 /** Normalize a key-scoping parameter; invalid shapes read as "no key". */
 function scopedDeviceKey(value) {

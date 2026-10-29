@@ -567,3 +567,43 @@ test("a key holder deletes only their own private copy", async () => {
   );
   assert.equal(forbidden.status, 401);
 });
+
+test("registration materializes Swift round-trip defaults before signing", async () => {
+  const env = testEnv();
+  const { state } = makePrivateRegistryStorage();
+  const registry = new GatewayManifestRegistry(state, env);
+
+  // Minimal manifest: no schemaVersion, no capabilities, no
+  // capabilities_v2, no cache.restoresLastState — all fields the phone's
+  // model rebuild would materialize as defaults.
+  const response = await registry.fetch(
+    new Request("https://hub.example.test/api/v1/html-apps", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer worker-admin-key" },
+      body: JSON.stringify({
+        appId: "dev.minimal.roundtrip",
+        name: "Minimal",
+        startURL: "https://app.example.com/index.html",
+        allowedOrigins: ["https://app.example.com"],
+        routes: ["/index.html"],
+        cache: { strategy: "networkOnly", version: "1", persistent: false },
+      }),
+    })
+  );
+  assert.equal(response.status, 200);
+  const saved = await response.json();
+  assert.equal(saved.schemaVersion, "1");
+  assert.deepEqual(saved.capabilities, []);
+  assert.deepEqual(saved.capabilities_v2, []);
+  assert.equal(saved.cache.restoresLastState, true);
+
+  // The stored copy keeps the defaults, so every later GET signs the same
+  // lossless shape.
+  const single = await (
+    await registry.fetch(
+      new Request("https://hub.example.test/api/v1/html-apps/dev.minimal.roundtrip")
+    )
+  ).json();
+  assert.deepEqual(single.capabilities_v2, []);
+  assert.equal(single.cache.restoresLastState, true);
+});

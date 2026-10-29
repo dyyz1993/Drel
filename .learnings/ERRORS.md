@@ -394,3 +394,35 @@ code signing`（伴生 `No Accounts`），前一天 build 118 同链路正常。
 - Recurrence-Count: 1
 - First-Seen: 2026-10-30
 - Last-Seen: 2026-10-30
+
+## [ERR-20261030-002] gateway
+
+**Logged**: 2026-10-30
+
+**Symptom**: 手机端日志 `Manifest signature verification failed for
+dev.vot.workspace` → 整个网关目录校验中止，受信表永远只有 4 个官方应用，
+VOT 自注册起从未在任何手机上同步成功（用户先后报「应用未注册」「不在网关
+清单」，build 119 前后表现一致）。
+
+**Root Cause**: 手机验签不是对原始 wire 字节，而是 `canonicalUnsignedPayload`
+用 Swift 模型重建再编码（HTMLAppGatewayOnboarding.swift:417）；模型解码给
+可选字段填默认值（`capabilities_v2`→`[]`、`cache.restoresLastState`→`true`，
+HTMLAppRuntimeModels.swift），重编码就**多出这两个字段** → 字节不一致 →
+Ed25519 必挂。官方应用恰好显式带了这两个字段所以从未暴露；服务端签名本身
+正确（node 同 canonical 验证全 PASS）。教训：**「服务端签名正确」不等于
+「客户端验签通过」，两端 canonical 构造必须逐字段对账**。
+
+**Resolution**: Worker 注册时把 Swift 会补的默认值显式写进签名文档
+（normalizeManifestForWireRoundTrip：schemaVersion/capabilities/
+capabilities_v2/cache.restoresLastState），存量 VOT 重新注册换形状；
+测试 51/51，部署 2026.10.30-canonical（8e074b01）。模拟器 60 秒完整
+bootstrap 后 VOT 入受信表。注意：webManifest 逐应用抓取阶段较慢，
+验证等待要给足时间。**遗留**：注册 API 应在文档里注明最小无损字段集；
+Swift 侧长期应改为对 wire 原始字节验签（模型往返天然脆弱）。
+
+**Metadata**
+- Pattern-Key: drel.gateway.signature-model-roundtrip-mismatch
+- See Also: L-20261026-01（wire 对账家族）
+- Recurrence-Count: 1
+- First-Seen: 2026-10-30
+- Last-Seen: 2026-10-30
