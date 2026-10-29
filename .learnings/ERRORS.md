@@ -370,3 +370,27 @@ tx 网关（cloak.xbrowser.dev:5801）与本地 Go 网关设计的固定夹具�
 - Recurrence-Count: 1
 - First-Seen: 2026-10-29
 - Last-Seen: 2026-10-29
+
+## [ERR-20261030-001] release
+
+**Logged**: 2026-10-30
+
+**Symptom**: `publish-drel-testflight.sh 119` 在导出阶段失败：
+`Signing certificate "Apple Distribution…" serial C4DC782A… is not valid for
+code signing`（伴生 `No Accounts`），前一天 build 118 同链路正常。
+
+**Root Cause**: 团队分发证书 0C4DC782…(SHA-1 62B9DB31…) 已被吊销，但证书实体
+仍留在登录钥匙串里；`-exportArchive` 的 automatic 签名在解析 Apple Distribution
+身份时选中这张死证并直接判失效。ASC 上的 App Store 描述文件其实全部绑着有效
+证书（15CC35EA…），非档案问题。注意 xcodebuild 报错里的 serial 会吞掉前导 0
+（C4DC782… = 0C4DC782…）。
+
+**Resolution**: `security delete-certificate -Z 62B9DB31…` 删除死证后，同参数
+导出立即成功；顺带从 ASC 重新下载安装了三份 App Store 描述文件（本机档案刷新，
+非必需但做了）。预防：证书轮换后应同步清理钥匙串旧实体。
+
+**Metadata**
+- Pattern-Key: drel.release.revoked-distribution-cert-export
+- Recurrence-Count: 1
+- First-Seen: 2026-10-30
+- Last-Seen: 2026-10-30
