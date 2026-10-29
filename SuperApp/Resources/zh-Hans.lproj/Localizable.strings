@@ -273,6 +273,7 @@
 "message.detail.media.save_failed_message" = "图片未能写入系统相册。";
 "message.detail.technical_info" = "技术信息";
 "message.detail.open_app_failed" = "无法打开 PWA";
+"message.detail.open_app_untrusted" = "该应用不在网关签名清单中，或路由未获信任。请确认推送来自已注册的应用。";
 "message.detail.open_approval" = "打开审批页面";
 "message.detail.approval_safety_note" = "通知仅用于定位请求；确认操作需在目标应用内完成并重新校验状态。";
 "message.detail.approval_native_note" = "操作将提交到当前 Drel 审批服务；第一份有效响应生效。";

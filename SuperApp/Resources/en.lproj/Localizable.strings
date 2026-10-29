@@ -273,6 +273,7 @@
 "message.detail.media.save_failed_message" = "The image could not be saved to your photo library.";
 "message.detail.technical_info" = "Technical Information";
 "message.detail.open_app_failed" = "Unable to Open PWA";
+"message.detail.open_app_untrusted" = "This app is not in a signed gateway manifest, or its route is not trusted. Make sure the push came from a registered app.";
 "message.detail.open_approval" = "Open Approval Page";
 "message.detail.approval_safety_note" = "The notification only locates the request. Confirm inside the target app after it revalidates the state.";
 "message.detail.approval_native_note" = "The action is submitted to the configured Drel approval service; the first valid response wins.";
