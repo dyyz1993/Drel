@@ -10,8 +10,8 @@ App Store Connect now has a `1.5.0` version record in
 ```text
 App Store version ID: 5f394085-1ddb-41f4-bef1-263ba39112a0
 Version:              1.5.0
-Build:                113
-Build ID:             957fd228-fc84-4947-b216-51df36b8fc95
+Build:                118
+Build ID:             1b65a4bd-2a15-42c2-a1ba-7bc4b3ee15e9
 Build state:          VALID
 Release:              manual, after approval
 ```
@@ -36,14 +36,14 @@ push, Inbox, favorites, and offline apps.
 - The notes disclose all seven action wire names, including `clipboard` and
   `getLocation`, plus their data flow.
 
-## Submission blockers
+## Final verification state
 
-1. The official production gateway must return the signed action demo with
-   `signature.algorithm=ed25519`, `cache.version=3`, and these exact actions:
-   `haptic`, `vibrate`, `share`, `fullscreen`, `clipboard`, `getLocation`,
-   `addToHomeScreen`.
-2. The physical-device TestFlight walkthrough must exercise the declared
-   actions, permission approval, permission revocation, fullscreen exit, and
-   add-to-Home-Screen.
-3. The App Review recording must be made from build 113 only after those
-   checks pass and attached privately.
+Build 118 is processed as `VALID` in App Store Connect and was installed on a
+physical iPhone 13. The signed production gateway, all seven declared actions,
+permission revocation, fullscreen exit, add-to-Home-Screen, undeclared-camera
+rejection, local tests, and crash scan are recorded in
+[verification-118.md](verification-118.md).
+
+No private review recording is attached by default. The public signed demo and
+the notes provide the primary review path; add a recording only if Apple asks
+for additional reproduction help.
