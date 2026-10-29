@@ -422,10 +422,16 @@ final class PWAAppCenterViewController: UIViewController {
                         self.officialGatewayUnavailable = false
                         self.lastGatewayFailureAt = nil
                     } catch {
+                        WebBridgeLogger.shared.error(
+                            "Official gateway activation failed: \(error.localizedDescription)"
+                        )
                         self.officialGatewayUnavailable = true
                         self.lastGatewayFailureAt = Date()
                     }
-                case .failure:
+                case .failure(let error):
+                    WebBridgeLogger.shared.error(
+                        "Official gateway validation failed: \(error.localizedDescription)"
+                    )
                     self.officialGatewayUnavailable = true
                     self.lastGatewayFailureAt = Date()
                 }

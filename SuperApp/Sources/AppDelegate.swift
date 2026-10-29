@@ -387,7 +387,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                     scope: .always
                 ),
                 HTMLAppActionDeclaration(
-                    action: .location,
+                    action: .getLocation,
                     origins: [origin],
                     purposeId: "fixture-location-demo",
                     purpose: "获取当前位置完成演示",
