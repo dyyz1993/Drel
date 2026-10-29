@@ -2,8 +2,9 @@
 
 Date: 2026-10-29
 
-App Store Connect now has a `1.5.0` version record in
-`PREPARE_FOR_SUBMISSION`. The record is not submitted for review.
+App Store Connect has a `1.5.0` version record in `WAITING_FOR_REVIEW`.
+Version 1.5.0 was submitted for App Review with build 118 at 2026-10-29
+10:52 +08:00.
 
 ## Identity
 
@@ -14,6 +15,7 @@ Build:                118
 Build ID:             1b65a4bd-2a15-42c2-a1ba-7bc4b3ee15e9
 Build state:          VALID
 Release:              manual, after approval
+ASC submission ID:    5f394085-1ddb-41f4-bef1-263ba39112a0
 ```
 
 ## Locales
@@ -35,6 +37,7 @@ push, Inbox, favorites, and offline apps.
 - Demo account required: false
 - The notes disclose all seven action wire names, including `clipboard` and
   `getLocation`, plus their data flow.
+- App Review confirmation: `已提交 1 个项目` / `审核最多可能需要 48 小时`.
 
 ## Final verification state
 
@@ -44,6 +47,6 @@ permission revocation, fullscreen exit, add-to-Home-Screen, undeclared-camera
 rejection, local tests, and crash scan are recorded in
 [verification-118.md](verification-118.md).
 
-No private review recording is attached by default. The public signed demo and
-the notes provide the primary review path; add a recording only if Apple asks
-for additional reproduction help.
+No private review recording is attached. The public signed demo and the notes
+provide the primary review path; add a recording only if Apple asks for
+additional reproduction help.

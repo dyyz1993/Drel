@@ -50,5 +50,7 @@ it cleared the grant and the next `getLocation` call showed Drel's permission
 prompt again. Re-authorizing it restored exactly one grant. The post-walkthrough
 crash scan reported zero diagnostic reports and zero app crashes.
 
-This proves the 118 TestFlight path on production infrastructure. It does not
-predict Apple's review outcome or replace the eventual App Store release check.
+This proves the 118 TestFlight path on production infrastructure. The ASC
+record is now `WAITING_FOR_REVIEW` with manual release after approval. It does
+not predict Apple's review outcome or replace the eventual App Store release
+check.
