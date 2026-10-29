@@ -3,8 +3,8 @@
 Date: 2026-10-29
 
 Status: local tests, release-package inspection, production gateway, TestFlight
-processing, and physical-device walkthrough passed. App Store submission is the
-remaining release action.
+processing, physical-device walkthrough, and App Store submission passed. The
+version is waiting for Apple review.
 
 ## Identity
 
@@ -130,6 +130,7 @@ Screenshots:
 - [Fullscreen enter](iphone-118-fullscreen-enter.jpg)
 - [Fullscreen exit](iphone-118-fullscreen-exit.jpg)
 - [Camera rejected](iphone-118-camera-rejected.jpg)
+- [ASC waiting for review](asc-118-waiting-for-review.png)
 
 Crash command:
 
@@ -145,6 +146,28 @@ Observed:
 
 ## Boundary
 
-This is production TestFlight and production-gateway evidence. It does not
-claim Apple review approval, App Store availability, or post-release phased
-rollout health.
+## App Store submission
+
+Submitted at 2026-10-29 10:52 +08:00. The confirmation panel reported one
+submitted item and a review window of up to 48 hours.
+
+```bash
+ASC_KEY_ID=... ASC_ISSUER_ID=... bash tools/asc-api.sh get \
+  '/v1/appStoreVersions/5f394085-1ddb-41f4-bef1-263ba39112a0?fields%5BappStoreVersions%5D=versionString,appStoreState,releaseType,build&include=build,appStoreVersionSubmission'
+```
+
+Observed:
+
+```text
+versionString = 1.5.0
+appStoreState = WAITING_FOR_REVIEW
+releaseType = MANUAL
+build = 118
+submission id = 5f394085-1ddb-41f4-bef1-263ba39112a0
+```
+
+## Boundary
+
+This is production TestFlight, production-gateway, and submitted-review
+evidence. It does not claim Apple review approval, App Store availability, or
+post-release rollout health.
