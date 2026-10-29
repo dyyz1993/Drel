@@ -1256,3 +1256,35 @@ terminate 再读；
 - Recurrence-Count: 1
 - First-Seen: 2026-10-30
 - Last-Seen: 2026-10-30
+
+## [LRN-20261030-005] best_practice
+
+**Logged**: 2026-10-30
+**Priority**: medium
+**Status**: pending
+**Area**: gateway
+
+### Summary
+注册 HTML App 的 cache 策略应默认照抄 html-app-onboarding.md 示例
+（`strategy: manifest` + `persistent: true`）；`networkOnly` 只适合调试。
+给用户注册 VOT 时误选 networkOnly，导致每次打开全量走网络、体验"很慢"，
+用户误以为 VOT 不是标准 PWA。
+
+### Details
+Drel 三档离线/缓存模型：networkOnly（每次全网络）→ manifest partial
+（Drel 托管版本化缓存，首次加载后秒开、弱网可用）→ strong offline
+（签名资源清单 + SHA-256 逐文件校验 + 原子安装，断网可开，需应用侧
+发布 package.json）。Service Worker 不属于 Drel 的可靠离线承诺
+（drel-app-development skill 明确边界）。
+
+### Suggested Action
+替人注册应用时默认 manifest 策略并填 version；要真离线再评估 strong
+offline 包（工程量在应用侧）。
+
+### Metadata
+- Source: user_feedback
+- Tags: cache-strategy, offline, registration
+- Pattern-Key: drel.gateway.registration-default-cache-strategy
+- Recurrence-Count: 1
+- First-Seen: 2026-10-30
+- Last-Seen: 2026-10-30
