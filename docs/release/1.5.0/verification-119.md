@@ -10,8 +10,8 @@ app-open activation gap.
 ```text
 CFBundleShortVersionString = 1.5.0
 CFBundleVersion = 119
-TestFlight build ID = pending upload
-IPA SHA-256 = pending upload
+TestFlight build ID = 87721488-77a6-4082-9d31-c4417cc991f5
+IPA SHA-256 = fc64c7db18ad5e054f21a7b2fb8ae4a583c2941dabd419ceab85e03bfb3da5ca
 ```
 
 ## What changed
