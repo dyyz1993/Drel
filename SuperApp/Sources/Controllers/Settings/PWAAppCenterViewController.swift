@@ -174,7 +174,7 @@ final class PWAAppCenterViewController: UIViewController {
             onSelectPushChannel: { [weak self] channel in self?.selectPushChannel(channel) },
             onSelectApp: { [weak self] appID in self?.openApp(appID: appID) },
             onShowAppDetails: { [weak self] appID in self?.showAppDetails(appID: appID) },
-            onManageApps: { [weak self] in self?.showGatewayManagement() },
+            onManageApps: { [weak self] in self?.showAppManagement() },
             onOpenAPIExamples: { [weak self] in self?.showAPIExamples() },
             onOpenGuideAndDebug: { [weak self] in self?.showGuideAndDebug() }
         )
@@ -457,6 +457,38 @@ final class PWAAppCenterViewController: UIViewController {
     private func openApp(appID: String) {
         guard let manifest = manifests.first(where: { $0.appID == appID }) else { return }
         launch(manifest)
+    }
+
+    /// The "manage" action next to My Apps belongs to the app workspace.
+    /// Opening gateway settings here hid the app detail and permission center
+    /// from a normal tap; keep gateway management as an explicit action from
+    /// the app detail sheet instead.
+    private func showAppManagement() {
+        guard !manifests.isEmpty else {
+            showGatewayManagement()
+            return
+        }
+        if manifests.count == 1, let manifest = manifests.first {
+            showAppDetails(appID: manifest.appID)
+            return
+        }
+
+        let alert = UIAlertController(title: "我的应用", message: nil, preferredStyle: .actionSheet)
+        for manifest in manifests.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) {
+            alert.addAction(UIAlertAction(title: manifest.name, style: .default) { [weak self] _ in
+                self?.showAppDetails(appID: manifest.appID)
+            })
+        }
+        alert.addAction(UIAlertAction(title: "管理应用服务", style: .default) { [weak self] _ in
+            self?.showGatewayManagement()
+        })
+        alert.addAction(UIAlertAction(title: "关闭", style: .cancel))
+        if let popover = alert.popoverPresentationController,
+           traitCollection.horizontalSizeClass == .regular {
+            popover.sourceView = view
+            popover.sourceRect = view.bounds
+        }
+        present(alert, animated: true)
     }
 
     private func showAppDetails(appID: String) {

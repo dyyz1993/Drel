@@ -21,6 +21,10 @@ final class NextPhaseAccessibilityTests: XCTestCase {
         let manage = element("pwaHome.manageApps", in: app)
         XCTAssertTrue(manage.waitForExistence(timeout: 5))
         manage.tap()
+        let serviceManagement = app.buttons["管理应用服务"]
+        if serviceManagement.waitForExistence(timeout: 2) {
+            serviceManagement.tap()
+        }
 
         for identifier in ["gateway.scan", "gateway.paste", "gateway.validate"] {
             let control = app.buttons[identifier]
