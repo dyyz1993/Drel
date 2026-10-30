@@ -100,7 +100,7 @@ reviewing and revoking grants, and a one-command permission regression gate.
 - Home app badges now reflect offline availability in three states: no offline
   capability, offline-capable but not installed, and installed. Capable apps
   show a cloud-download badge before installation, while installed apps switch
-  to a solid green cloud. — Scope: `App` — Verified: `simulator` — Evidence:
+  to a green cloud badge. — Scope: `App` — Verified: `simulator` — Evidence:
   [docs/release/1.5.0/home-offline-badge.png](docs/release/1.5.0/home-offline-badge.png)
 - The collapsed immersive control exposes only a 20pt edge sliver, one third
   less than the previous 30pt control, while keeping the arrow and its enlarged
