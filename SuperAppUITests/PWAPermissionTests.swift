@@ -239,6 +239,11 @@ final class PWAPermissionTests: XCTestCase {
         let nativeExit = element("browserManager.immersiveReturnButton")
         XCTAssertTrue(nativeExit.waitForExistence(timeout: 3))
         let collapsedFrame = nativeExit.frame
+        XCTAssertEqual(collapsedFrame.maxX, 20, accuracy: 1, "Collapsed immersive control should expose only a 20pt edge sliver")
+        let collapsedAttachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        collapsedAttachment.name = "v2-fullscreen-host-exit-collapsed-20pt"
+        collapsedAttachment.lifetime = .keepAlways
+        add(collapsedAttachment)
         nativeExit.tap()
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = "v2-fullscreen-host-exit-visible"
