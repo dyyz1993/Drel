@@ -87,6 +87,13 @@ reviewing and revoking grants, and a one-command permission regression gate.
   as global ones. — Scope: `Gateway`, `App` — Verified: `server-test`,
   `simulator` — Evidence:
   [docs/testing/results/drel-1-5-0-119-keybind/verification.md](docs/testing/results/drel-1-5-0-119-keybind/verification.md)
+- Motion sensors managed action: trusted HTML apps can declare `sensors`
+  in a signed manifest and subscribe to accelerometer/gyroscope streams
+  through the Bridge. Raw CoreMotion data carries no system privacy
+  semantics, so the signed session declaration alone gates access — no
+  consent panel and no Info.plist usage key. — Scope: `Bridge` — Verified:
+  `simulator` — Evidence:
+  [docs/testing/results/drel-gyro-sensors/verification.md](docs/testing/results/drel-gyro-sensors/verification.md)
 
 ### Changed
 
