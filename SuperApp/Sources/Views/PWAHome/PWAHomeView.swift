@@ -471,20 +471,17 @@ struct PWAHomeView: View {
                     }
                     .overlay(alignment: .bottomTrailing) {
                         if app.isOfflineInstalled {
-                            Image(uiImage: LucideIcon.download.templateImage(pointSize: 11, weight: .bold) ?? UIImage())
+                            // 已安装：绿色实心云（云中箭头收起由纯云资产补齐，暂同形换色）
+                            Image(uiImage: LucideIcon.cloudDownload.templateImage(pointSize: 13, weight: .semibold) ?? UIImage())
                                 .renderingMode(.template)
-                                .foregroundColor(.white)
-                                .frame(width: 18, height: 18)
-                                .background(Color.appSuccess, in: Circle())
+                                .foregroundColor(Color.appSuccess)
                                 .offset(x: -2, y: -2)
                                 .accessibilityHidden(true)
                         } else if app.isOfflineCapable {
-                            // 支持离线但尚未安装：低调灰徽章提示能力存在
-                            Image(uiImage: LucideIcon.download.templateImage(pointSize: 11, weight: .bold) ?? UIImage())
+                            // 支持离线但尚未安装：灰色云下载
+                            Image(uiImage: LucideIcon.cloudDownload.templateImage(pointSize: 13, weight: .regular) ?? UIImage())
                                 .renderingMode(.template)
                                 .foregroundColor(Color.appTextTertiary)
-                                .frame(width: 18, height: 18)
-                                .background(Color.appTextTertiary.opacity(0.16), in: Circle())
                                 .offset(x: -2, y: -2)
                                 .accessibilityHidden(true)
                         }
