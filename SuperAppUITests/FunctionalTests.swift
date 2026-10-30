@@ -7,6 +7,10 @@ final class FunctionalTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app.launchArguments = ["--UITesting", "-UITesting"]
+        app.launchEnvironment = [
+            "AppleLanguages": "(zh-Hans)",
+            "AppleLocale": "zh_CN"
+        ]
         app.launch()
     }
 
@@ -38,7 +42,7 @@ final class FunctionalTests: XCTestCase {
     // MARK: - Test 1: Settings Navigation
 
     func testSettingsNavigation() throws {
-        navigateToTab("设置")
+        navigateToTab("tab.settings")
 
         let settingsRoot = app.descendants(matching: .any)["SettingsViewController"]
         XCTAssertTrue(settingsRoot.waitForExistence(timeout: 5), "Settings screen should exist")
