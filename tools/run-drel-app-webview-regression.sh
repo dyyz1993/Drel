@@ -41,11 +41,11 @@ run_gate() {
 run_gate "Services start and verify" \
     "bash scripts/services.sh start && bash scripts/services.sh verify"
 run_gate "Drel functional WebView tests" \
-    "xcodebuild test -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -destination '$DESTINATION' -derivedDataPath '$DERIVED_DATA' CODE_SIGNING_ALLOWED=NO -only-testing:DrelUITests/FunctionalTests"
+    "xcodebuild test -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -destination '$DESTINATION' -derivedDataPath '$DERIVED_DATA' CODE_SIGNING_ALLOWED=NO -only-testing:DrelUITests/FunctionalTests -quiet"
 run_gate "Manifest v2 user-mediated share" \
-    "xcodebuild test -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -destination '$DESTINATION' -derivedDataPath '$DERIVED_DATA' CODE_SIGNING_ALLOWED=NO -only-testing:DrelUITests/PWAPermissionTests/testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt"
+    "xcodebuild test -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -destination '$DESTINATION' -derivedDataPath '$DERIVED_DATA' CODE_SIGNING_ALLOWED=NO -only-testing:DrelUITests/PWAPermissionTests/testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt -quiet"
 run_gate "Manifest v2 fullscreen boundary" \
-    "xcodebuild test -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -destination '$DESTINATION' -derivedDataPath '$DERIVED_DATA' CODE_SIGNING_ALLOWED=NO -only-testing:DrelUITests/PWAPermissionTests/testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit"
+    "xcodebuild test -workspace Drel.xcworkspace -scheme Drel -sdk iphonesimulator -destination '$DESTINATION' -derivedDataPath '$DERIVED_DATA' CODE_SIGNING_ALLOWED=NO -only-testing:DrelUITests/PWAPermissionTests/testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit -quiet"
 
 {
     echo "# Drel App WebView Regression Report"
