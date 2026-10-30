@@ -2,6 +2,8 @@
 # Drel 1.5 TestFlight 发布脚本（2026-10-22 沉淀，build 101/102 同链路验证）
 #
 # 归档 → 二进制/契约校验 → 导出 IPA → altool 上传 → 轮询 Apple 处理至 VALID。
+# Set WBK_MARKETING_VERSION for non-1.5 releases; the default preserves the
+# historical 1.5 flow.
 # 与 AGENTS.md 的规则对齐：
 #   * 归档用 Drel15Store scheme，MARKETING_VERSION=1.5.0，CURRENT_PROJECT_VERSION=<build>
 #   * 本地「WebBridgeKit App Store」描述文件曾缺 Communication Notifications，
@@ -24,6 +26,7 @@ APP_ID="${WBK_APP_ID:-6802806992}"
 KEY_ID="${WBK_ASC_KEY_ID:?需要设置 WBK_ASC_KEY_ID（App Store Connect API Key ID）}"
 KEY_ISSUER="${WBK_ASC_ISSUER_ID:?需要设置 WBK_ASC_ISSUER_ID（App Store Connect Issuer ID）}"
 KEY_PATH="${WBK_ASC_KEY_PATH:?需要设置 WBK_ASC_KEY_PATH（AuthKey_<ID>.p8 私钥路径）}"
+MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.0}"
 # Prefer the repository's self-contained helper so the script also runs in CI,
 # where the author's ~/Project/study-mac-app checkout does not exist.
 # asc-api.sh takes ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH from the env.
@@ -42,6 +45,7 @@ SIGNING_KEYCHAIN_PASSWORD_SERVICE="${WBK_SIGNING_KEYCHAIN_PASSWORD_SERVICE:-drel
 SIGNING_KEYCHAIN_PASSWORD_ACCOUNT="${WBK_SIGNING_KEYCHAIN_PASSWORD_ACCOUNT:-codex-drel-release}"
 ORIGINAL_KEYCHAINS=()
 
+# shellcheck disable=SC2329  # invoked indirectly by the EXIT trap
 restore_keychains() {
   if (( ${#ORIGINAL_KEYCHAINS[@]} > 0 )); then
     security list-keychains -d user -s "${ORIGINAL_KEYCHAINS[@]}" >/dev/null
@@ -83,13 +87,13 @@ cat > "$EXPORT_OPTS" <<'PLIST'
 PLIST
 
 say "发布前规范门禁（版本身份 / 发布材料 / 仓库卫生）"
-python3 tools/verify-release-identity.py --marketing 1.5.0 --build "$BUILD" \
+python3 tools/verify-release-identity.py --marketing "$MARKETING_VERSION" --build "$BUILD" \
   || bad "发布身份校验失败：请先修好版本号、发布材料或提交状态"
 python3 tools/verify-release-notes.py || bad "CHANGELOG 与发布材料不一致"
 python3 tools/verify-repo-hygiene.py || bad "仓库卫生校验失败"
 ok "规范门禁通过"
 
-say "归档 Drel 1.5.0 ($BUILD)"
+say "归档 Drel $MARKETING_VERSION ($BUILD)"
 ARCHIVE_SIGN_ARGS=()
 if [[ "$ARCHIVE_SIGNING" == "project" ]]; then
   # Distribution-profile builds use the per-target identities and profiles in
@@ -107,10 +111,14 @@ else
 fi
 if [[ -n "$SIGNING_KEYCHAIN" ]]; then
   [[ -f "$SIGNING_KEYCHAIN" ]] || bad "signing keychain not found: $SIGNING_KEYCHAIN"
-  KEYCHAIN_PASSWORD=$(security find-generic-password \
-    -a "$SIGNING_KEYCHAIN_PASSWORD_ACCOUNT" \
-    -s "$SIGNING_KEYCHAIN_PASSWORD_SERVICE" -w 2>/dev/null) \
-    || bad "signing keychain password is not available from Keychain"
+  if [[ -n "${WBK_SIGNING_KEYCHAIN_PASSWORD:-}" ]]; then
+    KEYCHAIN_PASSWORD="$WBK_SIGNING_KEYCHAIN_PASSWORD"
+  else
+    KEYCHAIN_PASSWORD=$(security find-generic-password \
+      -a "$SIGNING_KEYCHAIN_PASSWORD_ACCOUNT" \
+      -s "$SIGNING_KEYCHAIN_PASSWORD_SERVICE" -w 2>/dev/null) \
+      || bad "signing keychain password is not available from Keychain"
+  fi
   security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$SIGNING_KEYCHAIN" >/dev/null \
     || bad "could not unlock the signing keychain"
   unset KEYCHAIN_PASSWORD
@@ -123,7 +131,7 @@ fi
 xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
   -allowProvisioningUpdates "${ARCHIVE_SIGN_ARGS[@]}" \
-  MARKETING_VERSION=1.5.0 CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1 \
+  MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1 \
   || bad "归档失败，详见 build/archive-$BUILD.log"
 ok "归档完成：$ARCHIVE"
 
