@@ -105,15 +105,24 @@ const Sensor = (() => {
   }
 
   function feed(value) {
+    if (state.source === "none") { state.source = "bridge"; setChip("Bridge sensors ✓", "ok"); }
     if (!calibrated) {
       samples.push(value);
-      if (samples.length >= 25) {
-        baseline = samples.reduce((a, b) => a + b, 0) / samples.length;
-        calibrated = true;
-        setChip("Bridge 陀螺仪 ✓ 已校准", "ok");
+      if (samples.length >= 30) {
+        const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+        const spread = Math.sqrt(samples.reduce((a, b) => a + (b - mean) * (b - mean), 0) / samples.length);
+        if (spread < 2.5) {
+          baseline = mean; calibrated = true;
+          setChip("Bridge 陀螺仪 ✓ 已校准", "ok");
+        } else { samples.shift(); }
       }
     }
-    if (baseline !== null) tilt = Math.max(-1, Math.min(1, (value - baseline) / 28));
+    if (baseline !== null) {
+      let d = value - baseline;
+      if (d > 180) d -= 360; else if (d < -180) d += 360;
+      const dz = 3, full = 22;
+      tilt = Math.abs(d) < dz ? 0 : Math.max(-1, Math.min(1, (d - Math.sign(d) * dz) / full));
+    }
   }
 
   function poll() {
