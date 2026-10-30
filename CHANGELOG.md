@@ -97,6 +97,16 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Changed
 
+- Home app badges now reflect offline availability in three states: no offline
+  capability, offline-capable but not installed, and installed. Capable apps
+  show a cloud-download badge before installation, while installed apps switch
+  to a solid green cloud. — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/release/1.5.0/home-offline-badge.png](docs/release/1.5.0/home-offline-badge.png)
+- The collapsed immersive control exposes only a 20pt edge sliver, one third
+  less than the previous 30pt control, while keeping the arrow and its enlarged
+  hit target intact. — Scope: `App`, `Bridge` — Verified: `simulator` —
+  Evidence:
+  [docs/testing/results/drel-1-5-0-122-immersive-inset/verification.md](docs/testing/results/drel-1-5-0-122-immersive-inset/verification.md)
 - Immersive web apps now separate collapsing the floating controls from
   closing the page: the edge arrow only collapses the toolbar, `×` closes the
   immersive browser, and a left-edge rightward swipe returns through page
