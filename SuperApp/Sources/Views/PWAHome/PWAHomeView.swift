@@ -28,6 +28,8 @@ final class PWAHomeViewModel: ObservableObject {
         let version: String?
         let isDefaultStartup: Bool
         let isOfflineInstalled: Bool
+        /// 签名清单声明了强离线（资源清单齐备）但离线包尚未安装。
+        let isOfflineCapable: Bool
     }
 
     @Published var pushURL: String
@@ -476,6 +478,15 @@ struct PWAHomeView: View {
                                 .background(Color.appSuccess, in: Circle())
                                 .offset(x: -2, y: -2)
                                 .accessibilityHidden(true)
+                        } else if app.isOfflineCapable {
+                            // 支持离线但尚未安装：低调灰徽章提示能力存在
+                            Image(uiImage: LucideIcon.download.templateImage(pointSize: 11, weight: .bold) ?? UIImage())
+                                .renderingMode(.template)
+                                .foregroundColor(Color.appTextTertiary)
+                                .frame(width: 18, height: 18)
+                                .background(Color.appTextTertiary.opacity(0.16), in: Circle())
+                                .offset(x: -2, y: -2)
+                                .accessibilityHidden(true)
                         }
                     }
 
@@ -507,7 +518,7 @@ struct PWAHomeView: View {
             app.name,
             app.version.map { "应用版本 \($0)" },
             app.isDefaultStartup ? "默认启动应用" : nil,
-            app.isOfflineInstalled ? "离线包已安装" : nil
+            app.isOfflineInstalled ? "离线包已安装" : (app.isOfflineCapable ? "支持离线，未安装" : nil)
         ].compactMap { $0 }.joined(separator: "、"))
         .accessibilityHint("轻点打开应用，长按查看设置")
         .accessibilityIdentifier("pwaHome.app.\(app.id)")

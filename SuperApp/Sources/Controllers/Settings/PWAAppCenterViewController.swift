@@ -373,7 +373,9 @@ final class PWAAppCenterViewController: UIViewController {
                 tint: appTint(for: manifest),
                 version: manifest.effectiveOfflineCache.version,
                 isDefaultStartup: UserDefaults.standard.string(forKey: SettingsPreferenceKeys.defaultStartupAppID) == manifest.appID,
-                isOfflineInstalled: hasCurrentOfflinePackage(for: manifest)
+                isOfflineInstalled: hasCurrentOfflinePackage(for: manifest),
+                isOfflineCapable: manifest.effectiveOfflineCache.isStrongOfflineEligible
+                    && !hasCurrentOfflinePackage(for: manifest)
             )
         }
         if !manifests.isEmpty {
