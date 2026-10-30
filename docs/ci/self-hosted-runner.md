@@ -13,6 +13,10 @@ Drel uses one repository-scoped GitHub Actions runner on the M2 Max Mac:
 The runner is intentionally separate from the `quite-note` runner and accepts at
 most one job at a time.
 
+The LaunchAgent is configured with the local HTTP proxy on `127.0.0.1:7890`.
+This only applies to the runner process; local and private-network addresses are
+excluded.
+
 ## Usage
 
 Use the dedicated labels in workflows:
