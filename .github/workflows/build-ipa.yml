@@ -159,7 +159,7 @@ jobs:
         with:
           name: Drel-unsigned-${{ github.event.inputs.configuration }}
           path: build/Drel.ipa
-          retention-days: 14
+          retention-days: 1
 
       # The signed IPA went to TestFlight above; keep the upload record for
       # forensics and never attach a signed IPA to a public GitHub release.
