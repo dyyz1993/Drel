@@ -54,8 +54,9 @@
 "use strict";
 /* ============ 传感器层（Web 版）============ */
 const Sensor = (() => {
-  let hzTimer = null, hzCount = 0, baseline = null, samples = [], calibrated = false;
-  let tilt = 0; // [-1, 1]
+  let hzTimer = null, hzCount = 0, frameCount = 0;
+  let baseline = null, samples = [], calibrating = false, calibrated = false;
+  let tilt = 0, tiltSmooth = 0;
   const chip = document.getElementById("sensorChip");
   const hzChip = document.getElementById("hzChip");
   const btnCal = document.getElementById("btnCal");
@@ -63,20 +64,52 @@ const Sensor = (() => {
 
   function setChip(text, cls) { chip.textContent = text; chip.className = "chip " + cls; }
 
-  function feed(gamma) {
-    hzCount++;
-    if (!calibrated) {
-      samples.push(gamma);
-      if (samples.length >= 25) {
-        baseline = samples.reduce((a, b) => a + b, 0) / samples.length;
-        calibrated = true;
-        setChip("Web 陀螺仪 ✓ 已校准", "ok");
+  // 屏幕朝向自适应：竖屏用 gamma（左右滚转），横屏用 beta（带符号），180° 反号
+  function axisValue(ev) {
+    const angle = (screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0;
+    let v;
+    if (angle === 90) v = -(ev.beta || 0);
+    else if (angle === 270 || angle === -90) v = (ev.beta || 0);
+    else if (angle === 180) v = -(ev.gamma || 0);
+    else v = (ev.gamma || 0);
+    if (typeof v !== "number" || isNaN(v)) return null;
+    return v;
+  }
+  function shortestDelta(from, to) {
+    let d = to - from;
+    if (d > 180) d -= 360; else if (d < -180) d += 360;
+    return d;
+  }
+
+  function startCalibration(settleMs) {
+    samples = []; calibrated = false; calibrating = true;
+    setChip("校准中：手机端平拿稳 " + Math.round((settleMs || 0) / 1000 + 1) + " 秒…", "dim");
+    setTimeout(() => { /* 静置期后再开始采样 */ }, 0);
+  }
+
+  function feed(v) {
+    raw = v; hzCount++;
+    if (state.source === "none") { state.source = "web"; setChip("Web 陀螺仪 ✓", "ok"); }
+    if (calibrating) {
+      samples.push(v);
+      if (samples.length >= 30) {
+        const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+        const spread = Math.sqrt(samples.reduce((a, b) => a + (b - mean) * (b - mean), 0) / samples.length);
+        if (spread < 2.5) {
+          baseline = mean; calibrated = true; calibrating = false;
+          setChip("Web 陀螺仪 ✓ 已校准", "ok");
+        } else {
+          samples.shift(); // 手机还在动：滚动窗口继续等它稳下来
+        }
       }
     }
     if (baseline !== null) {
-      tilt = Math.max(-1, Math.min(1, (gamma - baseline) / 28));
+      const d = shortestDelta(baseline, v);
+      const dz = 3, full = 22; // 3° 死区，22° 满舵
+      tilt = Math.abs(d) < dz ? 0 : Math.max(-1, Math.min(1, (d - Math.sign(d) * dz) / full));
     }
   }
+  let raw = 0;
 
   async function enable() {
     setChip("传感器：请求权限…", "dim");
@@ -89,46 +122,39 @@ const Sensor = (() => {
     if (!granted) { setChip("权限被拒 → 触屏模式", "bad"); return false; }
 
     window.addEventListener("deviceorientation", (ev) => {
-      if (ev.gamma === null || ev.gamma === undefined) return;
-      if (state.source === "none") { state.source = "web"; }
-      feed(ev.gamma);
+      const v = axisValue(ev);
+      if (v !== null) feed(v);
     });
     window.addEventListener("devicemotion", () => {
-      // 部分内核只送 motion 不送 orientation；Hz 统计与兜底都算上
       if (state.source === "none") state.source = "motion";
     });
 
+    // 首批事件到达后 800ms 自动开始校准（等权限弹窗后的手回到持机位）
+    setTimeout(() => { if (!calibrated && !calibrating) startCalibration(0); }, 800);
+
     hzTimer = setInterval(() => {
       state.hz = hzCount; hzCount = 0;
-      if (state.source !== "none") {
-        hzChip.classList.remove("hidden");
-        hzChip.textContent = state.hz + " Hz";
-      }
-      if (state.source === "none" && state.hz === 0 && chip.textContent.includes("…")) {
-        setChip("无事件（WebView 未送传感器）→ 触屏模式", "bad");
-      }
+      hzChip.classList.remove("hidden");
+      hzChip.textContent = state.hz + "Hz" +
+        (baseline !== null ? " γ" + Math.round(raw) + "°/b" + Math.round(baseline) + "°/" + Math.round(tilt * 100) + "%" : "");
     }, 1000);
-
-    // 1.5s 内没有任何 orientation 数据即判不可用
     setTimeout(() => {
-      if (state.source === "none") {
-        setChip("Web 陀螺仪不可用 → 触屏模式", "bad");
-      }
+      if (state.source === "none") setChip("Web 陀螺仪不可用 → 触屏模式", "bad");
     }, 1500);
-
-    if (calibrated) btnCal.classList.remove("hidden");
     btnCal.classList.remove("hidden");
     return true;
   }
 
-  btnCal.addEventListener("click", () => {
-    samples = []; calibrated = false; baseline = null;
-    setChip("重新校准中…保持手机水平", "dim");
-  });
+  btnCal.addEventListener("click", () => startCalibration(0));
 
   return {
     enable,
-    value: () => (state.source !== "none" && calibrated) ? tilt : null,
+    startCalibration,
+    value: () => {
+      if (state.source === "none" || !calibrated) return null;
+      tiltSmooth += (tilt - tiltSmooth) * 0.35; // 平滑，消除抖动
+      return tiltSmooth;
+    },
     source: () => state.source,
   };
 })();
