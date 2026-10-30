@@ -119,6 +119,7 @@ jobs:
           WBK_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           WBK_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER }}
           WBK_ASC_KEY_PATH: ${{ runner.temp }}/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          WBK_MARKETING_VERSION: ${{ steps.release.outputs.version }}
           WBK_SIGNING_KEYCHAIN: ${{ runner.temp }}/app-signing-${{ github.run_id }}.keychain-db
           WBK_SIGNING_KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
