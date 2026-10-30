@@ -1,0 +1,36 @@
+name: Self-hosted Runner Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/self-hosted-smoke.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drel-self-hosted-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Validate drel-ios runner
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check toolchain and capacity
+        shell: bash
+        run: |
+          set -euo pipefail
+          uname -m
+          sw_vers
+          xcodebuild -version
+          for tool in git ruby xcodegen swiftlint pod; do
+            printf '%-12s' "$tool"
+            command -v "$tool"
+          done
+          df -h /
+
