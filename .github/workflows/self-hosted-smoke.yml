@@ -34,9 +34,3 @@ jobs:
           done
           df -h /
 
-      - name: Check signing keychain access
-        shell: bash
-        run: |
-          set -euo pipefail
-          security show-keychain-info "$HOME/Library/Keychains/login.keychain-db"
-          security find-identity -v -p codesigning | sed -E 's/^[[:space:]]*[0-9]+\\) [A-F0-9]+ /- /'
