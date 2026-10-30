@@ -471,19 +471,9 @@ struct PWAHomeView: View {
                     }
                     .overlay(alignment: .bottomTrailing) {
                         if app.isOfflineInstalled {
-                            // 已安装：绿色描边云（不填充，与 Web 版细线风格统一）
-                            Image(uiImage: LucideIcon.fallbackTemplateImage(sfName: "cloud", pointSize: 12, weight: .semibold) ?? UIImage())
-                                .renderingMode(.template)
-                                .foregroundColor(Color.appSuccess)
-                                .offset(x: -2, y: -2)
-                                .accessibilityHidden(true)
+                            installedOfflineBadge
                         } else if app.isOfflineCapable {
-                            // 支持离线但尚未安装：灰色的云+下载箭头
-                            Image(uiImage: LucideIcon.cloudDownload.templateImage(pointSize: 13, weight: .regular) ?? UIImage())
-                                .renderingMode(.template)
-                                .foregroundColor(Color.appTextTertiary)
-                                .offset(x: -2, y: -2)
-                                .accessibilityHidden(true)
+                            availableOfflineBadge
                         }
                     }
 
@@ -519,6 +509,31 @@ struct PWAHomeView: View {
         ].compactMap { $0 }.joined(separator: "、"))
         .accessibilityHint("轻点打开应用，长按查看设置")
         .accessibilityIdentifier("pwaHome.app.\(app.id)")
+    }
+
+    private var installedOfflineBadge: some View {
+        let cloud = LucideIcon.fallbackTemplateImage(
+            sfName: "cloud",
+            pointSize: 12,
+            weight: .semibold
+        ) ?? UIImage()
+        return Image(uiImage: cloud)
+            .renderingMode(.template)
+            .foregroundColor(Color.appSuccess)
+            .offset(x: -2, y: -2)
+            .accessibilityHidden(true)
+    }
+
+    private var availableOfflineBadge: some View {
+        let cloudDownload = LucideIcon.cloudDownload.templateImage(
+            pointSize: 13,
+            weight: .regular
+        ) ?? UIImage()
+        return Image(uiImage: cloudDownload)
+            .renderingMode(.template)
+            .foregroundColor(Color.appTextTertiary)
+            .offset(x: -2, y: -2)
+            .accessibilityHidden(true)
     }
 
     private var waitingAppSlot: some View {
