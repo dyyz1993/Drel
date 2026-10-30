@@ -471,8 +471,8 @@ struct PWAHomeView: View {
                     }
                     .overlay(alignment: .bottomTrailing) {
                         if app.isOfflineInstalled {
-                            // 已安装：实心云（SF Symbols，绿色）——下载箭头收起
-                            Image(uiImage: LucideIcon.fallbackTemplateImage(sfName: "cloud.fill", pointSize: 12) ?? UIImage())
+                            // 已安装：绿色描边云（不填充，与 Web 版细线风格统一）
+                            Image(uiImage: LucideIcon.fallbackTemplateImage(sfName: "cloud", pointSize: 12, weight: .semibold) ?? UIImage())
                                 .renderingMode(.template)
                                 .foregroundColor(Color.appSuccess)
                                 .offset(x: -2, y: -2)
