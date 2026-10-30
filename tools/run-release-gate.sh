@@ -13,6 +13,7 @@ SWIFTLINT_BIN="$(command -v swiftlint)"
 ARCHIVE_VERSION_OVERRIDES=""
 ARCHIVE_PROVISIONING_UPDATES=""
 ARCHIVE_SIGNING_OVERRIDES=""
+V2_EXPECTED_BUILD="${DREL_RELEASE_GATE_BUILD_NUMBER:-90}"
 if [[ "${DREL_RELEASE_GATE_ALLOW_PROVISIONING_UPDATES:-}" == "1" ]]; then
     ARCHIVE_PROVISIONING_UPDATES="-allowProvisioningUpdates"
 fi
@@ -96,9 +97,9 @@ run_gate "APNs single-attempt policy" "bash tools/verify-apns-single-attempt.sh"
 if [[ "$ARCHIVE_READY" == "1" ]]; then
     if [[ "$RELEASE_SCHEME" == "Drel15Store" ]]; then
         if [[ "${DREL_RELEASE_GATE_AUTOMATIC_SIGNING:-}" == "1" ]]; then
-            run_gate "Drel 1.5 staging archive surface" "DREL_V2_ARCHIVE_SIGNING=development bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
+            run_gate "Drel 1.5 staging archive surface" "DREL_V2_EXPECTED_BUILD='$V2_EXPECTED_BUILD' DREL_V2_ARCHIVE_SIGNING=development bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
         else
-            run_gate "Drel 1.5 Store archive surface" "bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
+            run_gate "Drel 1.5 Store archive surface" "DREL_V2_EXPECTED_BUILD='$V2_EXPECTED_BUILD' bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
         fi
     else
         run_gate "Drel Store archive surface" "bash tools/verify-drel-store-archive.sh '$ARCHIVE_PATH'"
