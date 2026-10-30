@@ -20,13 +20,15 @@ cd "$ROOT"
 mkdir -p "$ROOT/build"
 
 APP_ID="${WBK_APP_ID:-6802806992}"
-KEY_ID="${WBK_ASC_KEY_ID:-4NXJ8HL7K9}"
-KEY_ISSUER="${WBK_ASC_ISSUER:-18f47979-0b65-4045-b969-00ba54177716}"
+# ASC 凭据一律来自环境/CI Secrets（开源仓库不保留标识符兜底）。
+KEY_ID="${WBK_ASC_KEY_ID:?需要设置 WBK_ASC_KEY_ID（App Store Connect API Key ID）}"
+KEY_ISSUER="${WBK_ASC_ISSUER_ID:?需要设置 WBK_ASC_ISSUER_ID（App Store Connect Issuer ID）}"
+KEY_PATH="${WBK_ASC_KEY_PATH:?需要设置 WBK_ASC_KEY_PATH（AuthKey_<ID>.p8 私钥路径）}"
 # Prefer the repository's self-contained helper so the script also runs in CI,
 # where the author's ~/Project/study-mac-app checkout does not exist.
 # asc-api.sh takes ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH from the env.
 if [[ -x "$ROOT/tools/asc-api.sh" ]]; then
-  export ASC_KEY_ID="$KEY_ID" ASC_ISSUER_ID="$KEY_ISSUER" ASC_APP_ID="$APP_ID"
+  export ASC_KEY_ID="$KEY_ID" ASC_ISSUER_ID="$KEY_ISSUER" ASC_APP_ID="$APP_ID" ASC_KEY_PATH="$KEY_PATH"
   ASC_API="$ROOT/tools/asc-api.sh"
 else
   ASC_API="/usr/bin/python3 $HOME/Project/study-mac-app/quite-note/tools/asc-api.py"
