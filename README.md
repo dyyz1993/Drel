@@ -2,7 +2,7 @@
 
 基于 `WebBridgeKit-Framework` 构建的完整 iOS 产品宿主应用（Target、Scheme 与对外产品名均为 `Drel`）、通知服务扩展（`NotificationServiceExtension`）、UI 自动化测试套件（`DrelUITests/`）及配套服务端（`Server/`）。
 
-Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark 兼容推送」的完整产品层公开出来。底层 SDK `WebBridgeKit-Framework` 保持闭源，以预编译 `xcframework` 形式分发。
+Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark 兼容推送」的完整产品层公开出来，底层 SDK [`WebBridgeKit-Framework`](../WebBridgeKit-Framework) 同样以 MIT 开源，两仓库按并列目录约定协同构建。
 
 ## 快速开始
 
@@ -27,7 +27,7 @@ Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark �
 - **`deploy/` & `infra/`**：网关 Nginx 配置与 Cloudflare Worker 边缘代理（`infra/cloudflare/drel-api-proxy/`）。
 - **`tools/` & `scripts/`**：应用层发布门禁、真机冒烟、容器安全策略校验与本地三服务管理脚本。
 
-> 底层 SDK 源码（`Sources/`）、框架资源（`Resources/`）、最小模板（`AppTemplate/`）及框架单元测试（`Tests/`）位于同级目录的 `../WebBridgeKit-Framework` 工程中。
+> 底层 SDK 源码（`Sources/`）、框架资源（`Resources/`）、最小模板（`AppTemplate/`）及框架单元测试（`Tests/`）位于并列开源仓库 [`WebBridgeKit-Framework`](../WebBridgeKit-Framework) 中。
 
 ## 2. 环境准备与联调构建
 
