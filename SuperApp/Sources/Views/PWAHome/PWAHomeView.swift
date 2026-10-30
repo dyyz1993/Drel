@@ -471,14 +471,14 @@ struct PWAHomeView: View {
                     }
                     .overlay(alignment: .bottomTrailing) {
                         if app.isOfflineInstalled {
-                            // 已安装：绿色实心云（云中箭头收起由纯云资产补齐，暂同形换色）
-                            Image(uiImage: LucideIcon.cloudDownload.templateImage(pointSize: 13, weight: .semibold) ?? UIImage())
+                            // 已安装：实心云（SF Symbols，绿色）——下载箭头收起
+                            Image(uiImage: LucideIcon.fallbackTemplateImage(sfName: "cloud.fill", pointSize: 12) ?? UIImage())
                                 .renderingMode(.template)
                                 .foregroundColor(Color.appSuccess)
                                 .offset(x: -2, y: -2)
                                 .accessibilityHidden(true)
                         } else if app.isOfflineCapable {
-                            // 支持离线但尚未安装：灰色云下载
+                            // 支持离线但尚未安装：灰色的云+下载箭头
                             Image(uiImage: LucideIcon.cloudDownload.templateImage(pointSize: 13, weight: .regular) ?? UIImage())
                                 .renderingMode(.template)
                                 .foregroundColor(Color.appTextTertiary)
