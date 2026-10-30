@@ -197,3 +197,4 @@ tools/__pycache__/
 .wrangler/
 build/cf-secrets/
 Server/native/drel-selfhosted
+.learnings/
