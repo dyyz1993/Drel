@@ -822,7 +822,7 @@ test("register accepts the official app's {deviceToken, key} field names", async
 test("register rejects device keys that cannot travel in URL paths", async () => {
   const env = testEnv();
   for (const badKey of [
-    "yfkp7esct2xead7d\u001F994acad",   // control separator (the legacy case)
+    "examplekey0001\u001F994acad",   // control separator (the legacy case)
     "has space",                        // whitespace
     "with/slash",                       // path separator
     "a",                                // too short

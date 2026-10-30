@@ -1288,3 +1288,33 @@ offline 包（工程量在应用侧）。
 - Recurrence-Count: 1
 - First-Seen: 2026-10-30
 - Last-Seen: 2026-10-30
+
+## [LRN-20261030-006] best_practice
+
+**Logged**: 2026-10-30
+**Priority**: high
+**Status**: pending
+**Area**: security
+
+### Summary
+真实运行标识（deviceKey、地址、票据）不得作为代码注释示例值或测试向量入库；
+开源前审计必须包含「真实运行值全历史 grep」。
+
+### Details
+开源审计发现用户真实 deviceKey 两次进入仓库：一次是我写 gateway.js 文档
+注释时顺手拿了当时手头的真实 Key 当格式示例，一次是更早的服务器测试把它
+当 URL 安全性测试向量。hygiene 门禁只查凭证形态（.p8/admin key），查不出
+"合法格式但真实有效"的投递地址。
+
+### Suggested Action
+注释/测试一律用显眼假值（examplekey0001 之类）；开源/公开前对当期真实
+运行标识跑 `git log --S"<值>"` 全历史扫描；泄露即换发（推送地址可重新生成）。
+
+### Metadata
+- Source: self_review
+- Related Files: build/reports/open-source-audit.md
+- Tags: security, open-source, audit
+- Pattern-Key: drel.security.real-identifier-as-example
+- Recurrence-Count: 1
+- First-Seen: 2026-10-30
+- Last-Seen: 2026-10-30
