@@ -128,11 +128,15 @@ if [[ -n "$SIGNING_KEYCHAIN" ]]; then
   security list-keychains -d user -s "$SIGNING_KEYCHAIN" "${ORIGINAL_KEYCHAINS[@]}" >/dev/null
   ARCHIVE_SIGN_ARGS+=("OTHER_CODE_SIGN_FLAGS=--keychain $SIGNING_KEYCHAIN")
 fi
-xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
+if ! xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
   -allowProvisioningUpdates "${ARCHIVE_SIGN_ARGS[@]}" \
-  MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1 \
-  || bad "归档失败，详见 build/archive-$BUILD.log"
+  MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1; then
+  echo "---- archive-$BUILD.log (tail) ----" >&2
+  tail -n 160 "$ROOT/build/archive-$BUILD.log" >&2 || true
+  echo "---- end archive-$BUILD.log ----" >&2
+  bad "归档失败，详见 build/archive-$BUILD.log"
+fi
 ok "归档完成：$ARCHIVE"
 
 say "归档校验（签名契约）"
