@@ -19,10 +19,14 @@ runs:
     - name: Ensure CLI tooling available
       shell: bash
       run: |
+        GEM_BIN="$(ruby -e 'print Gem.user_dir')/bin"
+        mkdir -p "$GEM_BIN"
+        echo "$GEM_BIN" >> "$GITHUB_PATH"
+        export PATH="$GEM_BIN:$PATH"
         command -v xcodegen || brew install xcodegen
         command -v swiftlint || brew install swiftlint
-        command -v pod >/dev/null || sudo gem install cocoapods --no-document
-        command -v xcpretty >/dev/null || sudo gem install xcpretty --no-document
+        command -v pod >/dev/null || gem install --user-install cocoapods --no-document
+        command -v xcpretty >/dev/null || gem install --user-install xcpretty --no-document
 
     - name: Cache CocoaPods
       uses: actions/cache@v4

@@ -42,6 +42,7 @@ SIGNING_KEYCHAIN_PASSWORD_SERVICE="${WBK_SIGNING_KEYCHAIN_PASSWORD_SERVICE:-drel
 SIGNING_KEYCHAIN_PASSWORD_ACCOUNT="${WBK_SIGNING_KEYCHAIN_PASSWORD_ACCOUNT:-codex-drel-release}"
 ORIGINAL_KEYCHAINS=()
 
+# shellcheck disable=SC2329  # invoked indirectly by the EXIT trap
 restore_keychains() {
   if (( ${#ORIGINAL_KEYCHAINS[@]} > 0 )); then
     security list-keychains -d user -s "${ORIGINAL_KEYCHAINS[@]}" >/dev/null
@@ -107,10 +108,14 @@ else
 fi
 if [[ -n "$SIGNING_KEYCHAIN" ]]; then
   [[ -f "$SIGNING_KEYCHAIN" ]] || bad "signing keychain not found: $SIGNING_KEYCHAIN"
-  KEYCHAIN_PASSWORD=$(security find-generic-password \
-    -a "$SIGNING_KEYCHAIN_PASSWORD_ACCOUNT" \
-    -s "$SIGNING_KEYCHAIN_PASSWORD_SERVICE" -w 2>/dev/null) \
-    || bad "signing keychain password is not available from Keychain"
+  if [[ -n "${WBK_SIGNING_KEYCHAIN_PASSWORD:-}" ]]; then
+    KEYCHAIN_PASSWORD="$WBK_SIGNING_KEYCHAIN_PASSWORD"
+  else
+    KEYCHAIN_PASSWORD=$(security find-generic-password \
+      -a "$SIGNING_KEYCHAIN_PASSWORD_ACCOUNT" \
+      -s "$SIGNING_KEYCHAIN_PASSWORD_SERVICE" -w 2>/dev/null) \
+      || bad "signing keychain password is not available from Keychain"
+  fi
   security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$SIGNING_KEYCHAIN" >/dev/null \
     || bad "could not unlock the signing keychain"
   unset KEYCHAIN_PASSWORD

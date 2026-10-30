@@ -1,0 +1,62 @@
+# Drel Self-Hosted Runner
+
+Drel uses one repository-scoped GitHub Actions runner on the M2 Max Mac:
+
+| Field | Value |
+|---|---|
+| Runner | `drel-m2max` |
+| Labels | `self-hosted`, `macOS`, `ARM64`, `drel-ios` |
+| Install directory | `~/runners/actions-runner-drel` |
+| LaunchAgent | `actions.runner.dyyz1993-Drel.drel-m2max` |
+| Work directory | `~/runners/actions-runner-drel/_work` |
+
+The runner is intentionally separate from the `quite-note` runner and accepts at
+most one job at a time.
+
+## Usage
+
+Use the dedicated labels in workflows:
+
+```yaml
+runs-on: [self-hosted, macOS, ARM64, drel-ios]
+```
+
+`Build IPA` uses this runner for both unsigned manual smoke archives and signed
+tag releases. A pushed `v<version>+<build>` tag runs archive, distribution
+contract checks, TestFlight upload, and Apple processing-state polling.
+
+## Required Repository Secrets
+
+- `WEBK_FRAMEWORK_REPO`
+- `WEBK_FRAMEWORK_TOKEN`
+- `BUILD_CERTIFICATE_BASE64`
+- `P12_PASSWORD`
+- `KEYCHAIN_PASSWORD`
+- `ASC_KEY_P8`
+- `ASC_KEY_ID`
+- `ASC_ISSUER`
+
+## Operations
+
+```bash
+launchctl list | grep actions.runner.dyyz1993-Drel
+~/runners/actions-runner-drel/svc.sh status
+tail -100 ~/Library/Logs/actions.runner.dyyz1993-Drel.drel-m2max/stdout.log
+tail -100 ~/Library/Logs/actions.runner.dyyz1993-Drel.drel-m2max/stderr.log
+```
+
+Restart only the Drel runner:
+
+```bash
+launchctl kickstart -k "gui/$(id -u)/actions.runner.dyyz1993-Drel.drel-m2max"
+```
+
+## Boundaries
+
+- Do not accept untrusted pull-request code on this runner.
+- Keep one concurrent Xcode job; do not register it as a generic all-repository
+  runner.
+- TestFlight upload is automated. App Store review submission and Apple review
+  remain explicit external release decisions.
+- The runner is not a clean VM. The signing step uses an ephemeral keychain, and
+  workflows must not rely on or modify the user's default keychain search list.

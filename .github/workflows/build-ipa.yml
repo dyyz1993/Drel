@@ -6,7 +6,7 @@ name: Build IPA
 #
 # TestFlight mode needs these repository secrets:
 #   WEBK_FRAMEWORK_TOKEN      read access to the private WebBridgeKit-Framework repo
-#   BUILD_CERTIFICATE_BASE64  base64 of the Apple Development .p12
+#   BUILD_CERTIFICATE_BASE64  base64 of the CI .p12 (Apple Development + Distribution)
 #   P12_PASSWORD              password of that .p12
 #   KEYCHAIN_PASSWORD         any password; used for the ephemeral CI keychain
 #   ASC_KEY_P8 / ASC_KEY_ID / ASC_ISSUER   App Store Connect API key for altool
@@ -29,16 +29,24 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: drel-build-ipa-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-ipa:
     name: Build and publish IPA
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Show runner toolchain
+        run: |
+          xcodebuild -version
+          sw_vers
+          df -h /
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
@@ -61,14 +69,14 @@ jobs:
             exit 1
           fi
           CERT_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing-${GITHUB_RUN_ID}.keychain-db"
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$CERT_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       - name: Write App Store Connect API key
         if: startsWith(github.ref, 'refs/tags/v')
@@ -109,12 +117,12 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           WBK_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          WBK_ASC_ISSUER: ${{ secrets.ASC_ISSUER }}
+          WBK_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER }}
+          WBK_ASC_KEY_PATH: ${{ runner.temp }}/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          WBK_SIGNING_KEYCHAIN: ${{ runner.temp }}/app-signing-${{ github.run_id }}.keychain-db
+          WBK_SIGNING_KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
           set -euo pipefail
-          # publish-drel-testflight.sh reads ~/.appstoreconnect/private_keys
-          mkdir -p "$HOME/.appstoreconnect"
-          ln -sfn "$RUNNER_TEMP/private_keys" "$HOME/.appstoreconnect/private_keys"
           bash tools/publish-drel-testflight.sh "${{ steps.release.outputs.build }}"
 
       # ── Unsigned smoke path (manual dispatch only) ────────────────────────
@@ -162,3 +170,18 @@ jobs:
           path: build/*.json
           retention-days: 30
           if-no-files-found: ignore
+
+      - name: Cleanup signing material
+        if: always()
+        shell: bash
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing-${GITHUB_RUN_ID}.keychain-db"
+          if [[ -f "$KEYCHAIN_PATH" ]]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
+          if [[ -d "$RUNNER_TEMP/private_keys" ]]; then
+            find "$RUNNER_TEMP/private_keys" -type f -delete
+          fi
+          if [[ -f "$RUNNER_TEMP/build_certificate.p12" ]]; then
+            rm -f "$RUNNER_TEMP/build_certificate.p12"
+          fi
