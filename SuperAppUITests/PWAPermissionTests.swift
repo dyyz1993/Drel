@@ -238,15 +238,29 @@ final class PWAPermissionTests: XCTestCase {
         XCTAssertFalse(app.navigationBars.firstMatch.waitForExistence(timeout: 2))
         let nativeExit = element("browserManager.immersiveReturnButton")
         XCTAssertTrue(nativeExit.waitForExistence(timeout: 3))
+        let collapsedFrame = nativeExit.frame
         nativeExit.tap()
-
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = "v2-fullscreen-host-exit-visible"
         attachment.lifetime = .keepAlways
         add(attachment)
 
+        // First verify the edge arrow now only collapses the control.
+        app.windows.firstMatch.coordinate(
+            withNormalizedOffset: CGVector(dx: 0, dy: 0)
+        ).withOffset(
+            CGVector(dx: collapsedFrame.minX + 48, dy: collapsedFrame.midY)
+        ).tap()
+        XCTAssertTrue(element("browserManager.webView").waitForExistence(timeout: 3), "Collapsing must keep the HTML app open")
+
+        // Re-expand, then use the dedicated back cell.
         nativeExit.tap()
-        XCTAssertTrue(fullscreenButton.waitForExistence(timeout: 4), "The host exit control must return to the app without closing the HTML app")
+        app.windows.firstMatch.coordinate(
+            withNormalizedOffset: CGVector(dx: 0, dy: 0)
+        ).withOffset(
+            CGVector(dx: collapsedFrame.minX + 96, dy: collapsedFrame.midY)
+        ).tap()
+        XCTAssertTrue(appButton.waitForExistence(timeout: 5), "The dedicated back cell must return to the app list")
     }
 
     func testV2ClipboardPromptsOnceThenReusesSignedGrant() {
@@ -313,15 +327,15 @@ final class PWAPermissionTests: XCTestCase {
 
         let nativeExit = element("browserManager.immersiveReturnButton")
         XCTAssertTrue(nativeExit.waitForExistence(timeout: 3))
+        let collapsedFrame = nativeExit.frame
         nativeExit.tap()
         // First tap expands the collapsed capsule. The second tap must land
-        // on the exit segment (leftmost 44pt of the expanded 140pt capsule)
+        // on the back segment (second 44pt cell of the expanded 188pt capsule)
         // instead of the element center, which now falls on the refresh cell.
-        let frame = nativeExit.frame
         app.windows.firstMatch.coordinate(
             withNormalizedOffset: CGVector(dx: 0, dy: 0)
         ).withOffset(
-            CGVector(dx: frame.minX + 22, dy: frame.midY)
+            CGVector(dx: collapsedFrame.minX + 96, dy: collapsedFrame.midY)
         ).tap()
 
         XCTAssertTrue(appButton.waitForExistence(timeout: 5))

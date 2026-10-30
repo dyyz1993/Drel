@@ -186,7 +186,7 @@ os.chdir('$PROJECT_ROOT')
 class Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Cache-Control', 'max-age=3600')
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         super().end_headers()
 class ReusableTCPServer(socketserver.TCPServer):
     allow_reuse_address = True

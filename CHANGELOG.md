@@ -97,6 +97,14 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Changed
 
+- Immersive web apps now separate collapsing the floating controls from
+  closing the page: the edge arrow only collapses the toolbar, `×` closes the
+  immersive browser, and a left-edge rightward swipe returns through page
+  history without exiting. Full-document navigation, `location.href`,
+  `location.assign`, `window.open(..., "_self")`, `history.pushState`, hash
+  routes and `history.replaceState` were checked in the simulator. — Scope:
+  `App`, `Bridge` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-1-5-0-121-navigation/verification.md](docs/testing/results/drel-1-5-0-121-navigation/verification.md)
 - The inbox presents one three-segment view — Unread (the default),
   Recent, Groups — replacing the previous display-mode control plus
   filter menu. — Scope: `App` — Verified: `simulator` — Evidence:

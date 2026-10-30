@@ -61,7 +61,7 @@ generic capability name.
 | `haptic` | Declaration only | Brief tactile feedback after a foreground user tap | Access data, make network requests, or show a permission prompt |
 | `vibrate` | Declaration only | Brief, bounded vibration after a foreground user tap | Play arbitrary sounds, loop indefinitely, or access data |
 | `share` | Declaration only | Opens the native iOS share sheet with the page-provided content | Send content in the background, choose a destination, or retain the user's selection |
-| `fullscreen` | Declaration only | Hides host navigation/status chrome and keeps a host-owned edge return control | Rotate the device, trap the user, disable scrolling, or dismiss Drel |
+| `fullscreen` | Declaration only | Hides host navigation/status chrome and keeps a host-owned control with collapse, back-history, refresh, favorite and close actions | Rotate the device, trap the user, disable scrolling, or exit without the explicit close control |
 | `addToHomeScreen` | Declaration only | Adds the current page to the Drel app list, and separately to the iPhone Home Screen | Read user data, or add anything the user did not open from the app |
 | `clipboard` | Persistent, revocable grant | Reads or writes the clipboard only after the user grants access; the grant is listed and revocable in Drel's permission center | Read the clipboard without a grant, or access the clipboard in the background |
 | `getLocation` | Persistent, revocable grant | Requests the device location only after the user grants access, and shows the standard iOS location prompt; the grant is listed and revocable in Drel's permission center | Track location in the background, or access location without a grant |
@@ -99,10 +99,11 @@ app after the owner releases it. Do not substitute the simulator-only fixture.
 2. Tap the haptic or vibrate control and observe the brief feedback.
 3. Tap the share control. Drel shows the iOS system share sheet; the reviewer
    may cancel without sharing anywhere.
-4. Tap the fullscreen control. Host chrome disappears while a draggable edge
-   return control remains available.
-5. Tap the edge control once to expand it, then tap the return area to leave
-   fullscreen without closing the HTML app.
+4. Tap the fullscreen control. Host chrome disappears while the floating edge
+   control remains available.
+5. Tap the edge control once to expand it. The arrow collapses the control;
+   the `×` closes the immersive page. A left-edge rightward swipe navigates
+   the page's own history and does not close Drel or the page.
 6. Tap the add-to-Home-Screen control. The page is offered to Drel's app
    list; the reviewer may decline.
 7. Tap the clipboard control. Drel shows its own permission prompt naming
@@ -170,7 +171,8 @@ test credentials.
 2. 3–8s: Open the signed Manifest v2 demo from the trusted app list.
 3. 8–12s: Tap haptic/vibrate and caption that only brief feedback occurs.
 4. 12–18s: Tap share, show the iOS system sheet, cancel the sheet.
-5. 18–24s: Tap fullscreen, show the edge return control, leave fullscreen.
+5. 18–24s: Tap fullscreen, show the edge control, demonstrate arrow collapse,
+   left-edge history back, and `×` close.
 6. 24–30s: Tap add-to-Home-Screen, show that the app is offered to the Drel
    app list, and decline it.
 7. 30–40s: Tap clipboard, show Drel's own permission prompt, approve it, and
