@@ -370,7 +370,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             ? FixturePaths.localPermissionV2Actions
             : FixturePaths.Local.pwaPermission.indexPath
         let startURL = includesV2Actions
-            ? "\(origin)\(route)?revision=20261018-fullscreen-v2"
+            ? "\(origin)\(route)?revision=20261030-route-lab"
             : "\(origin)\(route)"
         let manifest = HTMLAppManifest(
             appID: "com.webbridgekit.fixture.permissions",

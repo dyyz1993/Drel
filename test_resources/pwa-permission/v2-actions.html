@@ -10,6 +10,12 @@
         p { color: #68686d; line-height: 1.5; }
         button { width: 100%; min-height: 52px; margin-top: 20px; border: 0; border-radius: 14px; background: #4f6af6; color: white; font-size: 17px; font-weight: 600; }
         button.secondary { background: #253045; }
+        .route-lab { margin-top: 24px; padding: 18px; border: 1px solid #d9d9e3; border-radius: 16px; background: #fafafc; }
+        .route-lab h2 { margin: 0 0 8px; font-size: 20px; }
+        .route-lab p { margin: 0 0 12px; font-size: 14px; line-height: 1.4; }
+        .route-state { margin: 12px 0 0; padding: 12px; background: #eef1f8; border-radius: 10px; color: #1e2a4a; font-weight: 600; }
+        a.route-link { display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 14px; border-radius: 12px; background: #4f6af6; color: white; font-size: 16px; font-weight: 600; text-decoration: none; }
+        .route-lab button { min-height: 48px; margin-top: 14px; border-radius: 12px; font-size: 16px; }
         button .plus { display: inline-block; vertical-align: -3px; margin-right: 6px; }
     </style>
 </head>
@@ -21,6 +27,18 @@
     <button id="location-v2" onclick="locationV2Demo()">获取当前位置</button>
     <button id="home-v2" onclick="addToHomeScreenDemo()">添加到 Drel 首页</button>
     <button id="share-v2" onclick="shareV2Demo()">分享演示内容</button>
+    <section id="route-lab" class="route-lab">
+        <h2>路由返回测试</h2>
+        <p>先点底部的「切换沉浸全屏」，然后在这里选不同方式跳转，最后从屏幕最左侧向右滑测试网页返回。没有可返回历史时保持不动，退出网页只能点悬浮条里的 ×。</p>
+        <p id="route-state" class="route-state">当前路由：首页</p>
+        <a id="route-anchor" class="route-link" href="?route=a-tag">1. A 标签跳转（整页导航）</a>
+        <button id="route-href" onclick="navigateWithHref()">2. location.href 跳转（整页导航）</button>
+        <button id="route-assign" onclick="navigateWithAssign()">3. location.assign 跳转（整页导航）</button>
+        <button id="route-open" onclick="navigateWithOpen()">4. window.open(_self) 当前页跳转</button>
+        <button id="route-push" onclick="pushRoute()">5. history.pushState（同文档路由）</button>
+        <button id="route-hash" onclick="setHashRoute()">6. hash 路由（#route=hash）</button>
+        <button id="route-replace" class="secondary" onclick="replaceRoute()">7. history.replaceState（替换，不可返回）</button>
+    </section>
     <button id="fullscreen-v2" onclick="fullscreenV2Demo()" class="secondary">切换沉浸全屏</button>
     <p id="result"></p>
     <script>
@@ -67,6 +85,42 @@
             fullscreenEnabled = !fullscreenEnabled;
             await window.BarkBridge.callNative('fullscreen', { enabled: fullscreenEnabled });
         }
+
+        const routeState = document.getElementById('route-state');
+        const updateRouteLabel = () => {
+            const queryRoute = new URLSearchParams(location.search).get('route');
+            const hashRoute = location.hash ? location.hash.replace(/^#/, '') : '';
+            const route = queryRoute || hashRoute || '首页';
+            routeState.textContent = `当前路由：${route} · history.length=${history.length}`;
+        };
+
+        const buildRouteURL = (name) => {
+            const target = new URL(location.href);
+            target.searchParams.set('route', name);
+            target.hash = '';
+            return target.href;
+        };
+
+        function navigateWithHref() { location.href = buildRouteURL('location-href'); }
+        function navigateWithAssign() { location.assign(buildRouteURL('location-assign')); }
+        function navigateWithOpen() { window.open(buildRouteURL('window-open'), '_self'); }
+        function pushRoute() {
+            history.pushState({ route: 'history-push' }, '', buildRouteURL('history-push'));
+            updateRouteLabel();
+        }
+        function replaceRoute() {
+            history.replaceState({ route: 'history-replace' }, '', buildRouteURL('history-replace'));
+            updateRouteLabel();
+        }
+        function setHashRoute() {
+            location.hash = 'route=hash';
+        }
+
+        document.getElementById('route-anchor').href = buildRouteURL('a-tag');
+        window.addEventListener('popstate', updateRouteLabel);
+        window.addEventListener('hashchange', updateRouteLabel);
+        window.addEventListener('pageshow', updateRouteLabel);
+        updateRouteLabel();
     </script>
 </body>
 </html>
