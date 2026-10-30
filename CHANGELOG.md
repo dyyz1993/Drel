@@ -115,6 +115,8 @@ reviewing and revoking grants, and a one-command permission regression gate.
   routes and `history.replaceState` were checked in the simulator. — Scope:
   `App`, `Bridge` — Verified: `simulator` — Evidence:
   [docs/testing/results/drel-1-5-0-121-navigation/verification.md](docs/testing/results/drel-1-5-0-121-navigation/verification.md)
+- The official Action Demo adds a visible route lab covering A-tag, full-document, History API, and hash navigation; its signed demo manifest advances to cache version 4. — Scope: `Website`, `Gateway` — Verified: `manual` — Evidence:
+  [docs/release/1.5.0/verification-128.md](docs/release/1.5.0/verification-128.md)
 - The inbox presents one three-segment view — Unread (the default),
   Recent, Groups — replacing the previous display-mode control plus
   filter menu. — Scope: `App` — Verified: `simulator` — Evidence:

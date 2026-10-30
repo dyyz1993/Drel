@@ -267,7 +267,7 @@ test("the official action demo is signed without reading or writing durable stor
 
   const manifest = await response.json();
   assert.equal(manifest.appId, "dev.drel.action-demo");
-  assert.equal(manifest.cache.version, "3");
+  assert.equal(manifest.cache.version, "4");
   assert.equal(manifest.signature.algorithm, "ed25519");
   assert.deepEqual(
     manifest.capabilities_v2.map((capability) => capability.action).sort(),
