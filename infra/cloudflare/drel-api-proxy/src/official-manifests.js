@@ -72,7 +72,7 @@ export const OFFICIAL_MANIFESTS = Object.freeze([
     },
     cache: {
       strategy: "networkOnly",
-      version: "3",
+      version: "4",
       persistent: false,
       restoresLastState: true,
     },

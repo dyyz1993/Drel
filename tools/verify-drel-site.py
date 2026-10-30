@@ -364,10 +364,10 @@ def check_action_demo_contract(site: Site, failures: list[str]) -> int:
             f"Store action wire names; missing={missing}, unexpected={unexpected}"
         )
 
-    if manifest.get("cache", {}).get("version") != "3":
+    if manifest.get("cache", {}).get("version") != "4":
         failures.append(
-            "[actions] gateway-manifest.json cache.version must be 3 for the "
-            "getLocation wire-name correction"
+            "[actions] gateway-manifest.json cache.version must be 4 for the "
+            "route-matrix demo update"
         )
     return len(declared)
 

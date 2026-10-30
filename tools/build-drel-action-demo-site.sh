@@ -62,7 +62,7 @@ cat > "$STAGE/test/actions/gateway-manifest.json" <<EOF
   ],
   "routes": ["/test/actions/v1/index.html"],
   "webManifest": {"url": "https://drel.app/test/actions/manifest.webmanifest", "sha256": "$WEB_MANIFEST_SHA256"},
-  "cache": {"strategy": "networkOnly", "version": "3", "persistent": false, "restoresLastState": true}
+  "cache": {"strategy": "networkOnly", "version": "4", "persistent": false, "restoresLastState": true}
 }
 EOF
 

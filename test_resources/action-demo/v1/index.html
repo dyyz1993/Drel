@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Drel Action Demo 3</title>
+  <title>Drel Action Demo 4</title>
   <style>
     :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
     body { margin: 0; min-height: 100vh; background: linear-gradient(170deg,#f5f7fb,#eef1f8); color: #172033; }
@@ -23,6 +23,14 @@
     button.full { grid-column: 1 / -1; }
     button .plus { display: inline-block; vertical-align: -3px; margin-right: 6px; }
     #result { min-height: 24px; margin-top: 12px; font-size: 13px; color: #68738a; }
+    .route-lab { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(23,32,51,.08); }
+    @media (prefers-color-scheme: dark) { .route-lab { border-top-color: rgba(255,255,255,.09); } }
+    .route-lab h2 { margin: 0 0 8px; font-size: 20px; letter-spacing: -.02em; }
+    .route-lab p { margin: 0 0 12px; font-size: 14px; }
+    .route-state { margin: 0 0 12px; padding: 12px; border-radius: 12px; background: rgba(77,80,216,.09); color: #1e2a4a; font-weight: 700; }
+    @media (prefers-color-scheme: dark) { .route-state { background: rgba(77,80,216,.2); color: #e8ecf7; } }
+    .route-actions { display: grid; gap: 10px; }
+    .route-actions button { min-height: 48px; border-radius: 12px; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -33,7 +41,7 @@
     <p>这些按钮代表签名 Manifest 声明的原生操作。低影响操作由前台点按触发；剪贴板和定位需要一次用户授权，可随时在权限中心撤销；添加到主页只会添加当前已注册应用。</p>
     <div class="meta">
       <div>App ID<br><strong>dev.drel.action-demo</strong></div>
-      <div>Version<br><strong>3</strong></div>
+      <div>Version<br><strong>4</strong></div>
       <div>Origin<br><strong>https://drel.app</strong></div>
       <div>Actions<br><strong>haptic / vibrate / share / fullscreen / clipboard / getLocation / addToHomeScreen</strong></div>
     </div>
@@ -51,6 +59,20 @@
       <button id="undeclared" class="full">测试未声明动作（相机）</button>
     </div>
     <div id="result">等待操作…</div>
+  </section>
+  <section class="card route-lab" aria-labelledby="route-title">
+    <h2 id="route-title">路由返回测试</h2>
+    <p>先点上面的「切换沉浸全屏」，再选择不同方式跳转；从屏幕最左侧向右滑返回网页历史。没有可返回历史时保持不动，退出网页只能点悬浮条里的 ×。</p>
+    <p id="route-state" class="route-state">当前路由：首页 · history.length=1</p>
+    <div class="route-actions">
+      <button id="route-anchor">1. A 标签跳转（整页导航）</button>
+      <button id="route-href">2. location.href 跳转（整页导航）</button>
+      <button id="route-assign">3. location.assign 跳转（整页导航）</button>
+      <button id="route-open">4. window.open(_self) 当前页跳转</button>
+      <button id="route-push">5. history.pushState（同文档路由）</button>
+      <button id="route-hash">6. hash 路由（#route=hash）</button>
+      <button id="route-replace" class="secondary">7. history.replaceState（替换，不可返回）</button>
+    </div>
   </section>
 </main>
 <script>
@@ -83,6 +105,49 @@
   document.getElementById('addToHomeScreen').onclick = () => call('addToHomeScreen', { reason: '把当前演示应用添加到 Drel 首页' });
   document.getElementById('phoneHomeScreen').onclick = () => call('addToHomeScreen', { reason: '把当前演示应用添加到 iPhone 主屏幕', placement: 'phoneHomeScreen' });
   document.getElementById('undeclared').onclick = () => call('camera', { action: 'takePhoto' });
+
+  const routeState = document.getElementById('route-state');
+  const routeRoute = () => {
+    const queryRoute = new URLSearchParams(location.search).get('route');
+    const hashRoute = location.hash ? location.hash.replace(/^#/, '') : '';
+    return queryRoute || hashRoute || '首页';
+  };
+  const updateRouteLabel = () => {
+    routeState.textContent = `当前路由：${routeRoute()} · history.length=${history.length}`;
+  };
+  const buildRouteURL = (name) => {
+    const target = new URL(location.href);
+    target.searchParams.set('route', name);
+    target.hash = '';
+    return target.href;
+  };
+  const navigateWithHref = () => { location.href = buildRouteURL('location-href'); };
+  const navigateWithAssign = () => { location.assign(buildRouteURL('location-assign')); };
+  const navigateWithOpen = () => { window.open(buildRouteURL('window-open'), '_self'); };
+  const pushRoute = () => {
+    history.pushState({ route: 'history-push' }, '', buildRouteURL('history-push'));
+    updateRouteLabel();
+  };
+  const replaceRoute = () => {
+    history.replaceState({ route: 'history-replace' }, '', buildRouteURL('history-replace'));
+    updateRouteLabel();
+  };
+  const setHashRoute = () => { location.hash = 'route=hash'; };
+
+  document.getElementById('route-anchor').onclick = (event) => {
+    event.preventDefault();
+    location.href = buildRouteURL('a-tag');
+  };
+  document.getElementById('route-href').onclick = navigateWithHref;
+  document.getElementById('route-assign').onclick = navigateWithAssign;
+  document.getElementById('route-open').onclick = navigateWithOpen;
+  document.getElementById('route-push').onclick = pushRoute;
+  document.getElementById('route-hash').onclick = setHashRoute;
+  document.getElementById('route-replace').onclick = replaceRoute;
+  window.addEventListener('popstate', updateRouteLabel);
+  window.addEventListener('hashchange', updateRouteLabel);
+  window.addEventListener('pageshow', updateRouteLabel);
+  updateRouteLabel();
 </script>
 </body>
 </html>
