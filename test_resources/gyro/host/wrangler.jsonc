@@ -1,0 +1,12 @@
+// 陀螺仪游戏夹具主机：纯静态资产托管（Workers assets），
+// 不占任何自有域名（workers.dev），随删随弃。
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "drel-gyro-games",
+  "compatibility_date": "2026-08-25",
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "gyro.drel.app", "custom_domain": true }
+  ],
+  "assets": { "directory": "./public", "html_handling": "none" }
+}
