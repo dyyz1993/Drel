@@ -248,6 +248,9 @@ const Touch = (() => {
   }
 
   btnStart.addEventListener("click", () => {
+    // 授权并进开始手势：WebKit 要求 requestPermission 必须由用户点击触发，
+    // 借「开始游戏」这一次点击同时完成，玩家之后不再被打断。
+    if (Sensor.source() === "none") { Sensor.enable(); }
     overlay.classList.add("hidden");
     reset(); running = true; last = performance.now();
     raf = requestAnimationFrame(loop);
