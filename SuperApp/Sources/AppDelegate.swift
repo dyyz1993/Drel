@@ -1087,42 +1087,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 }
 
 // MARK: - DebugWindow
-
-#if DEBUG
-private class DebugWindow: UIWindow {
-    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-        super.motionEnded(motion, with: event)
-        guard motion == .motionShake else { return }
-
-        let debugPanel = DebugPanelViewController()
-        let nav = UINavigationController(rootViewController: debugPanel)
-        nav.modalPresentationStyle = .fullScreen
-
-        topViewController()?.present(nav, animated: true)
-    }
-
-    private func topViewController() -> UIViewController? {
-        let root = rootViewController
-        return getTopViewController(from: root)
-    }
-
-    private func getTopViewController(from vc: UIViewController?) -> UIViewController? {
-        guard let vc = vc else { return nil }
-        if let presented = vc.presentedViewController {
-            return getTopViewController(from: presented)
-        }
-        if let nav = vc as? UINavigationController {
-            return getTopViewController(from: nav.visibleViewController)
-        }
-        if let tab = vc as? UITabBarController {
-            return getTopViewController(from: tab.selectedViewController)
-        }
-        return vc
-    }
-}
-#else
-private typealias DebugWindow = UIWindow
-#endif
+// DebugWindow（摇一摇调试面板，DEBUG 专属，Release 回退 UIWindow）已迁至
+// SuperApp/Sources/Utilities/DebugWindow.swift。
 
 // MARK: - SceneDelegate
 
