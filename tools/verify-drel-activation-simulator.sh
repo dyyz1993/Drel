@@ -13,7 +13,8 @@
 set -euo pipefail
 
 APP_ID="${1:-dev.vot.workspace}"
-UDID="${2:-$(xcrun simctl list devices | sed -n 's/.*(\([A-F0-9-]\{36\}\)) (Booted).*/\1/p' | head -1)}"
+ROUTE="${2:-/}"
+UDID="${3:-$(xcrun simctl list devices | sed -n 's/.*(\([A-F0-9-]\{36\}\)) (Booted).*/\1/p' | head -1)}"
 APP_PATH="${APP_PATH:-$(find /tmp/drel-dd/Build/Products/Debug-iphonesimulator -maxdepth 1 -name 'Drel.app' 2>/dev/null | head -1)}"
 BUNDLE="com.webbridgekit.superapp"
 MANIFESTS_KEY="com.webbridgekit.html-app-runtime.manifests"
@@ -46,7 +47,7 @@ cat > "$PAYLOAD" <<EOF
   "title": "激活验证",
   "body": "$APP_ID 端到端",
   "appId": "$APP_ID",
-  "route": "/"
+  "route": "$ROUTE"
 }
 EOF
 xcrun simctl push "$UDID" "$BUNDLE" "$PAYLOAD"

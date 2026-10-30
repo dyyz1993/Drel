@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>陀螺仪躲避 · Bridge 版</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+  html, body { height: 100%; overflow: hidden; background: #0b1020; font-family: -apple-system, "PingFang SC", sans-serif; }
+  #stage { position: fixed; inset: 0; }
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 8px;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    background: linear-gradient(#0b1020ee, #0b102000);
+    color: #dbe4ff; font-size: 13px;
+  }
+  .chip { border: 1px solid #3b4a7a; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .chip.ok { border-color: #34d399; color: #6ee7b7; }
+  .chip.bad { border-color: #f87171; color: #fca5a5; }
+  .chip.dim { color: #93a0c8; border-color: #2b3560; }
+  #btnSensor, #btnCal {
+    border: 1px solid #4f6af6; color: #c7d2fe; background: #4f6af633;
+    border-radius: 999px; padding: 5px 12px; font-size: 13px;
+  }
+  #score { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 44px); right: 14px; z-index: 9;
+           color: #93a0c8; font-size: 12px; text-align: right; }
+  #overlay { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+             align-items: center; justify-content: center; gap: 10px; background: #0b1020d9; color: #e7ecff; }
+  #overlay h1 { font-size: 24px; }
+  #overlay p { color: #93a0c8; font-size: 13px; max-width: 30ch; text-align: center; line-height: 1.6; }
+  #overlay button { margin-top: 6px; border: 0; border-radius: 12px; padding: 12px 28px;
+                    font-size: 16px; background: #4f6af6; color: white; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="hud">
+  <span class="chip dim">Bridge 陀螺仪版</span>
+  <span id="sensorChip" class="chip bad">传感器：未启用</span>
+  <span id="hzChip" class="chip dim hidden">0 Hz</span>
+  <button id="btnSensor">开启传感器</button>
+  <button id="btnCal" class="hidden">校准</button>
+</div>
+<div id="score">得分 0 · 最佳 0</div>
+<div id="overlay">
+  <h1>陀螺仪躲避</h1>
+  <p>左右倾斜手机控制飞船，躲开下落的障碍。<br>此版经 Drel Bridge 的 sensors 动作取传感器。<br>当前商店容器未开放 sensors 时自动转触屏。</p>
+  <button id="btnStart">开始游戏</button>
+</div>
+<script>
+"use strict";
+/* ============ 传感器层（Bridge 版）============ */
+const Sensor = (() => {
+  let hzTimer = null, hzCount = 0, baseline = null, samples = [], calibrated = false, polling = false;
+  let tilt = 0; // [-1, 1]
+  const chip = document.getElementById("sensorChip");
+  const hzChip = document.getElementById("hzChip");
+  const btnCal = document.getElementById("btnCal");
+  const state = { source: "none", hz: 0, lastRaw: "" };
+  let cbSeq = 0; const pending = new Set();
+
+  function setChip(text, cls) { chip.textContent = text; chip.className = "chip " + cls; }
+
+  // 容器注入的运行时契约：bridgeVersion > 0 才有 Bridge
+  function bridgeVersion() {
+    try { return Number((window.DrelRuntime && window.DrelRuntime.bridgeVersion) || 0); }
+    catch (e) { return 0; }
+  }
+  function hasHandler() {
+    return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.BarkBridge);
+  }
+
+  // 结果回调 shim（原始消息风格）
+  window.BarkBridge = window.BarkBridge || {};
+  window.BarkBridge.receiveResult = function (res) {
+    hzCount++;
+    const cb = res && res.callbackId;
+    if (cb !== undefined) pending.delete(cb);
+    if (res && res.success) {
+      if (state.source === "none") { state.source = "bridge"; setChip("Bridge sensors ✓", "ok"); }
+      const d = res.data || {};
+      state.lastRaw = Object.keys(d).slice(0, 5).join(",");
+      // 优先姿态角，其次旋转速率，再次加速度——不同实现字段不同
+      const gamma = pick(d, ["gamma", "orientation.gamma", "attitude.gamma", "rotation.gamma"]);
+      const rot = pick(d, ["rotationRate.gamma", "rotation.gamma", "rotationRateAlpha"]);
+      const accX = pick(d, ["acceleration.x", "x", "gravity.x"]);
+      let v = null;
+      if (typeof gamma === "number") v = gamma;
+      else if (typeof rot === "number") v = rot * 12;
+      else if (typeof accX === "number") v = accX * 18;
+      if (v !== null) feed(v);
+    } else if (state.source === "none") {
+      setChip("Bridge 拒绝 sensors（白名单未开放）→ 触屏模式", "bad");
+    }
+  };
+  function pick(obj, paths) {
+    for (const p of paths) {
+      const v = p.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
+      if (typeof v === "number") return v;
+    }
+    return undefined;
+  }
+
+  function feed(value) {
+    if (!calibrated) {
+      samples.push(value);
+      if (samples.length >= 25) {
+        baseline = samples.reduce((a, b) => a + b, 0) / samples.length;
+        calibrated = true;
+        setChip("Bridge 陀螺仪 ✓ 已校准", "ok");
+      }
+    }
+    if (baseline !== null) tilt = Math.max(-1, Math.min(1, (value - baseline) / 28));
+  }
+
+  function poll() {
+    const cb = ++cbSeq; pending.add(cb);
+    try {
+      window.webkit.messageHandlers.BarkBridge.postMessage({ action: "sensors", params: {}, callbackId: String(cb) });
+    } catch (e) { /* handler 消失即停 */ }
+  }
+
+  function enable() {
+    if (bridgeVersion() === 0 || !hasHandler()) {
+      setChip("Bridge 不可用（容器未注入）→ 触屏模式", "bad");
+      return false;
+    }
+    if (polling) return true;
+    polling = true;
+    setChip("Bridge sensors 请求中…", "dim");
+    const timer = setInterval(poll, 33);
+    hzTimer = setInterval(() => {
+      state.hz = hzCount; hzCount = 0;
+      hzChip.classList.remove("hidden");
+      hzChip.textContent = state.hz + " Hz" + (state.lastRaw ? " · " + state.lastRaw : "");
+    }, 1000);
+    setTimeout(() => {
+      if (state.source === "none") {
+        setChip("Bridge 无响应/被拒 → 触屏模式", "bad");
+        clearInterval(timer);
+      }
+    }, 1500);
+    btnCal.classList.remove("hidden");
+    return true;
+  }
+
+  btnCal.addEventListener("click", () => {
+    samples = []; calibrated = false; baseline = null;
+    setChip("重新校准中…保持手机水平", "dim");
+  });
+
+  return {
+    enable,
+    value: () => (state.source !== "none" && calibrated) ? tilt : null,
+    source: () => state.source,
+  };
+})();
+
+/* ============ 触屏兜底（两版共用）============ */
+const Touch = (() => {
+  let active = false, side = 0;
+  addEventListener("touchstart", (e) => { active = true; side = e.touches[0].clientX < innerWidth / 2 ? -1 : 1; }, { passive: true });
+  addEventListener("touchmove", (e) => { side = e.touches[0].clientX < innerWidth / 2 ? -1 : 1; }, { passive: true });
+  addEventListener("touchend", () => { active = false; }, { passive: true });
+  return { value: () => active ? side : null };
+})();
+
+/* ============ 游戏内核（两版共用）============ */
+(() => {
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  const overlay = document.getElementById("overlay");
+  const scoreEl = document.getElementById("score");
+  const btnStart = document.getElementById("btnStart");
+  const btnSensor = document.getElementById("btnSensor");
+  let W = 0, H = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 3);
+    W = innerWidth; H = innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize); resize();
+
+  let running = false, raf = 0, last = 0;
+  let px = 0.5, obstacles = [], score = 0, best = 0, elapsed = 0, spawnIn = 0, dead = false;
+  try { best = Number(localStorage.getItem("gyro-bridge-best") || 0); } catch (e) {}
+
+  function reset() {
+    px = 0.5; obstacles = []; score = 0; elapsed = 0; spawnIn = 0.4; dead = false;
+    updateScore();
+  }
+  function updateScore() { scoreEl.textContent = "得分 " + Math.floor(score) + " · 最佳 " + Math.floor(best); }
+
+  function input() {
+    const t = Sensor.value(); if (t !== null) return t;
+    const s = Touch.value(); if (s !== null) return s;
+    return 0;
+  }
+
+  function step(dt) {
+    elapsed += dt; score += dt * 10;
+    px += input() * dt * 0.9;
+    px = Math.max(0.07, Math.min(0.93, px));
+    spawnIn -= dt;
+    const interval = Math.max(0.32, 0.75 - elapsed * 0.01);
+    if (spawnIn <= 0) {
+      spawnIn = interval;
+      const w = 0.10 + Math.random() * 0.14;
+      obstacles.push({ x: Math.random() * (1 - w), w, y: -0.12, h: 0.045 + Math.random() * 0.05 });
+    }
+    const fall = 0.32 + elapsed * 0.012;
+    for (const o of obstacles) o.y += fall * dt;
+    obstacles = obstacles.filter((o) => o.y < 1.2);
+    // 碰撞（飞船在 y≈0.86，半宽 0.045，半高 0.02）
+    for (const o of obstacles) {
+      const shipL = px - 0.045, shipR = px + 0.045;
+      const shipT = 0.845, shipB = 0.885;
+      if (o.x < shipR && o.x + o.w > shipL && o.y < shipB && o.y + o.h > shipT) { gameOver(); return; }
+    }
+    updateScore();
+  }
+
+  function gameOver() {
+    dead = true; running = false;
+    if (score > best) { best = score; try { localStorage.setItem("gyro-bridge-best", String(Math.floor(best))); } catch (e) {} }
+    updateScore();
+    overlay.querySelector("h1").textContent = "撞上了！";
+    overlay.querySelector("p").innerHTML = "得分 " + Math.floor(score) + " · 最佳 " + Math.floor(best) +
+      "<br>传感器：" + (Sensor.source() === "none" ? "未启用/不可用" : Sensor.source());
+    btnStart.textContent = "再来一局";
+    overlay.classList.remove("hidden");
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // 背景星
+    ctx.fillStyle = "#141c38";
+    for (let i = 0; i < 24; i++) {
+      const sx = ((i * 197) % 100) / 100 * W;
+      const sy = ((i * 131 + Math.floor(elapsed * 40 * (1 + i % 3))) % 100) / 100 * H;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    // 障碍
+    ctx.fillStyle = "#f87171";
+    for (const o of obstacles) {
+      ctx.beginPath();
+      ctx.roundRect(o.x * W, o.y * H, o.w * W, o.h * H, 6);
+      ctx.fill();
+    }
+    // 飞船
+    const sx = px * W, sy = 0.865 * H;
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(input() * 0.25);
+    ctx.fillStyle = "#8b5cf6";
+    ctx.beginPath();
+    ctx.moveTo(0, -16); ctx.lineTo(12, 14); ctx.lineTo(0, 8); ctx.lineTo(-12, 14);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#c4b5fd";
+    ctx.fillRect(-4, 8, 8, 8 + Math.sin(elapsed * 30) * 4);
+    ctx.restore();
+  }
+
+  function loop(ts) {
+    if (!running) return;
+    const dt = Math.min(0.05, (ts - last) / 1000 || 0.016); last = ts;
+    step(dt); draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  btnStart.addEventListener("click", () => {
+    overlay.classList.add("hidden");
+    reset(); running = true; last = performance.now();
+    raf = requestAnimationFrame(loop);
+  });
+  btnSensor.addEventListener("click", () => Sensor.enable());
+  document.addEventListener("visibilitychange", () => { if (document.hidden && running) { running = false; } });
+  draw();
+})();
+</script>
+</body>
+</html>

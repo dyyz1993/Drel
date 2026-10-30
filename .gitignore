@@ -97,6 +97,8 @@ docs/promotion/*draft*.png
 node_modules/
 test-results/
 test_resources/*
+!test_resources/gyro/
+!test_resources/gyro/**
 !test_resources/data-template/
 !test_resources/data-template/**
 !test_resources/pwa-notification/
