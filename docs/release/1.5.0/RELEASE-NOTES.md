@@ -2,7 +2,7 @@
 
 Status: owner-review draft. Do not paste into App Store Connect until the
 physical-device TestFlight walkthrough is approved and the exact production
-gateway demo is available. The copy below describes the same seven actions
+gateway demo is available. The copy below describes the same eight actions
 the Store build allows; the review notes carry the full detail.
 
 ## zh-Hans
@@ -10,11 +10,12 @@ the Store build allows; the review notes carry the full detail.
 ```text
 Drel 1.5.0 更新
 
-• 原生操作声明：可信 HTML 应用可在签名 Manifest 中声明触感、震动、分享、沉浸全屏、添加到主页
+• 原生操作声明：可信 HTML 应用可在签名 Manifest 中声明触感、震动、分享、沉浸全屏、添加到主页、剪贴板、位置和运动传感器
 • 更清晰的操作边界：声明只是能力清单，不等于长期授权，也不代表用户已同意交出隐私数据
 • 前台手势触发：网页必须在用户点按后的短时间内调用，后台或未声明操作会被拒绝
 • 分享更透明：每次分享都打开 iOS 系统分享面板，由你检查内容并选择去向
 • 沉浸全屏更清晰：左侧箭头只收起工具条，× 关闭网页，左边缘向右滑返回网页历史且不会误退出
+• 运动传感器可用于游戏：可信应用可在本次应用会话中订阅加速度计和陀螺仪事件，离开页面或应用后停止
 • 首页应用图标会用云朵标识离线能力与安装状态；沉浸全屏收起后的侧边控制露出更少，减少遮挡
 • 剪贴板与位置由你授权：可信应用需要读取剪贴板或位置时，Drel 会单独征求你的同意
 • 授权随时可撤：已授予的剪贴板与位置权限集中在权限中心，一键撤销后立即失效
@@ -26,11 +27,12 @@ Drel 1.5.0 更新
 ```text
 What’s new in Drel 1.5.0
 
-• Declared native actions: trusted HTML apps can declare haptic, vibrate, share, immersive fullscreen, and add-to-home-screen actions in an Ed25519-signed manifest
+• Declared native actions: trusted HTML apps can declare haptic, vibrate, share, immersive fullscreen, add-to-home-screen, clipboard, location, and motion-sensor actions in an Ed25519-signed manifest
 • Clearer boundaries: a declaration is an action inventory, not a long-term grant of user privacy
 • Foreground-gesture requirement: pages must call an action shortly after a user tap; undeclared or background calls are rejected
 • Transparent sharing: every share opens the native iOS share sheet so you review the content and choose the destination
 • Clearer fullscreen controls: the edge arrow only collapses the toolbar, × closes the page, and a left-edge rightward swipe returns through page history without exiting
+• Motion sensors can drive games: a trusted app can subscribe to accelerometer and gyroscope events for the current app session, and streaming stops when the page or app leaves the foreground
 • Home app badges use cloud icons for offline availability and install state; the collapsed immersive control now takes up less edge space
 • Clipboard and location need your permission: when a trusted app asks to read the clipboard or your position, Drel asks you separately
 • Revoke any time: granted clipboard and location permissions live in one permission center, and revoking one takes effect immediately

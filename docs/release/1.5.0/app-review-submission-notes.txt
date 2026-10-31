@@ -1,19 +1,20 @@
-Drel 1.5.0 (Build 118) Review Notes
+Drel 1.5.0 (Build 130) Review Notes
 
 SUMMARY
 Drel is a developer push-notification utility and a secure container for HTML apps that the user explicitly trusts. Version 1.5.0 adds a fixed Manifest v2 action runtime for trusted apps.
 
-The Store build exposes exactly seven native actions and no others:
-haptic, vibrate, share, fullscreen, clipboard, getLocation, addToHomeScreen.
+The Store build exposes exactly eight native actions and no others:
+haptic, vibrate, share, fullscreen, clipboard, getLocation, addToHomeScreen,
+sensors.
 
-This is not a general JavaScript-to-native Bridge. Ordinary web pages, untrusted pages, and strong-offline packages do not receive it. The action list cannot be extended remotely. Camera, photos, Bluetooth, microphone, speech, contacts, motion, file import/export, and generic device control are not exposed by the Drel 1.5 host.
+This is not a general JavaScript-to-native Bridge. Ordinary web pages, untrusted pages, and strong-offline packages do not receive it. The action list cannot be extended remotely. Camera, photos, Bluetooth, microphone, speech, contacts, file import/export, and generic device control are not exposed by the Drel 1.5 host. The sensors action is limited to a foreground accelerometer/gyroscope subscription for the active trusted app session.
 
 TRUST AND RUNTIME BOUNDARY
 1. A network-managed app must have an Ed25519-signed gateway manifest.
 2. The requested action must be declared for the exact app and origin.
-3. Drel's host build accepts only the seven actions above; every other Bridge action is rejected before handler dispatch.
+3. Drel's host build accepts only the eight actions above; every other Bridge action is rejected before handler dispatch.
 4. The page must be active in the foreground and must call the action after a recent one-use user tap.
-5. haptic, vibrate, share, fullscreen, and addToHomeScreen create no persistent privacy grant. The manifest declaration is an allowlist, not standing consent.
+5. haptic, vibrate, share, fullscreen, addToHomeScreen, and sensors create no persistent privacy grant. The manifest declaration is an allowlist, not standing consent.
 6. clipboard and getLocation require a separate persistent grant. The permission center lists both grants and supports explicit revocation that takes effect immediately.
 
 HOW TO TEST
@@ -28,18 +29,21 @@ https://drel.app/test/actions/v1/index.html
 6. Tap add-to-Home-Screen. The trusted demo may be offered for Drel's app list and the iPhone Home Screen.
 7. Tap clipboard. Drel first shows its own permission prompt naming the app and origin. After consent, the requested clipboard operation runs in the WebView.
 8. Tap location. Drel first shows its own permission prompt, then the standard iOS location prompt. Approval or denial returns to the page without an error screen.
-9. Open the permission center. Active clipboard and location grants are visible with their scope.
-10. Revoke the clipboard grant, confirm the prompt, then call clipboard again. The later call is rejected.
+9. Open the signed gyro demo, start the accelerometer from the debug panel, and tilt the device. Event count and game input should follow physical motion.
+10. Open the permission center. Active clipboard and location grants are visible with their scope.
+11. Revoke the clipboard grant, confirm the prompt, then call clipboard again. The later call is rejected.
 
 NEGATIVE CHECKS
 - An undeclared action is rejected.
 - A compliant action without a recent foreground tap is rejected.
 - An ordinary web page or strong-offline package does not receive the Bridge.
-- The host action catalog contains only the seven actions listed above.
+- The host action catalog contains only the eight actions listed above.
 - After a grant is revoked, later calls of that action are rejected.
 
 DATA HANDLING
 Only clipboard and getLocation can read user data. Both require an explicit local grant. Their returned values stay in the requesting WebView and are not forwarded to the Drel service. Drel does not access either value in the background and does not retain returned values.
+
+The sensors action streams accelerometer or gyroscope samples only to the active page after a foreground subscription call. Streaming stops on an explicit stop call, page hide, or controller teardown. Drel keeps no motion history and does not forward samples to the service.
 
 The share action always opens Apple's system share sheet. Drel does not record the shared payload or selected destination.
 
