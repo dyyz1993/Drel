@@ -122,6 +122,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
         #if DEBUG
         DrelSelfHostedUITestFixture.startIfRequested()
+        if ProcessInfo.processInfo.arguments.contains("--reset-app-catalog-activations") {
+            let activationStore = HTMLAppPushActivationStore()
+            [
+                "dev.drel.data-template",
+                "dev.drel.offline-demo",
+                "dev.drel.offline-network-demo"
+            ].forEach(activationStore.deactivate)
+        }
         #endif
         #if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY
         if isUITesting {

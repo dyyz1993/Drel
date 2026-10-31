@@ -361,13 +361,21 @@ final class PWAAppCatalogViewController: UIViewController {
     private let activationStore = HTMLAppPushActivationStore()
     private let presentationMetadataStore = HTMLAppPresentationMetadataStore()
     private lazy var launchResolver = HTMLAppLaunchResolver(trustRegistry: runtime.trustRegistry)
+    private lazy var onboardingService = HTMLAppGatewayOnboardingService(
+        gatewayRegistry: gatewayRegistry,
+        trustRegistry: runtime.trustRegistry,
+        permissionLedger: runtime.permissionLedger,
+        presentationMetadataStore: presentationMetadataStore
+    )
     private var manifestsByID: [String: HTMLAppManifest] = [:]
     private var viewModel: PWAAppCatalogViewModel?
+    private var isRefreshingCatalog = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = ThemeTokens.Color.background
         reload()
+        refreshCatalogIfNeeded()
     }
 
     private func reload() {
@@ -412,6 +420,26 @@ final class PWAAppCatalogViewController: UIViewController {
             hosting.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         hosting.didMove(toParent: self)
+    }
+
+    private func refreshCatalogIfNeeded() {
+        guard manifestsByID.isEmpty, !isRefreshingCatalog else { return }
+        isRefreshingCatalog = true
+        let gateway = gatewayRegistry.activeGateway() ?? DrelGatewayConfiguration.official
+        onboardingService.validate(gateway) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isRefreshingCatalog = false
+                guard case .success(let report) = result else { return }
+                do {
+                    try self.onboardingService.activate(report)
+                    self.reload()
+                } catch {
+                    // The empty state remains visible; the home screen owns
+                    // the gateway error presentation and retry cooldown.
+                }
+            }
+        }
     }
 
     private func makeCatalogItem(_ manifest: HTMLAppManifest) -> PWAAppCatalogItem {

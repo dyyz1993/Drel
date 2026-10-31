@@ -18,7 +18,12 @@ Each release line carries three pieces of evidence:
 
 ## Unreleased
 
-Nothing yet.
+- The Home app shelf now offers **浏览全部应用**, listing every app in the
+  active gateway's signed catalog. Users can inspect source origins, signature
+  key, declared Bridge capabilities, and routes before opening an app or
+  explicitly adding it to Home. — Scope: `App` — Verified: `simulator` —
+  Evidence:
+  [docs/testing/results/drel-app-catalog-browser/verification.md](docs/testing/results/drel-app-catalog-browser/verification.md)
 
 ## [1.5.0] — 2026-10-22
 
