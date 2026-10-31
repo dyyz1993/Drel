@@ -11,7 +11,7 @@ Connect.
 
 Drel is a developer push-notification utility and a container for HTML apps
 that the user has explicitly trusted. Version 1.5.0 adds a narrowly scoped
-Manifest v2 action runtime. The Store build exposes exactly seven native
+Manifest v2 action runtime. The Store build exposes exactly eight native
 actions, and no others:
 
 - `haptic`
@@ -21,14 +21,15 @@ actions, and no others:
 - `clipboard`
 - `getLocation`
 - `addToHomeScreen`
+- `sensors`
 
 This is not a general JavaScript-to-native Bridge and it is not remotely
 extensible. Ordinary web pages, strong-offline packages, and unregistered apps
 do not receive the Bridge. Drel 1.5 does not enable camera scanning, photo
-library access, Bluetooth, microphone, speech, contacts, motion, file
+library access, Bluetooth, microphone, speech, contacts, file
 import/export, or generic device control.
 
-We are disclosing the full list deliberately. Two of the seven actions read
+We are disclosing the full list deliberately. Two of the eight actions read
 user data (`clipboard` and `getLocation`); both require an explicit,
 persistent, user-revocable grant, and both are described below and in the
 Permissions and privacy section. Nothing in this list is hidden behind a
@@ -39,11 +40,12 @@ generic capability name.
 1. A network-managed HTML app must have an Ed25519-signed gateway manifest.
 2. Every action must be declared in that signed manifest for the exact app
    action and origin.
-3. Drel's build policy exposes only the seven actions listed above; all other
+3. Drel's build policy exposes only the eight actions listed above; all other
    Bridge actions are rejected before handler dispatch.
 4. The page must be active in the foreground, and the call must consume a
    recent one-use touch gesture.
-5. `haptic`, `vibrate`, `share`, `fullscreen` and `addToHomeScreen` write no
+5. `haptic`, `vibrate`, `share`, `fullscreen`, `addToHomeScreen` and `sensors`
+   write no
    persistent privacy grant. For these, a manifest declaration is an
    allowlist, not standing user consent.
 6. `clipboard` and `getLocation` do require a persistent grant. The user
@@ -62,6 +64,7 @@ generic capability name.
 | `vibrate` | Declaration only | Brief, bounded vibration after a foreground user tap | Play arbitrary sounds, loop indefinitely, or access data |
 | `share` | Declaration only | Opens the native iOS share sheet with the page-provided content | Send content in the background, choose a destination, or retain the user's selection |
 | `fullscreen` | Declaration only | Hides host navigation/status chrome and keeps a host-owned control with collapse, back-history, refresh, favorite and close actions | Rotate the device, trap the user, disable scrolling, or exit without the explicit close control |
+| `sensors` | Declaration only; active app session only | Streams accelerometer or gyroscope samples at the page-requested interval after a foreground tap; streaming stops on an explicit stop call, page hide, or controller teardown | Read other sensors, retain motion history, or stream when the page is outside the active app session |
 | `addToHomeScreen` | Declaration only | Adds the current page to the Drel app list, and separately to the iPhone Home Screen | Read user data, or add anything the user did not open from the app |
 | `clipboard` | Persistent, revocable grant | Reads or writes the clipboard only after the user grants access; the grant is listed and revocable in Drel's permission center | Read the clipboard without a grant, or access the clipboard in the background |
 | `getLocation` | Persistent, revocable grant | Requests the device location only after the user grants access, and shows the standard iOS location prompt; the grant is listed and revocable in Drel's permission center | Track location in the background, or access location without a grant |
@@ -112,9 +115,12 @@ app after the owner releases it. Do not substitute the simulator-only fixture.
 8. Tap the location control. Drel shows its own permission prompt, then the
    standard iOS location prompt. Approve or deny; both paths return to the
    page without an error screen.
-9. Open Drel's permission center. The clipboard and location grants for the
+9. Open the signed gyro demo, tap the sensor debug control, and start the
+   accelerometer. Tilt the device and confirm the event count and game input
+   follow the physical motion. This action has no privacy prompt or grant.
+10. Open Drel's permission center. The clipboard and location grants for the
    demo app are listed with their scope.
-10. Revoke the clipboard grant and confirm the confirmation prompt appears.
+11. Revoke the clipboard grant and confirm the confirmation prompt appears.
     Tap clipboard again in the demo app; the call is now rejected.
 
 ### Negative checks
@@ -122,12 +128,12 @@ app after the owner releases it. Do not substitute the simulator-only fixture.
 - An undeclared action is rejected.
 - Calling an approved action without a recent foreground tap is rejected.
 - Ordinary web pages and offline packages do not receive the Bridge.
-- The host action catalog contains only the seven listed actions.
+- The host action catalog contains only the eight listed actions.
 - After a grant is revoked, later calls of that action are rejected.
 
 ## Permissions and privacy
 
-Two of the seven actions reach user data, and both are declared above:
+Two of the eight actions reach user data, and both are declared above:
 
 - `clipboard` reads or writes the clipboard, and `getLocation` reads the
   device location. Each requires a persistent, revocable grant that the user
@@ -137,12 +143,14 @@ Two of the seven actions reach user data, and both are declared above:
   Drel does not access the clipboard or the location in the background, and
   it does not retain the returned values.
 
-The remaining five actions do not read user data and do not create a
+The remaining six actions do not read user data and do not create a
 persistent grant. `share` is mediated each time by Apple's system sheet;
-Drel does not record the shared payload or selected destination.
+Drel does not record the shared payload or selected destination. `sensors`
+streams CoreMotion samples only to the active page and keeps no motion
+history.
 
 The first 1.5.0 action train intentionally avoids other sensitive system
-prompts: camera, photos, Bluetooth, microphone, speech, contacts, and motion
+prompts: camera, photos, Bluetooth, microphone, speech, and contacts
 are not enabled by Drel's host policy.
 
 The linked SDK still contains generic handler code for developers building
@@ -179,11 +187,13 @@ test credentials.
    show the value in the page.
 8. 40–50s: Tap location, show Drel's permission prompt and the iOS location
    prompt, and approve it.
-9. 50–60s: Open Drel's permission center and show the two active grants.
-10. 60–70s: Revoke the clipboard grant, then tap clipboard again and show
+9. 50–60s: Open the gyro demo, start the accelerometer, and show the debug
+   event count plus tilt-driven movement.
+10. 60–70s: Open Drel's permission center and show the two active grants.
+11. 70–80s: Revoke the clipboard grant, then tap clipboard again and show
     that the call is rejected.
-11. 70–80s: Show an undeclared-action rejection and state that the catalog is
-    limited to these seven actions.
+12. 80–90s: Show an undeclared-action rejection and state that the catalog is
+    limited to these eight actions.
 
 ## Service and contact facts
 
@@ -197,13 +207,13 @@ test credentials.
 ## Preconditions before ASC use
 
 - Owner approves this exact action catalog and copy.
-- Production gateway serves a signed demo app whose manifest declares the
-  seven review actions, using the wire action names
+- Production gateway serves signed demo apps whose manifests declare the
+  eight review actions, using the wire action names
   (`getLocation`, not `location`).
 - Physical-device TestFlight walkthrough confirms haptic/vibrate on supported
   hardware, the system share sheet, fullscreen, the host exit control,
-  add-to-Home-Screen, the clipboard grant flow, the location grant flow, and
-  the revoke flow.
+  add-to-Home-Screen, the clipboard grant flow, the location grant flow, the
+  revoke flow, and live accelerometer-driven game input.
 - Record and privately attach the walkthrough only after those checks pass.
 - Create or edit only the new 1.5.0 App Store version; do not modify Drel
   1.4.1 or its release state.

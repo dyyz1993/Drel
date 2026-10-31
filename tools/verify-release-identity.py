@@ -52,6 +52,7 @@ STORE_ACTION_ALLOWLIST = {
     "clipboard",
     "getLocation",
     "addToHomeScreen",
+    "sensors",
 }
 
 # Actions that read user data. They need a persistent, user-revocable
@@ -66,6 +67,7 @@ DECLARATION_ONLY_ACTIONS = {
     "share",
     "fullscreen",
     "addToHomeScreen",
+    "sensors",
 }
 
 # Capabilities the public copy must never claim. Each entry lists the
