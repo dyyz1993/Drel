@@ -18,12 +18,7 @@ Each release line carries three pieces of evidence:
 
 ## Unreleased
 
-- The Home app shelf now offers **浏览全部应用**, listing every app in the
-  active gateway's signed catalog. Users can inspect source origins, signature
-  key, declared Bridge capabilities, and routes before opening an app or
-  explicitly adding it to Home. — Scope: `App` — Verified: `simulator` —
-  Evidence:
-  [docs/testing/results/drel-app-catalog-browser/verification.md](docs/testing/results/drel-app-catalog-browser/verification.md)
+Nothing yet.
 
 ## [1.5.0] — 2026-10-22
 
@@ -102,6 +97,12 @@ reviewing and revoking grants, and a one-command permission regression gate.
 
 ### Changed
 
+- The Home app shelf now offers **浏览全部应用**, listing every app in the
+  active gateway's signed catalog. Users can inspect source origins, signature
+  key, declared Bridge capabilities, and routes before opening an app or
+  explicitly adding it to Home. — Scope: `App` — Verified: `simulator` —
+  Evidence:
+  [docs/testing/results/drel-app-catalog-browser/verification.md](docs/testing/results/drel-app-catalog-browser/verification.md)
 - Home app badges now reflect offline availability in three states: no offline
   capability, offline-capable but not installed, and installed. Capable apps
   show a cloud-download badge before installation, while installed apps switch
