@@ -114,3 +114,30 @@ v2 action policy:       PASS
 ![Simulator 虚拟倾斜后游戏运行](artifacts/gyro-v7-simulator-synthetic-game.png)
 
 ![从全部应用返回我的应用](artifacts/catalog-returned-to-my-apps.png)
+
+## Build 130 真机与 v8 热修（2026-10-31）
+
+Build 130 已通过 tag `v1.5.0+130` 上传 TestFlight：GitHub Actions
+`41181799571`，`processingState=VALID`，
+`internalBuildState=IN_BETA_TESTING`。iPhone 13（iOS 18.7.3）安装后设置页
+显示 `Drel v1.5.0 (Build 130)`。
+
+130 的 v6 页面先完成原生传感器证明：校准成功、31Hz、游戏结束显示
+`传感器：bridge`。随后发现 v7 调试封装把 `startAccelerometer` 转发时漏了
+`action` 字段，导致返回状态成功但未启动流。v8 只热修线上夹具：
+
+```text
+entry:                  https://gyro.drel.app/bridge-gyro.v8.html
+entry SHA-256:          3d9f1769fcd5de493dc7d39a4d5f0213a289c25882de906b5db9840284f84a1b
+entry size:             18346 bytes
+resource manifest SHA:  621d1381a753b4dd1e8520be5f24f4ee9ad6e86ccf746cb50b355bd835014215
+signed cache version:   8
+deviceKey shadow:       refreshed to v8
+```
+
+v8 真机复测：开始后 18Hz，校准后 30Hz，游戏结束显示 `传感器：bridge`。
+从“浏览全部应用”打开后，`×` 回到应用列表，`返回我的应用`回到我的应用。
+
+![iPhone Build 130](artifacts/iphone-130-settings-build.jpg)
+
+![iPhone v8 Bridge accelerometer](artifacts/iphone-130-gyro-v8-bridge.jpg)

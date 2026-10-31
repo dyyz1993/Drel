@@ -129,7 +129,7 @@ const Debug = (() => {
     }
     write("CALL", `${action} ${JSON.stringify(params || {})}`);
     try {
-      const result = await window.BarkBridge.callNative("sensors", params || {});
+      const result = await window.BarkBridge.callNative("sensors", { action, ...(params || {}) });
       const payload = result && typeof result === "object" && "data" in result
         ? result.data
         : result;
