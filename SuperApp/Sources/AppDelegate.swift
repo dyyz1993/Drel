@@ -80,7 +80,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
         WebBridgeHostCapabilityPolicy.nativeActionAllowlist = [
             "haptic", "vibrate", "share", "fullscreen",
-            "clipboard", "getLocation", "addToHomeScreen"
+            "clipboard", "getLocation", "addToHomeScreen", "sensors"
         ]
         WebBrowserManager.shared.webGrantsPresenter = nil
         #else

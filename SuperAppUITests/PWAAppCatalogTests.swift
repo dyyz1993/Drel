@@ -28,7 +28,7 @@ final class PWAAppCatalogTests: XCTestCase {
         XCTAssertTrue(addToHome.isEnabled)
         addToHome.tap()
 
-        let back = app.buttons["BackButton"]
+        let back = app.buttons["pwaCatalog.back"]
         XCTAssertTrue(back.waitForExistence(timeout: 4))
         back.tap()
 
@@ -61,8 +61,31 @@ final class PWAAppCatalogTests: XCTestCase {
         )
         XCTAssertTrue(app.webViews.firstMatch.exists)
 
+        let nativeExit = app.descendants(matching: .any)["browserManager.immersiveReturnButton"]
+        XCTAssertTrue(nativeExit.waitForExistence(timeout: 4))
+        let collapsedFrame = nativeExit.frame
+        nativeExit.tap()
+        app.windows.firstMatch.coordinate(
+            withNormalizedOffset: CGVector(dx: 0, dy: 0)
+        ).withOffset(
+            CGVector(dx: collapsedFrame.minX + 96, dy: collapsedFrame.midY)
+        ).tap()
+
+        XCTAssertTrue(
+            app.buttons["pwaCatalog.app.dev.drel.data-template"].waitForExistence(timeout: 8),
+            "Closing a catalog-launched web app should return to the catalog list"
+        )
+        let catalogBack = app.buttons["pwaCatalog.back"]
+        XCTAssertTrue(catalogBack.waitForExistence(timeout: 4))
+
+        catalogBack.tap()
+        XCTAssertTrue(
+            app.buttons["pwaHome.manageApps"].waitForExistence(timeout: 5),
+            "The catalog must expose a working route back to My Apps"
+        )
+
         let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "signed-app-catalog-opened"
+        attachment.name = "signed-app-catalog-returned-to-my-apps"
         attachment.lifetime = .keepAlways
         add(attachment)
     }

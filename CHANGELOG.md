@@ -94,6 +94,11 @@ reviewing and revoking grants, and a one-command permission regression gate.
   consent panel and no Info.plist usage key. — Scope: `Bridge` — Verified:
   `simulator` — Evidence:
   [docs/testing/results/drel-gyro-sensors/verification.md](docs/testing/results/drel-gyro-sensors/verification.md)
+- The gyro demo adds an on-page Bridge diagnostics panel with runtime
+  identity, sensor availability, call/event logs, and synthetic tilt for
+  simulator game-loop checks. — Scope: `Website`, `Bridge` — Verified:
+  `simulator` — Evidence:
+  [docs/testing/results/drel-gyro-sensors/verification.md](docs/testing/results/drel-gyro-sensors/verification.md)
 
 ### Changed
 
@@ -103,6 +108,11 @@ reviewing and revoking grants, and a one-command permission regression gate.
   explicitly adding it to Home. — Scope: `App` — Verified: `simulator` —
   Evidence:
   [docs/testing/results/drel-app-catalog-browser/verification.md](docs/testing/results/drel-app-catalog-browser/verification.md)
+- The signed app catalog now restores the shared navigation bar and exposes
+  an explicit **返回我的应用** action, so closing a catalog-launched web app
+  returns to the catalog list without trapping the user there. — Scope:
+  `App` — Verified: `simulator` — Evidence:
+  [docs/testing/results/drel-gyro-sensors/verification.md](docs/testing/results/drel-gyro-sensors/verification.md)
 - Home app badges now reflect offline availability in three states: no offline
   capability, offline-capable but not installed, and installed. Capable apps
   show a cloud-download badge before installation, while installed apps switch
