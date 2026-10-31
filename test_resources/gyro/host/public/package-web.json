@@ -1,14 +1,14 @@
 {
   "schemaVersion": "1",
   "appId": "dev.gyro.web",
-  "version": "1",
-  "entrypoint": "web-gyro.v4.html",
+  "version": "5",
+  "entrypoint": "web-gyro.v5.html",
   "files": [
     {
-      "path": "web-gyro.v4.html",
-      "url": "https://gyro.drel.app/web-gyro.v4.html",
-      "sha256": "3a3837d7773cbf9238319f312a911666ffa7cf33c9ec571cad415f2ee436a59c",
-      "size": 11764,
+      "path": "web-gyro.v5.html",
+      "url": "https://gyro.drel.app/web-gyro.v5.html",
+      "sha256": "d390a81e8c2b8f334bd1dee498258e56c282c5d6554e9863e5295981b57c7b8f",
+      "size": 11801,
       "mimeType": "text/html"
     }
   ]

@@ -105,7 +105,7 @@ const Sensor = (() => {
     }
     if (baseline !== null) {
       const d = shortestDelta(baseline, v);
-      const dz = 3, full = 22; // 3° 死区，22° 满舵
+      const dz = 0.06, full = 0.45; // 重力分量：0.06G 死区，0.45G 满舵
       tilt = Math.abs(d) < dz ? 0 : Math.max(-1, Math.min(1, (d - Math.sign(d) * dz) / full));
     }
   }
@@ -115,28 +115,27 @@ const Sensor = (() => {
     setChip("传感器：请求权限…", "dim");
     let granted = true;
     try {
-      if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) {
-        granted = (await DeviceOrientationEvent.requestPermission()) === "granted";
+      if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
+        granted = (await DeviceMotionEvent.requestPermission()) === "granted";
       }
     } catch (e) { granted = false; }
     if (!granted) { setChip("权限被拒 → 触屏模式", "bad"); return false; }
 
-    window.addEventListener("deviceorientation", (ev) => {
-      const v = axisValue(ev);
-      if (v !== null) feed(v);
-    });
-    window.addEventListener("devicemotion", () => {
-      if (state.source === "none") state.source = "motion";
+    // 重力 x 分量：竖持/平持都对应左右倾斜（gamma 只在平持姿势有效，弃用）
+    window.addEventListener("devicemotion", (ev) => {
+      const g = ev.accelerationIncludingGravity;
+      if (!g || typeof g.x !== "number") return;
+      if (state.source === "none") { state.source = "motion"; setChip("Web 陀螺仪 ✓", "ok"); }
+      feed(g.x);
     });
 
-    // 首批事件到达后 800ms 自动开始校准（等权限弹窗后的手回到持机位）
-    setTimeout(() => { if (!calibrated && !calibrating) startCalibration(0); }, 800);
+    setTimeout(() => { if (!calibrated && !calibrating) startCalibration(0); }, 600);
 
     hzTimer = setInterval(() => {
       state.hz = hzCount; hzCount = 0;
       hzChip.classList.remove("hidden");
       hzChip.textContent = state.hz + "Hz" +
-        (baseline !== null ? " γ" + Math.round(raw) + "°/b" + Math.round(baseline) + "°/" + Math.round(tilt * 100) + "%" : "");
+        (baseline !== null ? " x" + raw.toFixed(2) + "G/b" + baseline.toFixed(2) + "G/" + Math.round(tilt * 100) + "%" : "");
     }, 1000);
     setTimeout(() => {
       if (state.source === "none") setChip("Web 陀螺仪不可用 → 触屏模式", "bad");
