@@ -36,4 +36,4 @@ rg -q 'testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt' SuperAppUITests/P
 rg -q 'testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit' SuperAppUITests/PWAPermissionTests.swift || fail "fullscreen UI regression test missing"
 rg -q '^#if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY' SuperApp/Sources/Managers/TestDataSeeder.swift || fail "development fixture seeder is not excluded from Drel 1.5"
 
-echo "PASS: Drel 1.5 enables signed haptic/vibrate/share/fullscreen/sensors plus grant-based clipboard/location and add-to-home-screen; 1.4.1 remains 1.4.1 (89)."
+echo "PASS: Drel 1.5 enables signed haptic/vibrate/share/fullscreen/add-to-home-screen plus revocable sensors/clipboard/location; 1.4.1 remains 1.4.1 (89)."

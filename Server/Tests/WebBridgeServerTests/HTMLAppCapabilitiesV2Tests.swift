@@ -59,7 +59,7 @@ struct HTMLAppCapabilitiesV2Tests {
         }
     }
 
-    @Test("Accepts always for clipboard and location grants")
+    @Test("Accepts always for clipboard, location, and sensors grants")
     func acceptsAlwaysForGrantAction() async throws {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -79,10 +79,17 @@ struct HTMLAppCapabilitiesV2Tests {
                     scope: .always
                 ),
                 HTMLAppPolicyManifest.CapabilityDeclaration(
-                    action: .location,
+                    action: .getLocation,
                     origins: ["https://apps.example.com"],
                     purposeId: "location-grant",
                     purpose: "Get the current position",
+                    scope: .always
+                ),
+                HTMLAppPolicyManifest.CapabilityDeclaration(
+                    action: .sensors,
+                    origins: ["https://apps.example.com"],
+                    purposeId: "motion-grant",
+                    purpose: "Subscribe to tilt motion",
                     scope: .always
                 )
             ],
@@ -92,7 +99,7 @@ struct HTMLAppCapabilitiesV2Tests {
         )
         let service = makeService(dataDir: directory.path)
         let signed = try await service.save(manifest)
-        #expect(signed.capabilitiesV2.count == 2)
+        #expect(signed.capabilitiesV2.count == 3)
     }
 
     @Test("Rejects unknown action")
