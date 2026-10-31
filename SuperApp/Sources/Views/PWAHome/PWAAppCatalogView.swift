@@ -378,6 +378,31 @@ final class PWAAppCatalogViewController: UIViewController {
         refreshCatalogIfNeeded()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // PWAAppCenter hides the shared navigation bar on its own root screen.
+        // The catalog is a pushed child, so it must restore the bar when a web
+        // app is closed or the user otherwise returns here.
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+        if navigationItem.leftBarButtonItem == nil,
+           (navigationController?.viewControllers.count ?? 0) > 1 {
+            let back = UIBarButtonItem(
+                image: LucideIcon.chevronLeft.image(),
+                style: .plain,
+                target: self,
+                action: #selector(backToAppCenter)
+            )
+            back.accessibilityIdentifier = "pwaCatalog.back"
+            back.accessibilityLabel = "返回我的应用"
+            back.tintColor = ThemeTokens.Color.text
+            navigationItem.leftBarButtonItem = back
+        }
+    }
+
+    @objc private func backToAppCenter() {
+        navigationController?.popViewController(animated: true)
+    }
+
     private func reload() {
         let manifests = runtime.trustRegistry.registeredManifests()
             .filter { $0.signature != nil }

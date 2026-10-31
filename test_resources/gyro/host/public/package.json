@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1",
+  "appId": "dev.gyro.offline",
+  "version": "7",
+  "entrypoint": "bridge-gyro.v7.html",
+  "files": [
+    {
+      "path": "bridge-gyro.v7.html",
+      "url": "https://gyro.drel.app/bridge-gyro.v7.html",
+      "sha256": "aff9567ff3b9064d139419f7ab22f43dfc763a248c37b2a7eed4d5a8c6fe6929",
+      "size": 18329,
+      "mimeType": "text/html"
+    }
+  ]
+}

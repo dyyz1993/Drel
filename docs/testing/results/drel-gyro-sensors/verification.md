@@ -49,3 +49,68 @@ Drel 模拟器构建:        green（策略三处穷举 switch 全通过编译�
   绿实心云 = 已安装（`isOfflineCapable` / `isOfflineInstalled`）。
   Web 版应用已按用户决策下架（DeviceOrientation 路线弃用），Bridge 版
   v5 保留（离线包 v5）。
+
+## v7 调试页、Simulator 与返回路径（2026-10-31）
+
+### 根因
+
+- 游戏循环和触摸兜底本身可用；Device/Simulator 的失败点是 Drel 1.5
+  的 `DREL_V2_MANAGED_ACTIONS_ONLY` 白名单漏了 `sensors`，调用在进入
+  `WebSensorsHandler` 前就被宿主拒绝。
+- v7 调试页放在 HUD 内，但初始开始遮罩层级高于 HUD，按钮看得见却点不到。
+  v7 已把 HUD 提到遮罩之上，调试入口在开始页即可操作。
+- “浏览全部应用”是由隐藏了导航栏的 App Center 推入的子页面。关闭网页后
+  虽然回到应用列表，但列表没有明确的返回入口。现在列表会在
+  `viewWillAppear` 恢复导航栏，并提供 `pwaCatalog.back`「返回我的应用」。
+
+### v7 调试能力
+
+- 显示页面 URL、BarkBridge、`callNative` / `receiveEvent`、Bridge 版本、
+  app ID、离线模式和事件计数。
+- 可查询加速度计/陀螺仪状态、启动/停止加速度计、清空日志。
+- 可注入“左倾 / 回中 / 右倾”虚拟倾斜；真实设备无传感器事件时仍能验证
+  游戏循环、输入平滑和渲染，但虚拟倾斜不作为真机传感器证据。
+
+### 线上资产
+
+```text
+entry:                  https://gyro.drel.app/bridge-gyro.v7.html
+entry SHA-256:          aff9567ff3b9064d139419f7ab22f43dfc763a248c37b2a7eed4d5a8c6fe6929
+entry size:             18329 bytes
+resource manifest SHA:  39b54def06c2cc7330251805385b3a43fd48483fe01d67840b1b28dc063060f3
+web manifest SHA:       97e646258f965555523e526a5ef0a20c248e717ebc13effe128bdf2db229b1c5
+signed parent cache:    7
+signed action:          sensors / gyro-tilt-steer / appSession
+signing key:            gw-2026-09-15
+```
+
+### Simulator 结果
+
+```text
+device:                 Nearo iPhone 13 QA (iOS 18.3.1 Simulator)
+UI tests:               3 passed, 0 failed
+  GyroDebugTests:       1/1
+  PWAAppCatalogTests:   2/2
+Drel15Release build:    BUILD SUCCEEDED
+CI/design lint:         0 errors, all checks passed
+v2 action policy:       PASS
+```
+
+实测：
+
+- `传感器调试`可打开；`查询传感器`返回成功，页面显示
+  `accelerometer:false`、`gyroscope:false`，没有出现
+  `Action is not enabled by host policy`；
+- `启动加速度计`调用到达原生层，事件计数仍为 0；模拟器没有可用的真实
+  倾斜事件流，不能替代真机校准/体感验收；
+- `模拟右倾`后开始游戏，得分从 0 推进到 23，证明游戏循环正常；
+- 从“浏览全部应用”打开 Web App 后，专用 `×` 回到应用列表；
+  `pwaCatalog.back` 再回到“我的应用”。
+
+### 截图
+
+![Bridge 传感器调试面板](artifacts/gyro-v7-simulator-debug-panel.png)
+
+![Simulator 虚拟倾斜后游戏运行](artifacts/gyro-v7-simulator-synthetic-game.png)
+
+![从全部应用返回我的应用](artifacts/catalog-returned-to-my-apps.png)

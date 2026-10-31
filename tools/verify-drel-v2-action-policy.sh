@@ -27,7 +27,7 @@ rg -A 8 '^        Drel15Release:$' project.yml | rg -q 'PROVISIONING_PROFILE_SPE
 rg -A 7 '^        Drel14Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.4.1"' || fail "Drel 1.4.1 version was changed"
 rg -A 7 '^        Drel14Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "89"' || fail "Drel 1.4.1 build was changed"
 rg -q '"haptic", "vibrate", "share", "fullscreen",' SuperApp/Sources/AppDelegate.swift || fail "Drel 1.5 action allowlist mismatch"
-rg -q '"clipboard", "getLocation", "addToHomeScreen"' SuperApp/Sources/AppDelegate.swift || fail "Drel 1.5 action allowlist mismatch"
+rg -q '"clipboard", "getLocation", "addToHomeScreen", "sensors"' SuperApp/Sources/AppDelegate.swift || fail "Drel 1.5 action allowlist mismatch"
 rg -q 'allowedActions.contains\(action\)' "$FRAMEWORK/Sources/Core/WebJavaScriptBridge.swift" || fail "SDK does not enforce the host action allowlist"
 rg -q 'testHostActionAllowlistRejectsUnlistedNativeActionBeforeHandler' "$FRAMEWORK/Tests/CoreTests/WebJavaScriptBridgeTests.swift" || fail "host allowlist regression test missing"
 rg -q 'testDeclaredShareRunsAfterGestureWithoutReusableConsentGrant' "$FRAMEWORK/Tests/CoreTests/WebJavaScriptBridgeTests.swift" || fail "no-persistent-grant regression test missing"
@@ -36,4 +36,4 @@ rg -q 'testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt' SuperAppUITests/P
 rg -q 'testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit' SuperAppUITests/PWAPermissionTests.swift || fail "fullscreen UI regression test missing"
 rg -q '^#if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY' SuperApp/Sources/Managers/TestDataSeeder.swift || fail "development fixture seeder is not excluded from Drel 1.5"
 
-echo "PASS: Drel 1.5 enables signed haptic/vibrate/share/fullscreen plus grant-based clipboard/location and add-to-home-screen; 1.4.1 remains 1.4.1 (89)."
+echo "PASS: Drel 1.5 enables signed haptic/vibrate/share/fullscreen/sensors plus grant-based clipboard/location and add-to-home-screen; 1.4.1 remains 1.4.1 (89)."

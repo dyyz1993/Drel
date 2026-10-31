@@ -121,6 +121,7 @@ test_resources/*
 package.json
 !infra/cloudflare/drel-api-proxy/package.json
 !test_resources/offline-package/package.json
+!test_resources/gyro/host/public/package.json
 package-lock.json
 tsconfig.json
 vitest.config.ts
