@@ -34,3 +34,19 @@ Evidence:
 
 The tag-triggered GitHub Actions run is the authoritative archive, signing,
 TestFlight upload, and Apple processing-state proof for this build.
+
+## TestFlight publication
+
+```text
+GitHub Actions run:  41176318146
+Result:              PASS
+Archive/signing:     PASS
+Upload:              PASS
+processingState:     VALID
+internalBuildState:  IN_BETA_TESTING
+```
+
+The artifact upload step reported the account-level GitHub Actions artifact
+quota warning, but archive, export, signing, TestFlight upload, and ASC
+processing all completed successfully. The warning does not affect the
+TestFlight binary.
