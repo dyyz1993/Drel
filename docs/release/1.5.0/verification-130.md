@@ -42,25 +42,48 @@ sensor evidence.
 ## Published demo
 
 ```text
-Entry:                  https://gyro.drel.app/bridge-gyro.v7.html
-Entry SHA-256:          aff9567ff3b9064d139419f7ab22f43dfc763a248c37b2a7eed4d5a8c6fe6929
-Entry size:             18329 bytes
-Resource manifest SHA:  39b54def06c2cc7330251805385b3a43fd48483fe01d67840b1b28dc063060f3
-Signed cache version:   7
+Entry:                  https://gyro.drel.app/bridge-gyro.v8.html
+Entry SHA-256:          3d9f1769fcd5de493dc7d39a4d5f0213a289c25882de906b5db9840284f84a1b
+Entry size:             18346 bytes
+Resource manifest SHA:  621d1381a753b4dd1e8520be5f24f4ee9ad6e86ccf746cb50b355bd835014215
+Signed cache version:   8
 Signed action:          sensors / gyro-tilt-steer / appSession
 Signing key:            gw-2026-09-15
 ```
 
+Build 130 originally published v7. Physical acceptance exposed a v7 fixture
+regression: the debug helper omitted the `action` field when forwarding
+`startAccelerometer`, so the native status call succeeded but did not start the
+stream. v8 is an online fixture hotfix only; the signed 130 app binary is
+unchanged and correctly allows `sensors`.
+
 ## TestFlight publication
 
-Pending tag-triggered archive, signing, upload, and App Store Connect
-processing.
+```text
+Tag:                 v1.5.0+130
+Release commit:      7cca023
+GitHub Actions run:  41181799571
+Result:              PASS
+Archive/signing:     PASS
+Upload:              PASS
+processingState:     VALID
+internalBuildState:  IN_BETA_TESTING
+```
 
 ## Physical-device acceptance
 
-Pending TestFlight install. Required checks:
+Device: `许映洲的iPhone`, iPhone 13, iOS 18.7.3, wired TestFlight install.
 
-- The debug panel reports a live accelerometer stream and event count.
-- Tilt controls the ship after calibration, without the host-policy rejection.
-- Closing a catalog-launched app returns to the catalog list.
-- `返回我的应用` returns to My Apps.
+- Settings shows `Drel v1.5.0 (Build 130)`.
+- Build 130's v6 page proved the native path before the fixture hotfix:
+  calibration succeeded, stream reached 31Hz, and game-over reported
+  `传感器：bridge`.
+- After the v8 fixture hotfix, start reported 18Hz immediately, calibrated,
+  reached 30Hz, and game-over again reported `传感器：bridge`; score advanced
+  to 43.
+- From 浏览全部应用 → gyro detail → 打开应用, `×` returned to the catalog
+  list; `返回我的应用` returned to My Apps.
+
+![Build 130 installed on TestFlight](../../testing/results/drel-gyro-sensors/artifacts/iphone-130-settings-build.jpg)
+
+![v8 physical accelerometer stream](../../testing/results/drel-gyro-sensors/artifacts/iphone-130-gyro-v8-bridge.jpg)
