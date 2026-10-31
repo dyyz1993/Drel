@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>陀螺仪躲避 · Web 版</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+  html, body { height: 100%; overflow: hidden; background: #0b1020; font-family: -apple-system, "PingFang SC", sans-serif; }
+  #stage { position: fixed; inset: 0; }
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 8px;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    background: linear-gradient(#0b1020ee, #0b102000);
+    color: #dbe4ff; font-size: 13px;
+  }
+  .chip { border: 1px solid #3b4a7a; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .chip.ok { border-color: #34d399; color: #6ee7b7; }
+  .chip.bad { border-color: #f87171; color: #fca5a5; }
+  .chip.dim { color: #93a0c8; border-color: #2b3560; }
+  #btnSensor, #btnCal {
+    border: 1px solid #4f6af6; color: #c7d2fe; background: #4f6af633;
+    border-radius: 999px; padding: 5px 12px; font-size: 13px;
+  }
+  #score { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 44px); right: 14px; z-index: 9;
+           color: #93a0c8; font-size: 12px; text-align: right; }
+  #overlay { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+             align-items: center; justify-content: center; gap: 10px; background: #0b1020d9; color: #e7ecff; }
+  #overlay h1 { font-size: 24px; }
+  #overlay p { color: #93a0c8; font-size: 13px; max-width: 30ch; text-align: center; line-height: 1.6; }
+  #overlay button { margin-top: 6px; border: 0; border-radius: 12px; padding: 12px 28px;
+                    font-size: 16px; background: #4f6af6; color: white; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="hud">
+  <span class="chip dim">Web 陀螺仪版</span>
+  <span id="sensorChip" class="chip bad">传感器：未启用</span>
+  <span id="hzChip" class="chip dim hidden">0 Hz</span>
+  <button id="btnSensor">开启传感器</button>
+  <button id="btnCal" class="hidden">校准</button>
+</div>
+<div id="score">得分 0 · 最佳 0</div>
+<div id="overlay">
+  <h1>陀螺仪躲避</h1>
+  <p>左右倾斜手机控制飞船，躲开下落的障碍。<br>没有陀螺仪时：按住屏幕左/右半边转向。<br>点下方按钮向系统申请陀螺仪权限。</p>
+  <button id="btnStart">开始游戏</button>
+</div>
+<script>
+"use strict";
+/* ============ 传感器层（Web 版）============ */
+const Sensor = (() => {
+  let hzTimer = null, hzCount = 0, frameCount = 0;
+  let baseline = null, samples = [], calibrating = false, calibrated = false;
+  let tilt = 0, tiltSmooth = 0;
+  const chip = document.getElementById("sensorChip");
+  const hzChip = document.getElementById("hzChip");
+  const btnCal = document.getElementById("btnCal");
+  const state = { source: "none", hz: 0 };
+
+  function setChip(text, cls) { chip.textContent = text; chip.className = "chip " + cls; }
+
+  // 屏幕朝向自适应：竖屏用 gamma（左右滚转），横屏用 beta（带符号），180° 反号
+  function axisValue(ev) {
+    const angle = (screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0;
+    let v;
+    if (angle === 90) v = -(ev.beta || 0);
+    else if (angle === 270 || angle === -90) v = (ev.beta || 0);
+    else if (angle === 180) v = -(ev.gamma || 0);
+    else v = (ev.gamma || 0);
+    if (typeof v !== "number" || isNaN(v)) return null;
+    return v;
+  }
+  function shortestDelta(from, to) {
+    let d = to - from;
+    if (d > 180) d -= 360; else if (d < -180) d += 360;
+    return d;
+  }
+
+  function startCalibration(settleMs) {
+    samples = []; calibrated = false; calibrating = true;
+    setChip("校准中：手机端平拿稳 " + Math.round((settleMs || 0) / 1000 + 1) + " 秒…", "dim");
+    setTimeout(() => { /* 静置期后再开始采样 */ }, 0);
+  }
+
+  function feed(v) {
+    raw = v; hzCount++;
+    if (state.source === "none") { state.source = "web"; setChip("Web 陀螺仪 ✓", "ok"); }
+    if (calibrating) {
+      samples.push(v);
+      if (samples.length >= 30) {
+        const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+        const spread = Math.sqrt(samples.reduce((a, b) => a + (b - mean) * (b - mean), 0) / samples.length);
+        if (spread < 2.5) {
+          baseline = mean; calibrated = true; calibrating = false;
+          setChip("Web 陀螺仪 ✓ 已校准", "ok");
+        } else {
+          samples.shift(); // 手机还在动：滚动窗口继续等它稳下来
+        }
+      }
+    }
+    if (baseline !== null) {
+      const d = shortestDelta(baseline, v);
+      const dz = 0.06, full = 0.45; // 重力分量：0.06G 死区，0.45G 满舵
+      tilt = Math.abs(d) < dz ? 0 : Math.max(-1, Math.min(1, (d - Math.sign(d) * dz) / full));
+    }
+  }
+  let raw = 0;
+
+  async function enable() {
+    setChip("传感器：请求权限…", "dim");
+    let granted = true;
+    try {
+      if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
+        granted = (await DeviceMotionEvent.requestPermission()) === "granted";
+      }
+    } catch (e) { granted = false; }
+    if (!granted) { setChip("权限被拒 → 触屏模式", "bad"); return false; }
+
+    // 重力 x 分量：竖持/平持都对应左右倾斜（gamma 只在平持姿势有效，弃用）
+    window.addEventListener("devicemotion", (ev) => {
+      const g = ev.accelerationIncludingGravity;
+      if (!g || typeof g.x !== "number") return;
+      if (state.source === "none") { state.source = "motion"; setChip("Web 陀螺仪 ✓", "ok"); }
+      feed(g.x);
+    });
+
+    setTimeout(() => { if (!calibrated && !calibrating) startCalibration(0); }, 600);
+
+    hzTimer = setInterval(() => {
+      state.hz = hzCount; hzCount = 0;
+      hzChip.classList.remove("hidden");
+      hzChip.textContent = state.hz + "Hz" +
+        (baseline !== null ? " x" + raw.toFixed(2) + "G/b" + baseline.toFixed(2) + "G/" + Math.round(tilt * 100) + "%" : "");
+    }, 1000);
+    setTimeout(() => {
+      if (state.source === "none") setChip("Web 陀螺仪不可用 → 触屏模式", "bad");
+    }, 1500);
+    btnCal.classList.remove("hidden");
+    return true;
+  }
+
+  btnCal.addEventListener("click", () => startCalibration(0));
+
+  return {
+    enable,
+    startCalibration,
+    value: () => {
+      if (state.source === "none" || !calibrated) return null;
+      tiltSmooth += (tilt - tiltSmooth) * 0.35; // 平滑，消除抖动
+      return tiltSmooth;
+    },
+    source: () => state.source,
+  };
+})();
+
+/* ============ 触屏兜底（两版共用）============ */
+const Touch = (() => {
+  let active = false, side = 0;
+  addEventListener("touchstart", (e) => { active = true; side = e.touches[0].clientX < innerWidth / 2 ? -1 : 1; }, { passive: true });
+  addEventListener("touchmove", (e) => { side = e.touches[0].clientX < innerWidth / 2 ? -1 : 1; }, { passive: true });
+  addEventListener("touchend", () => { active = false; }, { passive: true });
+  return { value: () => active ? side : null };
+})();
+
+/* ============ 游戏内核（两版共用）============ */
+(() => {
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  const overlay = document.getElementById("overlay");
+  const scoreEl = document.getElementById("score");
+  const btnStart = document.getElementById("btnStart");
+  const btnSensor = document.getElementById("btnSensor");
+  let W = 0, H = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 3);
+    W = innerWidth; H = innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize); resize();
+
+  let running = false, raf = 0, last = 0;
+  let px = 0.5, obstacles = [], score = 0, best = 0, elapsed = 0, spawnIn = 0, dead = false;
+  try { best = Number(localStorage.getItem("gyro-web-best") || 0); } catch (e) {}
+
+  function reset() {
+    px = 0.5; obstacles = []; score = 0; elapsed = 0; spawnIn = 0.4; dead = false;
+    updateScore();
+  }
+  function updateScore() { scoreEl.textContent = "得分 " + Math.floor(score) + " · 最佳 " + Math.floor(best); }
+
+  function input() {
+    const t = Sensor.value(); if (t !== null) return t;
+    const s = Touch.value(); if (s !== null) return s;
+    return 0;
+  }
+
+  function step(dt) {
+    elapsed += dt; score += dt * 10;
+    px += input() * dt * 0.9;
+    px = Math.max(0.07, Math.min(0.93, px));
+    spawnIn -= dt;
+    const interval = Math.max(0.32, 0.75 - elapsed * 0.01);
+    if (spawnIn <= 0) {
+      spawnIn = interval;
+      const w = 0.10 + Math.random() * 0.14;
+      obstacles.push({ x: Math.random() * (1 - w), w, y: -0.12, h: 0.045 + Math.random() * 0.05 });
+    }
+    const fall = 0.32 + elapsed * 0.012;
+    for (const o of obstacles) o.y += fall * dt;
+    obstacles = obstacles.filter((o) => o.y < 1.2);
+    // 碰撞（飞船在 y≈0.86，半宽 0.045，半高 0.02）
+    for (const o of obstacles) {
+      const shipL = px - 0.045, shipR = px + 0.045;
+      const shipT = 0.845, shipB = 0.885;
+      if (o.x < shipR && o.x + o.w > shipL && o.y < shipB && o.y + o.h > shipT) { gameOver(); return; }
+    }
+    updateScore();
+  }
+
+  function gameOver() {
+    dead = true; running = false;
+    if (score > best) { best = score; try { localStorage.setItem("gyro-web-best", String(Math.floor(best))); } catch (e) {} }
+    updateScore();
+    overlay.querySelector("h1").textContent = "撞上了！";
+    overlay.querySelector("p").innerHTML = "得分 " + Math.floor(score) + " · 最佳 " + Math.floor(best) +
+      "<br>传感器：" + (Sensor.source() === "none" ? "未启用/不可用" : Sensor.source());
+    btnStart.textContent = "再来一局";
+    overlay.classList.remove("hidden");
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // 背景星
+    ctx.fillStyle = "#141c38";
+    for (let i = 0; i < 24; i++) {
+      const sx = ((i * 197) % 100) / 100 * W;
+      const sy = ((i * 131 + Math.floor(elapsed * 40 * (1 + i % 3))) % 100) / 100 * H;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    // 障碍
+    ctx.fillStyle = "#f87171";
+    for (const o of obstacles) {
+      ctx.beginPath();
+      ctx.roundRect(o.x * W, o.y * H, o.w * W, o.h * H, 6);
+      ctx.fill();
+    }
+    // 飞船
+    const sx = px * W, sy = 0.865 * H;
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(input() * 0.25);
+    ctx.fillStyle = "#8b5cf6";
+    ctx.beginPath();
+    ctx.moveTo(0, -16); ctx.lineTo(12, 14); ctx.lineTo(0, 8); ctx.lineTo(-12, 14);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#c4b5fd";
+    ctx.fillRect(-4, 8, 8, 8 + Math.sin(elapsed * 30) * 4);
+    ctx.restore();
+  }
+
+  function loop(ts) {
+    if (!running) return;
+    const dt = Math.min(0.05, (ts - last) / 1000 || 0.016); last = ts;
+    step(dt); draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  btnStart.addEventListener("click", () => {
+    // 授权并进开始手势：WebKit 要求 requestPermission 必须由用户点击触发，
+    // 借「开始游戏」这一次点击同时完成，玩家之后不再被打断。
+    if (Sensor.source() === "none") { Sensor.enable(); }
+    overlay.classList.add("hidden");
+    reset(); running = true; last = performance.now();
+    raf = requestAnimationFrame(loop);
+  });
+  btnSensor.addEventListener("click", () => Sensor.enable());
+  document.addEventListener("visibilitychange", () => { if (document.hidden && running) { running = false; } });
+  draw();
+})();
+</script>
+</body>
+</html>
