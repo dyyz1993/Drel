@@ -44,7 +44,7 @@ final class GyroDebugTests: XCTestCase {
         XCTAssertTrue(app.webViews.staticTexts["Bridge 传感器调试"].waitForExistence(timeout: 4))
 
         app.webViews.buttons["查询传感器"].tap()
-        let allowAlways = app.buttons["wbk.pwa-permission.allow-always"]
+        let allowAlways = app.buttons["pwa.permission.scope.always"]
         XCTAssertTrue(allowAlways.waitForExistence(timeout: 5), "Motion must require a branded grant before dispatch")
         allowAlways.tap()
         let success = app.webViews.staticTexts.matching(
