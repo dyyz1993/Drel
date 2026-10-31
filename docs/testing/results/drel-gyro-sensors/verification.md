@@ -36,3 +36,16 @@ Drel 模拟器构建:        green（策略三处穷举 switch 全通过编译�
   「Bridge 拒绝 sensors → 触屏模式」为预期；
 - 新构建上预期：开游戏 → 自动订阅 → HUD「Bridge 加速度计 ✓ 已校准」，
   无任何弹窗。
+
+## 后续迭代（同实验线，2026-10-30）
+
+- 首个真机数据点：DeviceOrientation 事件在 Drel 的 WKWebView 内可达
+  （用户实测有单侧舵感），但校准基线缺陷导致单向锁死 → v3 修复
+  （方差门控 + 死区 + 解包裹）。
+- v5：Web 版改用 `accelerationIncludingGravity.x`（gamma 轴只在平持姿势
+  对应左右倾斜，竖持无效——用户实测坐实）；Bridge 版订阅调用并进
+  「开始游戏」手势（受管动作要求触碰后 1.5 秒内发起且手势一次性消耗）。
+- 首页卡片新增离线能力双态云徽章：灰「云+下载箭头」= 支持离线未安装；
+  绿实心云 = 已安装（`isOfflineCapable` / `isOfflineInstalled`）。
+  Web 版应用已按用户决策下架（DeviceOrientation 路线弃用），Bridge 版
+  v5 保留（离线包 v5）。
