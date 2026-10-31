@@ -2,7 +2,7 @@
 
 Status: owner-review draft for the future 1.5.0 App Store version. This text
 describes the full native action surface of the 1.5 Store build, including
-the two data-reading actions, so that review sees the real capability set
+the data-reading actions, so that review sees the real capability set
 rather than discovering an undisclosed action during testing. It must be
 re-checked against the final build before it is pasted into App Store
 Connect.
@@ -29,8 +29,8 @@ do not receive the Bridge. Drel 1.5 does not enable camera scanning, photo
 library access, Bluetooth, microphone, speech, contacts, file
 import/export, or generic device control.
 
-We are disclosing the full list deliberately. Two of the eight actions read
-user data (`clipboard` and `getLocation`); both require an explicit,
+We are disclosing the full list deliberately. Three of the eight actions read
+device/user data (`clipboard`, `getLocation`, and `sensors`); they require an explicit,
 persistent, user-revocable grant, and both are described below and in the
 Permissions and privacy section. Nothing in this list is hidden behind a
 generic capability name.
@@ -44,11 +44,11 @@ generic capability name.
    Bridge actions are rejected before handler dispatch.
 4. The page must be active in the foreground, and the call must consume a
    recent one-use touch gesture.
-5. `haptic`, `vibrate`, `share`, `fullscreen`, `addToHomeScreen` and `sensors`
+5. `haptic`, `vibrate`, `share`, `fullscreen` and `addToHomeScreen`
    write no
    persistent privacy grant. For these, a manifest declaration is an
    allowlist, not standing user consent.
-6. `clipboard` and `getLocation` do require a persistent grant. The user
+6. `clipboard`, `getLocation` and `sensors` do require a persistent grant. The user
    approves each one explicitly, the grant is revocable at any time from
    Drel's permission center, and the permission center shows the active
    grant list.
@@ -64,19 +64,19 @@ generic capability name.
 | `vibrate` | Declaration only | Brief, bounded vibration after a foreground user tap | Play arbitrary sounds, loop indefinitely, or access data |
 | `share` | Declaration only | Opens the native iOS share sheet with the page-provided content | Send content in the background, choose a destination, or retain the user's selection |
 | `fullscreen` | Declaration only | Hides host navigation/status chrome and keeps a host-owned control with collapse, back-history, refresh, favorite and close actions | Rotate the device, trap the user, disable scrolling, or exit without the explicit close control |
-| `sensors` | Declaration only; active app session only | Streams accelerometer or gyroscope samples at the page-requested interval after a foreground tap; streaming stops on an explicit stop call, page hide, or controller teardown | Read other sensors, retain motion history, or stream when the page is outside the active app session |
+| `sensors` | Persistent, revocable grant | Streams accelerometer or gyroscope samples at the page-requested interval after the user grants access and the page makes a foreground call; revoking the grant stops an active stream immediately, as do an explicit stop, page hide, or controller teardown | Read other sensors, retain motion history, or stream when the page is outside the active app session |
 | `addToHomeScreen` | Declaration only | Adds the current page to the Drel app list, and separately to the iPhone Home Screen | Read user data, or add anything the user did not open from the app |
 | `clipboard` | Persistent, revocable grant | Reads or writes the clipboard only after the user grants access; the grant is listed and revocable in Drel's permission center | Read the clipboard without a grant, or access the clipboard in the background |
 | `getLocation` | Persistent, revocable grant | Requests the device location only after the user grants access, and shows the standard iOS location prompt; the grant is listed and revocable in Drel's permission center | Track location in the background, or access location without a grant |
 
-### Where the two grant-based actions are visible to the user
+### Where the grant-based actions are visible to the user
 
-1. A trusted HTML app that declares `clipboard` or `getLocation` and calls it
+1. A trusted HTML app that declares `clipboard`, `getLocation`, or `sensors` and calls it
    after a foreground tap triggers Drel's own permission prompt.
 2. Approving it creates a persistent grant for that app and origin.
 3. Drel's permission center lists every active grant, shows its scope, and
    lets the user revoke it after an explicit confirmation.
-4. Revoking the grant immediately blocks later calls; the app is not left
+4. Revoking the grant immediately blocks later calls and stops an active sensor stream; the app is not left
    holding a silent capability.
 
 The grant list is stored on the device only. Drel does not upload clipboard

@@ -16,7 +16,8 @@ final class GyroDebugTests: XCTestCase {
             "--ui-testing",
             "--show-pwa-app-center",
             "--clear-last-session",
-            "--reset-app-catalog-activations"
+            "--reset-app-catalog-activations",
+            "--reset-permission-grants"
         ]
         app.launchEnvironment = [
             "AppleLanguages": "(zh-Hans)",
@@ -38,15 +39,18 @@ final class GyroDebugTests: XCTestCase {
         app.buttons["pwaCatalog.open"].tap()
 
         let debugButton = app.webViews.buttons["传感器调试"]
-        XCTAssertTrue(debugButton.waitForExistence(timeout: 20), "Gyro v7 should expose the sensor debug panel")
+        XCTAssertTrue(debugButton.waitForExistence(timeout: 20), "Gyro v9 should expose the sensor debug panel")
         debugButton.tap()
         XCTAssertTrue(app.webViews.staticTexts["Bridge 传感器调试"].waitForExistence(timeout: 4))
 
         app.webViews.buttons["查询传感器"].tap()
+        let allowAlways = app.buttons["wbk.pwa-permission.allow-always"]
+        XCTAssertTrue(allowAlways.waitForExistence(timeout: 5), "Motion must require a branded grant before dispatch")
+        allowAlways.tap()
         let success = app.webViews.staticTexts.matching(
             NSPredicate(format: "label CONTAINS %@", "lastResult: success")
         ).firstMatch
-        XCTAssertTrue(success.waitForExistence(timeout: 5), "The sensors status call must reach the native handler")
+        XCTAssertTrue(success.waitForExistence(timeout: 5), "An approved sensors grant must reach the native handler")
 
         app.webViews.buttons["启动加速度计"].tap()
         let startCall = app.webViews.staticTexts.matching(
@@ -63,7 +67,7 @@ final class GyroDebugTests: XCTestCase {
             "Simulator coverage must not stop at the host allowlist"
         )
         let debugAttachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        debugAttachment.name = "gyro-v7-simulator-bridge-debug-panel"
+        debugAttachment.name = "gyro-v9-simulator-bridge-debug-panel"
         debugAttachment.lifetime = .keepAlways
         add(debugAttachment)
 
@@ -82,7 +86,7 @@ final class GyroDebugTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [scoreAdvanced], timeout: 4), .completed)
 
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = "gyro-v7-simulator-dispatch-and-synthetic-game"
+        attachment.name = "gyro-v9-simulator-dispatch-and-synthetic-game"
         attachment.lifetime = .keepAlways
         add(attachment)
         #endif

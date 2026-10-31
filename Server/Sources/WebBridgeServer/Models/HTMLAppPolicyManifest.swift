@@ -65,7 +65,8 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
         case share
         case fullscreen
         case clipboard
-        case location
+        case getLocation
+        case sensors
         case addToHomeScreen
     }
 
@@ -261,8 +262,8 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
                   declaration.origins.allSatisfy({ canonicalOrigins.contains($0) }) else {
                 return "capabilities_v2 origins must be a nonempty unique subset of allowedOrigins"
             }
-            // Clipboard and location are signed user-data grants and may use
-            // always. All other declarations remain non-persistent.
+            // Clipboard, location, and motion are signed user-data grants and
+            // may use always. All other declarations remain non-persistent.
             if Self.isGrantBasedAction(declaration.action) {
                 guard declaration.scope == .always else {
                     return "capabilities_v2 grant actions require the always scope"
@@ -278,7 +279,7 @@ struct HTMLAppPolicyManifest: Codable, Equatable, Sendable, ResponseEncodable {
 
     private static func isGrantBasedAction(_ action: ControlledAction) -> Bool {
         switch action {
-        case .clipboard, .location: return true
+        case .clipboard, .getLocation, .sensors: return true
         case .haptic, .vibrate, .share, .fullscreen, .addToHomeScreen: return false
         }
     }

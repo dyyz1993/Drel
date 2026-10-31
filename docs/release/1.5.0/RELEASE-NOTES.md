@@ -17,8 +17,8 @@ Drel 1.5.0 更新
 • 沉浸全屏更清晰：左侧箭头只收起工具条，× 关闭网页，左边缘向右滑返回网页历史且不会误退出
 • 运动传感器可用于游戏：可信应用可在本次应用会话中订阅加速度计和陀螺仪事件，离开页面或应用后停止
 • 首页应用图标会用云朵标识离线能力与安装状态；沉浸全屏收起后的侧边控制露出更少，减少遮挡
-• 剪贴板与位置由你授权：可信应用需要读取剪贴板或位置时，Drel 会单独征求你的同意
-• 授权随时可撤：已授予的剪贴板与位置权限集中在权限中心，一键撤销后立即失效
+• 剪贴板、位置与运动传感器由你授权：可信应用读取这些数据前，Drel 会单独征求你的同意
+• 授权随时可撤：已授予的剪贴板、位置和运动传感器权限集中在权限中心，撤销后立即停止数据流
 • 能力范围保持克制：扫码、相册、蓝牙、麦克风、通讯录等敏感能力仍未开放
 ```
 
@@ -32,10 +32,10 @@ What’s new in Drel 1.5.0
 • Foreground-gesture requirement: pages must call an action shortly after a user tap; undeclared or background calls are rejected
 • Transparent sharing: every share opens the native iOS share sheet so you review the content and choose the destination
 • Clearer fullscreen controls: the edge arrow only collapses the toolbar, × closes the page, and a left-edge rightward swipe returns through page history without exiting
-• Motion sensors can drive games: a trusted app can subscribe to accelerometer and gyroscope events for the current app session, and streaming stops when the page or app leaves the foreground
+• Motion sensors can drive games: a trusted app can request accelerometer and gyroscope events after you grant access; revoking access stops the stream immediately
 • Home app badges use cloud icons for offline availability and install state; the collapsed immersive control now takes up less edge space
-• Clipboard and location need your permission: when a trusted app asks to read the clipboard or your position, Drel asks you separately
-• Revoke any time: granted clipboard and location permissions live in one permission center, and revoking one takes effect immediately
+• Clipboard, location, and motion sensors need your permission: when a trusted app asks for them, Drel asks you separately
+• Revoke any time: granted clipboard, location, and motion-sensor permissions live in one permission center, and revoking sensors stops the stream immediately
 • Restrained capability scope: camera scanning, photos, Bluetooth, microphone, contacts, and other sensitive actions remain unavailable
 ```
 

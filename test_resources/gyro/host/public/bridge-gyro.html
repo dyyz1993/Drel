@@ -66,7 +66,7 @@
 <div id="score">得分 0 · 最佳 0</div>
 <div id="overlay">
   <h1>陀螺仪躲避</h1>
-  <p>左右倾斜手机控制飞船，躲开下落的障碍。<br>此版经 Drel Bridge 的 sensors 动作取传感器。<br>当前商店容器未开放 sensors 时自动转触屏。</p>
+  <p>左右倾斜手机控制飞船，躲开下落的障碍。<br>此版经 Drel Bridge 的 sensors 动作取传感器。<br>传感器属于可撤销授权；撤销后立即回触屏。</p>
   <button id="btnStart">开始游戏</button>
 </div>
 <section id="debugPanel" class="hidden">
@@ -224,6 +224,18 @@ const Sensor = (() => {
     return false;
   }
   function onBridgeEvent(event, data) {
+    if (event === "onSensorsAccessRevoked") {
+      Debug.received(event, data);
+      state.source = "none";
+      baseline = null;
+      calibrated = false;
+      calibrating = false;
+      tilt = 0;
+      tiltSmooth = 0;
+      raw = 0;
+      setChip("传感器权限已撤销 → 触屏模式", "bad");
+      return;
+    }
     if (event !== "onAccelerometerChange") return;
     Debug.received(event, data);
     if (state.source === "none") { state.source = "bridge"; setChip("Bridge 加速度计 ✓ 等待校准", "ok"); }
