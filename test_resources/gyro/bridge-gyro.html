@@ -54,49 +54,41 @@
 "use strict";
 /* ============ 传感器层（Bridge 版）============ */
 const Sensor = (() => {
-  // WebSensorsHandler 订阅协议：status 查询 → startAccelerometer(interval)
-  // → window.BarkBridge.receiveEvent("onAccelerometerChange", {x,y,z,timestamp})
+  // 调用约定与 Action Demo 一致：window.BarkBridge.callNative(action, params)
+  // （运行时注入的 Promise 封装，投递给小写 barkBridge handler）。
+  // 传感器订阅必须在用户手势后发起：本层由「开始游戏」点击触发。
   const chip = document.getElementById("sensorChip");
   const hzChip = document.getElementById("hzChip");
   const btnCal = document.getElementById("btnCal");
   const state = { source: "none", hz: 0 };
-  let hzCount = 0, cbSeq = 0;
+  let hzCount = 0;
   let baseline = null, samples = [], calibrating = false, calibrated = false;
   let tilt = 0, tiltSmooth = 0, raw = 0;
 
-  const callbacks = {};
-  window.BarkBridge = window.BarkBridge || {};
-  window.BarkBridge.receiveResult = function (res) {
-    const done = res && res.callbackId && callbacks[res.callbackId];
-    if (done) { delete callbacks[res.callbackId]; done(res); }
-  };
-  window.BarkBridge.receiveEvent = function (event, data) {
-    if (event !== "onAccelerometerChange") return;
-    if (state.source === "none") { state.source = "bridge"; }
-    hzCount++;
-    feed(typeof data.x === "number" ? data.x : 0);
-  };
-  function call(params, done) {
-    const cb = "cb" + (++cbSeq);
-    callbacks[cb] = done;
-    try {
-      window.webkit.messageHandlers.BarkBridge.postMessage(
-        { action: "sensors", params: params, callbackId: cb });
-    } catch (e) {
-      delete callbacks[cb];
-      done({ success: false, error: String(e) });
-      return;
-    }
-    setTimeout(() => {
-      if (callbacks[cb]) { delete callbacks[cb]; done({ success: false, error: "timeout" }); }
-    }, 2500);
-  }
-
   function setChip(text, cls) { chip.textContent = text; chip.className = "chip " + cls; }
 
-  function feed(x) { // x：重力加速度分量（G），端平≈0，右倾为正
+  // 事件流由原生 evaluateJavaScript 调 receiveEvent 送达——只做增量挂载，
+  // 绝不覆盖运行时注入的 BarkBridge 对象（callNative/_callbacks 都在里面）。
+  function attachEventSink() {
+    if (window.BarkBridge) { window.BarkBridge.receiveEvent = onBridgeEvent; return true; }
+    let tries = 0;
+    const t = setInterval(() => {
+      tries++;
+      if (window.BarkBridge) { window.BarkBridge.receiveEvent = onBridgeEvent; clearInterval(t); }
+      else if (tries > 100) { clearInterval(t); }
+    }, 50);
+    return false;
+  }
+  function onBridgeEvent(event, data) {
+    if (event !== "onAccelerometerChange") return;
+    if (state.source === "none") { state.source = "bridge"; setChip("Bridge 加速度计 ✓ 等待校准", "ok"); }
+    hzCount++;
+    const x = typeof data.x === "number" ? data.x : 0;
+    feed(x);
+  }
+
+  function feed(x) { // 重力加速度 x 分量（G）：端平≈0，右倾为正；任意握持姿势有效
     raw = x;
-    if (state.source === "none") { state.source = "bridge"; }
     if (calibrating) {
       samples.push(x);
       if (samples.length >= 30) {
@@ -110,7 +102,7 @@ const Sensor = (() => {
     }
     if (baseline !== null) {
       const d = x - baseline;
-      const dz = 0.04, full = 0.38; // 4%G 死区，38%G 满舵
+      const dz = 0.04, full = 0.38;
       tilt = Math.abs(d) < dz ? 0 : Math.max(-1, Math.min(1, (d - Math.sign(d) * dz) / full));
     }
   }
@@ -119,52 +111,40 @@ const Sensor = (() => {
     setChip("校准中：手机端平拿稳 1 秒…", "dim");
   }
 
-  function bridgeVersion() {
-    try { return Number((window.DrelRuntime && window.DrelRuntime.bridgeVersion) || 0); }
-    catch (e) { return 0; }
-  }
-  function hasHandler() {
-    return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.BarkBridge);
-  }
-
-  // 受管动作要求"用户手势后 1.5 秒内"发起且手势一次性消耗：
-  // 必须由 开始游戏/开启传感器 的点击直接触发本订阅（一条调用），不能自动轮询。
-  function enable() {
-    if (bridgeVersion() === 0 && !hasHandler()) {
-      setChip("Bridge 不可用（容器未注入）→ 触屏模式", "bad");
-      return false;
-    }
+  async function enable() {
+    attachEventSink();
     setChip("Bridge sensors 订阅中…", "dim");
-    call({ action: "startAccelerometer", interval: 0.033 }, (res) => {
-      if (!res.success) {
-        setChip("Bridge 拒绝 sensors（" + (res.error || "容器白名单未开放") + "）→ 触屏模式", "bad");
-        return;
-      }
+    try {
+      const res = await window.BarkBridge.callNative("sensors", { action: "startAccelerometer", interval: 0.033 });
       setChip("Bridge 加速度计 ✓ 等待校准", "ok");
       setTimeout(() => { if (!calibrated && !calibrating) startCalibration(); }, 600);
-    });
-    setInterval(() => {
-      state.hz = hzCount; hzCount = 0;
-      if (state.source !== "none") {
-        hzChip.classList.remove("hidden");
-        hzChip.textContent = state.hz + "Hz" +
-          (baseline !== null ? " x" + raw.toFixed(2) + "G/b" + baseline.toFixed(2) + "/" + Math.round(tilt * 100) + "%" : "");
-      }
-    }, 1000);
-    btnCal.classList.remove("hidden");
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) { try { call({ action: "stopAccelerometer" }, () => {}); } catch (e) {} }
-    });
-    return true;
+      return res;
+    } catch (err) {
+      setChip("Bridge 拒绝 sensors（" + (err && err.message ? err.message : "未开放") + "）→ 触屏模式", "bad");
+      return null;
+    }
   }
 
+  setInterval(() => {
+    state.hz = hzCount; hzCount = 0;
+    if (state.source !== "none") {
+      hzChip.classList.remove("hidden");
+      hzChip.textContent = state.hz + "Hz" +
+        (baseline !== null ? " x" + raw.toFixed(2) + "G/b" + baseline.toFixed(2) + "G/" + Math.round(tilt * 100) + "%" : "");
+    }
+  }, 1000);
   btnCal.addEventListener("click", startCalibration);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && window.BarkBridge && window.BarkBridge.callNative) {
+      window.BarkBridge.callNative("sensors", { action: "stopAccelerometer" }).catch(() => {});
+    }
+  });
 
   return {
     enable,
     startCalibration,
     value: () => {
-      if (state.source === "none" || !calibrated) return null;
+      if (state.source !== "bridge" || !calibrated) return null;
       tiltSmooth += (tilt - tiltSmooth) * 0.35;
       return tiltSmooth;
     },
