@@ -474,16 +474,10 @@ final class PWAAppCenterViewController: UIViewController {
     /// from a normal tap; keep gateway management as an explicit action from
     /// the app detail sheet instead.
     private func showAppManagement() {
-        guard !manifests.isEmpty else {
-            showGatewayManagement()
-            return
-        }
-        if manifests.count == 1, let manifest = manifests.first {
-            showAppDetails(appID: manifest.appID)
-            return
-        }
-
         let alert = UIAlertController(title: "我的应用", message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "浏览全部应用", style: .default) { [weak self] _ in
+            self?.showAllApps()
+        })
         for manifest in manifests.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) {
             alert.addAction(UIAlertAction(title: manifest.name, style: .default) { [weak self] _ in
                 self?.showAppDetails(appID: manifest.appID)
@@ -499,6 +493,10 @@ final class PWAAppCenterViewController: UIViewController {
             popover.sourceRect = view.bounds
         }
         present(alert, animated: true)
+    }
+
+    private func showAllApps() {
+        navigationController?.pushViewController(PWAAppCatalogViewController(), animated: true)
     }
 
     private func showAppDetails(appID: String) {
