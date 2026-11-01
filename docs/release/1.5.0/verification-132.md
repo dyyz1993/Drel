@@ -41,3 +41,34 @@ Release commit:   FILLED_BY_RELEASE
 Actions run:      FILLED_BY_RELEASE
 ASC build state:  FILLED_BY_RELEASE
 ```
+
+## Physical-device acceptance
+
+Device: `许映洲的iPhone`, iPhone 13, iOS 18.7.3, USB TestFlight install.
+
+- TestFlight showed and installed `Drel 1.5.0 / Build 132`; the button changed
+  from `更新` to `打开`.
+- Opening the signed gyro demo and tapping Start raised the Drel motion consent
+  panel only from that user click. The game remained blocked while consent was
+  pending.
+- Selecting `始终允许` dismissed the panel. Replaying Start again did not show
+  the consent panel again.
+- The key-scoped gateway manifest advanced to v10 / `always` for this phone.
+- v10 Start awaited the native callback, then started only after success. The
+  accelerometer calibrated at 30Hz and game-over reported `传感器：bridge`.
+
+![Build 132 in TestFlight](../../testing/results/drel-gesture-gate/artifacts/iphone-132-testflight-build.jpg)
+![User-click consent](../../testing/results/drel-gesture-gate/artifacts/iphone-132-user-click-consent.jpg)
+![Always grant does not repeat](../../testing/results/drel-gesture-gate/artifacts/iphone-132-always-no-reprompt-stream.jpg)
+![v10 callback success](../../testing/results/drel-gesture-gate/artifacts/iphone-132-v10-callback-success-bridge.jpg)
+
+## Publication
+
+```text
+Tag:              v1.5.0+132
+Release commit:   9aae289
+Actions run:      41258708197
+Workflow result:  PASS in 14m34s
+Archive/upload:   PASS
+ASC state:        VALID / IN_BETA_TESTING
+```
