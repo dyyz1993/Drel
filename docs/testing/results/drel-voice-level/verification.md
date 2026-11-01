@@ -47,3 +47,12 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - Temporary, network-only preview origin: `https://drel-voice152.shanbox.19930810.xyz:8443`; verified TLS and SHA-256 match for both game pages and their shared adapter. It depends on the development Mac and must not be used as a permanent App Review demo.
 - Two device-scoped manifest inputs are prepared in `test_resources/voice-games/manifests/`; they are not registered or production-signed yet.
 - iPhone is paired, but PUA startup failed while enabling UI automation; no device acceptance or TestFlight publication is claimed.
+
+## 2026-11-02 TestFlight and permission follow-up
+
+- Build 136 uploaded successfully via Actions run 41325833823 and was installed on iPhone 13 / iOS 18.7.3; the settings screen confirmed 1.5.2 (136).
+- Two device-scoped manifests were signed by the existing gateway, signature-verified and read back. Both use a temporary development-Mac-backed HTTPS preview and are not production app listings or an App Review demo.
+- Voice Jump: no unsolicited prompt on entry; cancelling the in-app microphone permission left the game stopped. On first system permission approval, the app incorrectly reported that foreground was required; a second tap started the game and the score advanced. This build did not pass first-authorization acceptance.
+- Dandelion: entering the page did not prompt; tapping start displayed its own in-app permission, and allowing it started Bridge calibration. Actual physical blowing and revocation remain separate checks.
+- Framework fix `3e82898abda5791ddf2a60c1d804d1aebd2dbf1e`: wait briefly for an inactive permission transition to become active, while failing closed on background, cancellation, revocation, or timeout. Handler tests: 13 passed, 0 failed (`/tmp/wbk-voice137-handler.xcresult`).
+- Build 137 and physical first-authorization retest remain pending; do not claim the permission race is verified on a fresh physical permission state.
