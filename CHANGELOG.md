@@ -18,6 +18,11 @@ Each release line carries three pieces of evidence:
 
 ## Unreleased
 
+- Build 134: fix ordinary-browser status-bar visibility, unify short feedback
+  styling, and collapse the immersive capsule when opening More. — Scope: `App`
+  — Verified: `simulator` — Evidence:
+  [docs/release/1.5.0/verification-134.md](docs/release/1.5.0/verification-134.md)
+
 - Build 133: added a custom immersive function panel, preserved browser state
   when returning from bookmarks, and fixed a cache-statistics thread crash.
   — Scope: `App` — Verified: `simulator` — Evidence:

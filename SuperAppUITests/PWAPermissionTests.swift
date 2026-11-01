@@ -433,16 +433,19 @@ final class PWAPermissionTests: XCTestCase {
 
         let permissionItem = app.buttons["权限与能力"]
         XCTAssertTrue(permissionItem.waitForExistence(timeout: 5))
+        XCTAssertEqual(capsule.label, "显示浏览器控制条")
         sleep(1)
         snap("immersive-more-function-list")
         app.buttons["关闭功能菜单"].tap()
         XCTAssertFalse(permissionItem.waitForExistence(timeout: 1))
+        expanded.tap()
         more.tap()
         XCTAssertTrue(permissionItem.waitForExistence(timeout: 5))
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.71))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95))
         start.press(forDuration: 0.1, thenDragTo: end)
         XCTAssertFalse(permissionItem.waitForExistence(timeout: 1))
+        expanded.tap()
         more.tap()
         XCTAssertTrue(permissionItem.waitForExistence(timeout: 5))
         permissionItem.tap()
@@ -471,12 +474,11 @@ final class PWAPermissionTests: XCTestCase {
         let capsule = element("browserManager.immersiveReturnButton")
         XCTAssertTrue(capsule.waitForExistence(timeout: 5))
         let screen = app.frame
-        let collapsed = capsule.frame
-        let visibleX = min(screen.maxX - 4, max(screen.minX + 4, collapsed.midX))
-        app.coordinate(withNormalizedOffset: .zero)
-            .withOffset(CGVector(dx: visibleX, dy: collapsed.midY)).tap()
-
         func openMenu() {
+            let collapsed = capsule.frame
+            let visibleX = min(screen.maxX - 4, max(screen.minX + 4, collapsed.midX))
+            app.coordinate(withNormalizedOffset: .zero)
+                .withOffset(CGVector(dx: visibleX, dy: collapsed.midY)).tap()
             let frame = capsule.frame
             let moreX = frame.midX < screen.midX ? frame.maxX - 22 : frame.minX + 22
             app.coordinate(withNormalizedOffset: .zero)
@@ -485,6 +487,7 @@ final class PWAPermissionTests: XCTestCase {
                 print("ORDINARY_MENU_HIERARCHY \(app.debugDescription)")
                 XCTFail("普通浏览器功能菜单未出现")
             }
+            XCTAssertEqual(capsule.label, "显示浏览器控制条")
         }
         func tapMenuItem(_ label: String) {
             let item = app.buttons[label]
@@ -496,6 +499,10 @@ final class PWAPermissionTests: XCTestCase {
         app.buttons["复制链接"].tap()
         let toast = app.staticTexts["链接已复制"]
         XCTAssertTrue(toast.waitForExistence(timeout: 4))
+        let toastScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        toastScreenshot.name = "toast-copy-success"
+        toastScreenshot.lifetime = .keepAlways
+        add(toastScreenshot)
         let toastGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: toast)
         XCTAssertEqual(XCTWaiter.wait(for: [toastGone], timeout: 5), .completed)
         openMenu()
@@ -507,12 +514,34 @@ final class PWAPermissionTests: XCTestCase {
         let browserMenu = app.buttons["browserManager.menuButton"]
         XCTAssertTrue(browserMenu.waitForExistence(timeout: 5))
         browserMenu.tap()
+        if app.buttons["显示状态栏"].exists {
+            app.buttons["显示状态栏"].tap()
+        } else {
+            app.buttons["取消"].tap()
+        }
+        sleep(2)
+        let shownScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shownScreenshot.name = "browser-status-shown"
+        shownScreenshot.lifetime = .keepAlways
+        add(shownScreenshot)
+        browserMenu.tap()
+        XCTAssertTrue(app.buttons["隐藏状态栏"].waitForExistence(timeout: 5))
+        app.buttons["隐藏状态栏"].tap()
+        sleep(2)
+        let hiddenScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        hiddenScreenshot.name = "browser-status-hidden"
+        hiddenScreenshot.lifetime = .keepAlways
+        add(hiddenScreenshot)
+        browserMenu.tap()
+        XCTAssertTrue(app.buttons["显示状态栏"].waitForExistence(timeout: 5))
+        app.buttons["显示状态栏"].tap()
+        browserMenu.tap()
         XCTAssertTrue(app.buttons["隐藏导航栏"].waitForExistence(timeout: 5))
         app.buttons["隐藏导航栏"].tap()
         openMenu()
-        tapMenuItem("显示状态栏")
-        openMenu()
         tapMenuItem("隐藏状态栏")
+        openMenu()
+        tapMenuItem("显示状态栏")
         openMenu()
         tapMenuItem("缓存统计")
         XCTAssertTrue(app.alerts["缓存统计"].waitForExistence(timeout: 10))

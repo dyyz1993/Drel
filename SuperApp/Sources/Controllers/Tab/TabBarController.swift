@@ -14,6 +14,8 @@ import RxCocoa
 
 class TabBarController: UITabBarController {
 
+    override var childForStatusBarHidden: UIViewController? { selectedViewController }
+
     private let disposeBag = DisposeBag()
     private let defaultStartupLaunchResolver = HTMLAppLaunchResolver(
         trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry
@@ -179,7 +181,7 @@ class TabBarController: UITabBarController {
             case .settings:
                 root = createSettingsViewController()
             }
-            let nav = UINavigationController(rootViewController: root)
+            let nav = DrelNavigationController(rootViewController: root)
             // UINavigationController adopts its visible root item's title unless
             // the root owns the item, which would make the tab read "PWA 应用".
             root.tabBarItem = tab.makeTabBarItem()
@@ -612,6 +614,10 @@ class TabBarController: UITabBarController {
             nav.pushViewController(vc, animated: true)
         }
     }
+}
+
+private final class DrelNavigationController: UINavigationController {
+    override var childForStatusBarHidden: UIViewController? { visibleViewController }
 }
 
 extension TabBarController: UITabBarControllerDelegate {
