@@ -56,3 +56,11 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - Dandelion: entering the page did not prompt; tapping start displayed its own in-app permission, and allowing it started Bridge calibration. Actual physical blowing and revocation remain separate checks.
 - Framework fix `3e82898abda5791ddf2a60c1d804d1aebd2dbf1e`: wait briefly for an inactive permission transition to become active, while failing closed on background, cancellation, revocation, or timeout. Handler tests: 13 passed, 0 failed (`/tmp/wbk-voice137-handler.xcresult`).
 - Build 137 and physical first-authorization retest remain pending; do not claim the permission race is verified on a fresh physical permission state.
+
+### Physical-device follow-up on build 136
+
+- Dandelion: the owner blew into iPhone 13 and reported that the seeds dispersed with suitable sensitivity.
+- Opening the in-app permission center ended page capture; the page displayed “离开页面，麦克风已关闭。” and the stop button was disabled on return.
+- Revoking the stored microphone grant removed it from the permission center; tapping start again showed a new Drel permission prompt. Cancelling kept capture stopped.
+- The page was already stopped by navigation before revocation, so the device test did not independently prove active-stream revocation; handler tests cover the cancellation path.
+- Build 137 Simulator `Drel152Release` compiled successfully with framework `3e82898`; the built app reports 1.5.2 (137). TestFlight run 41330248700 is pending.
