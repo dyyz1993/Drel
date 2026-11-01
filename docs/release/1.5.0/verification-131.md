@@ -67,3 +67,29 @@ ASC state:        VALID / IN_BETA_TESTING
 Artifact note:    GitHub artifact upload failed on storage quota; the signed
                   TestFlight upload and Apple processing completed successfully.
 ```
+
+## Post-publication hotfix: v10 awaited sensor callback
+
+User acceptance found that v9 hid the game overlay immediately on Start while
+the permission callback was still pending. Gateway demo v10 fixes the
+lifecycle:
+
+- Start now sets a pending state and awaits `startAccelerometer`.
+- Only a successful Bridge callback hides the overlay and starts the game.
+- Denial, cancellation, or native unavailability leaves Start blocked as
+  `重试开始游戏`.
+- The Simulator cannot produce a successful accelerometer callback; after
+  synthetic tilt is selected as the debug source, the retry starts normally.
+
+```text
+v10 entry SHA-256:       ef6144920f1022429b990992f6cbc318af580614cef217707bc5a4164a196e61
+v10 entry size:          19373 bytes
+Web manifest SHA-256:    1641700defd30299863df020c73a329eef7b4bf4d280581fc4faf7fca8bb42fb
+Signed cache version:    10
+Worker asset version:    77c6341d-82bf-4c70-9a6d-aa99fd497edb
+Gyro v10 UI test:        1/1 PASS
+Drel15Release build:     BUILD SUCCEEDED
+```
+
+This is an online signed-fixture hotfix; the build 131 app binary remains
+unchanged.

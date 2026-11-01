@@ -140,6 +140,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             // （2026-08-24 定位：测试设备与 `booted` 不是同一台导致卸载无效）。
             if ProcessInfo.processInfo.arguments.contains("--reset-permission-grants") {
                 HTMLAppPermissionLedger.shared.revokeAll()
+                // RuntimeCenter creates a second ledger instance over the same
+                // storage; clearing only the legacy shared singleton left the
+                // runtime's grants alive and silently skipped permission UI.
+                HTMLAppRuntimeCenter.shared.permissionLedger.revokeAll()
             }
         } else {
             DispatchQueue.global(qos: .userInitiated).async {
