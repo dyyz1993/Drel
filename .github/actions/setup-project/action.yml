@@ -49,9 +49,15 @@ runs:
         # xcodegen validates framework source paths while generating the project,
         # so the private framework must exist before generation.
         python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
-        git clone --depth 1 \
+        git clone --depth 1 --branch codex/voice-152 \
           "https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git" \
           ../WebBridgeKit-Framework
+        EXPECTED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
+        ACTUAL_FRAMEWORK_REVISION="$(git -C ../WebBridgeKit-Framework rev-parse HEAD)"
+        [[ "$ACTUAL_FRAMEWORK_REVISION" == "$EXPECTED_FRAMEWORK_REVISION" ]] || {
+          echo "::error::Framework revision does not match the pinned release revision"
+          exit 1
+        }
     - name: Generate & Install
       shell: bash
       run: |

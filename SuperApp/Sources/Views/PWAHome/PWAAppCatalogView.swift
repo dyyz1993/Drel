@@ -561,6 +561,7 @@ final class PWAAppCatalogViewController: UIViewController {
         case .getLocation: return "当前位置"
         case .addToHomeScreen: return "添加到主页"
         case .sensors: return "运动传感器"
+        case .audioLevel: return "麦克风音量"
         }
     }
 

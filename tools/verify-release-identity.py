@@ -34,7 +34,7 @@ RELEASE_ROOT = ROOT / "docs" / "release"
 APP_DELEGATE = ROOT / "SuperApp" / "Sources" / "AppDelegate.swift"
 
 # Configurations that actually reach a store or a TestFlight group.
-STORE_CONFIGS = ("Release", "Drel14Release", "Drel15Release")
+STORE_CONFIGS = ("Release", "Drel14Release", "Drel15Release", "Drel152Release")
 
 # The actions the Drel 1.5 Store host policy allows. This is the fallback
 # list, used only when the AppDelegate allowlist cannot be parsed. The
@@ -57,7 +57,7 @@ STORE_ACTION_ALLOWLIST = {
 
 # Actions that read user data. They need a persistent, user-revocable
 # grant, and they need their own review notes row.
-GRANT_BASED_ACTIONS = {"clipboard", "getLocation"}
+GRANT_BASED_ACTIONS = {"clipboard", "getLocation", "sensors", "audioLevel"}
 
 # Actions that only produce a transient, in-session effect. A manifest
 # declaration is an allowlist for them, never standing user consent.
@@ -185,7 +185,7 @@ def mentioned_actions(text: str) -> set[str]:
     """Return the action names a release document actually discusses."""
     return {
         action
-        for action in STORE_ACTION_ALLOWLIST
+        for action in STORE_ACTION_ALLOWLIST | {"audioLevel"}
         if action in text
     }
 
@@ -337,6 +337,8 @@ def main() -> int:
                                          notes, re.M | re.S):
                     flattened = " ".join(bullet.split())
                     for entry in FORBIDDEN_CLAIMS:
+                        if args.marketing == "1.5.2" and entry[0] == "microphone":
+                            continue
                         label, *wording = entry
                         for term in wording:
                             if not claims_capability(flattened, term):
@@ -356,6 +358,8 @@ def main() -> int:
             if review_path.is_file():
                 review = review_path.read_text(encoding="utf-8")
                 allowlist, source = store_allowlist()
+                if args.marketing == "1.5.2":
+                    allowlist.add("audioLevel")
                 missing = sorted(allowlist - mentioned_actions(review))
                 if missing:
                     failures.append(

@@ -26,7 +26,13 @@ APP_ID="${WBK_APP_ID:-6802806992}"
 KEY_ID="${WBK_ASC_KEY_ID:?需要设置 WBK_ASC_KEY_ID（App Store Connect API Key ID）}"
 KEY_ISSUER="${WBK_ASC_ISSUER_ID:?需要设置 WBK_ASC_ISSUER_ID（App Store Connect Issuer ID）}"
 KEY_PATH="${WBK_ASC_KEY_PATH:?需要设置 WBK_ASC_KEY_PATH（AuthKey_<ID>.p8 私钥路径）}"
-MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.1}"
+MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.2}"
+case "$MARKETING_VERSION" in
+  1.5.1) RELEASE_SCHEME=Drel15Store ;;
+  1.5.2) RELEASE_SCHEME=Drel152Store ;;
+  *) echo "Unsupported release version: $MARKETING_VERSION" >&2; exit 1 ;;
+esac
+export DREL_V2_EXPECTED_VERSION="$MARKETING_VERSION"
 # Prefer the repository's self-contained helper so the script also runs in CI,
 # where the author's ~/Project/study-mac-app checkout does not exist.
 # asc-api.sh takes ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH from the env.
@@ -128,7 +134,7 @@ if [[ -n "$SIGNING_KEYCHAIN" ]]; then
   security list-keychains -d user -s "$SIGNING_KEYCHAIN" "${ORIGINAL_KEYCHAINS[@]}" >/dev/null
   ARCHIVE_SIGN_ARGS+=("OTHER_CODE_SIGN_FLAGS=--keychain $SIGNING_KEYCHAIN")
 fi
-if ! xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
+if ! xcodebuild archive -workspace Drel.xcworkspace -scheme "$RELEASE_SCHEME" \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
   -allowProvisioningUpdates "${ARCHIVE_SIGN_ARGS[@]}" \
   MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1; then

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1",
+  "appId": "dev.drel.test.voice-jump",
+  "name": "声音跳跳（测试）",
+  "startURL": "https://drel-voice152.shanbox.19930810.xyz:8443/v1/voice-jump/index.html",
+  "allowedOrigins": [
+    "https://drel-voice152.shanbox.19930810.xyz:8443"
+  ],
+  "capabilities": [],
+  "capabilities_v2": [
+    {
+      "action": "audioLevel",
+      "origins": [
+        "https://drel-voice152.shanbox.19930810.xyz:8443"
+      ],
+      "purposeId": "voice-jump-level",
+      "purpose": "使用麦克风的实时音量控制游戏角色跳跃",
+      "scope": "always"
+    }
+  ],
+  "routes": [
+    "/v1/voice-jump/index.html"
+  ],
+  "cache": {
+    "strategy": "networkOnly",
+    "version": "1",
+    "persistent": false,
+    "restoresLastState": true
+  }
+}
