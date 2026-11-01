@@ -53,5 +53,10 @@ existing controlled-action review model remains unchanged.
 - Release remains manual after approval. Version 1.5.0 remains available.
 - The owner reported the other build 135 checks passed. The ordinary HTTPS
   `drel://open` entry presents a different, two-item menu; it does not verify
-  the status-bar toggle. That toggle has simulator evidence above but no
-  confirmed physical-device verification for build 135.
+  the status-bar toggle.
+- Physical iPhone 13, iOS 18.7.3, TestFlight 1.5.1 (135): reopened the signed
+  Action Demo from Favorites, enabled the navigation bar from the fullscreen
+  menu, and toggled the status bar in the browser menu. Time and battery were
+  visible when shown and absent when hidden; display was restored afterward.
+- Evidence: `build/reports/drel-135-status/shown.jpg` and `hidden.jpg` in this
+  worktree. This does not establish a toggle in the two-item HTTPS menu.
