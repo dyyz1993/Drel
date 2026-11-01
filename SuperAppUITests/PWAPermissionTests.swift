@@ -410,9 +410,19 @@ final class PWAPermissionTests: XCTestCase {
         XCTAssertTrue(appButton.waitForExistence(timeout: 12))
         appButton.tap()
 
-        let menu = element("browserManager.immersiveMenuButton")
-        XCTAssertTrue(menu.waitForExistence(timeout: 12))
-        menu.tap()
+        let capsule = element("browserManager.immersiveReturnButton")
+        XCTAssertTrue(capsule.waitForExistence(timeout: 12))
+
+        // The edge capsule is a UIControl without per-cell accessibility
+        // elements. Tap its collapsed sliver, then the trailing More cell.
+        let expanded = app.coordinate(withNormalizedOffset: CGVector(dx: 0.025, dy: 0.19))
+        expanded.tap()
+        let more = app.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.19))
+        more.tap()
+
+        let permissionItem = app.buttons["权限与能力"]
+        XCTAssertTrue(permissionItem.waitForExistence(timeout: 5))
+        permissionItem.tap()
 
         XCTAssertTrue(element("pwa-permission.headerCard").waitForExistence(timeout: 5))
         // 未授权能力不再渲染行，中心此时应为空授权态
