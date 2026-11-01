@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCHIVE_PATH="${1:-/tmp/wbk-v2-runtime-release/Drel-1.5.0-90.xcarchive}"
 EXPECTED_BUILD="${DREL_V2_EXPECTED_BUILD:-90}"
+EXPECTED_VERSION="${DREL_V2_EXPECTED_VERSION:-1.5.1}"
 SIGNING_MODE="${DREL_V2_ARCHIVE_SIGNING:-distribution}"
 APP_PATH="${DREL_V2_EXPORTED_APP_PATH:-$ARCHIVE_PATH/Products/Applications/Drel.app}"
 PLIST="$APP_PATH/Info.plist"
@@ -13,7 +14,7 @@ value() { /usr/libexec/PlistBuddy -c "Print :$1" "$PLIST" 2>/dev/null || true; }
 
 [[ -d "$APP_PATH" ]] || fail "Drel.app missing from archive"
 [[ "$(value CFBundleIdentifier)" == "com.webbridgekit.superapp" ]] || fail "unexpected bundle identifier"
-[[ "$(value CFBundleShortVersionString)" == "1.5.0" ]] || fail "archive is not version 1.5.0"
+[[ "$(value CFBundleShortVersionString)" == "$EXPECTED_VERSION" ]] || fail "archive is not version $EXPECTED_VERSION"
 [[ "$(value CFBundleVersion)" == "$EXPECTED_BUILD" ]] || fail "archive is not build $EXPECTED_BUILD"
 [[ -f "$ARCHIVE_PATH/Info.plist" ]] || fail "archive metadata missing"
 /usr/libexec/PlistBuddy -c 'Print :ApplicationProperties' "$ARCHIVE_PATH/Info.plist" >/dev/null 2>&1 || fail "archive ApplicationProperties missing"
@@ -54,4 +55,4 @@ for marker in '--pwa-v2-actions' 'fixture-share-demo' 'v2-actions.html'; do
     ! strings -a "$APP_PATH/Drel" | grep -qF -- "$marker" || fail "debug fixture leaked into Store binary: $marker"
 done
 
-echo "PASS: signed Drel 1.5.0 ($EXPECTED_BUILD) $SIGNING_MODE app identity, privacy strings, and fixture boundary verified."
+echo "PASS: signed Drel $EXPECTED_VERSION ($EXPECTED_BUILD) $SIGNING_MODE app identity, privacy strings, and fixture boundary verified."

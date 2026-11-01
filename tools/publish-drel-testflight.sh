@@ -5,7 +5,7 @@
 # Set WBK_MARKETING_VERSION for non-1.5 releases; the default preserves the
 # historical 1.5 flow.
 # 与 AGENTS.md 的规则对齐：
-#   * 归档用 Drel15Store scheme，MARKETING_VERSION=1.5.0，CURRENT_PROJECT_VERSION=<build>
+#   * 归档用 Drel15Store scheme，MARKETING_VERSION=1.5.1，CURRENT_PROJECT_VERSION=<build>
 #   * 本地「WebBridgeKit App Store」描述文件曾缺 Communication Notifications，
 #     因此归档走自动开发签名（同 build 99/100/101/102 验证过的链路），
 #     导出时再换 App Store 分发签名。
@@ -26,7 +26,7 @@ APP_ID="${WBK_APP_ID:-6802806992}"
 KEY_ID="${WBK_ASC_KEY_ID:?需要设置 WBK_ASC_KEY_ID（App Store Connect API Key ID）}"
 KEY_ISSUER="${WBK_ASC_ISSUER_ID:?需要设置 WBK_ASC_ISSUER_ID（App Store Connect Issuer ID）}"
 KEY_PATH="${WBK_ASC_KEY_PATH:?需要设置 WBK_ASC_KEY_PATH（AuthKey_<ID>.p8 私钥路径）}"
-MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.0}"
+MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.1}"
 # Prefer the repository's self-contained helper so the script also runs in CI,
 # where the author's ~/Project/study-mac-app checkout does not exist.
 # asc-api.sh takes ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH from the env.
@@ -207,7 +207,7 @@ for i in $(seq 1 30); do
     BUILD_ID=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" 2>/dev/null \
       | { grep -oE '"id" *: *"[a-f0-9-]{36}"' || true; } | head -1 | grep -oE '[a-f0-9-]{36}')
     $ASC_API get "/v1/builds/$BUILD_ID/buildBetaDetail" 2>/dev/null | grep -E "internalBuildState"
-    ok "Drel 1.5.0 ($BUILD) 处理完成，TestFlight 可安装"
+    ok "Drel $MARKETING_VERSION ($BUILD) 处理完成，TestFlight 可安装"
     echo
     echo "接下来：在 TestFlight 上做真机验收（三档面板 / 允许一次重复弹窗 / 权限中心 / 主屏幕引导）"
     exit 0

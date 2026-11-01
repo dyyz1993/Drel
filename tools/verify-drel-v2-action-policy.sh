@@ -19,7 +19,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 rg -q '^  Drel15Release: release$' project.yml || fail "Drel 1.5 release configuration missing"
 rg -q '^  Drel15Store:$' project.yml || fail "Drel 1.5 Store scheme missing"
-rg -A 7 '^        Drel15Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.5.0"' || fail "Drel 1.5 version mismatch"
+rg -A 7 '^        Drel15Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.5.1"' || fail "Drel 1.5.1 version mismatch"
 rg -A 7 '^        Drel15Release:$' project.yml | rg -q "CURRENT_PROJECT_VERSION: \"$EXPECTED_BUILD\"" || fail "Drel 1.5 build mismatch"
 rg -A 2 '^        Drel15Release:$' project.yml | rg -q 'DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY' || fail "Drel 1.5 host policy flags missing"
 rg -A 8 '^        Drel15Release:$' project.yml | rg -q 'CODE_SIGN_STYLE: Manual' || fail "Drel 1.5 must use manual App Store signing"
@@ -36,4 +36,4 @@ rg -q 'testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt' SuperAppUITests/P
 rg -q 'testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit' SuperAppUITests/PWAPermissionTests.swift || fail "fullscreen UI regression test missing"
 rg -q '^#if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY' SuperApp/Sources/Managers/TestDataSeeder.swift || fail "development fixture seeder is not excluded from Drel 1.5"
 
-echo "PASS: Drel 1.5 enables signed haptic/vibrate/share/fullscreen/add-to-home-screen plus revocable sensors/clipboard/location; 1.4.1 remains 1.4.1 (89)."
+echo "PASS: Drel 1.5.1 (135) UI release keeps signed actions and revocable sensors/clipboard/location; 1.4.1 remains 1.4.1 (89)."
