@@ -414,16 +414,7 @@ class TokenGenerateViewController: BaseViewController<TokenGenerateViewModel> {
     // MARK: - Private Methods
 
     private func showCopySuccessToast() {
-        let alert = UIAlertController(
-            title: L10n.tr("token.generate.copied_title"),
-            message: L10n.tr("token.generate.copied_message"),
-            preferredStyle: .alert
-        )
-        present(alert, animated: true)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            alert.dismiss(animated: true)
-        }
+        HUDService.shared.showSuccess(withStatus: L10n.tr("token.generate.copied_title"))
     }
 
     private func showShareSheet(token: AccessToken) {

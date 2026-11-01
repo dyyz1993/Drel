@@ -29,3 +29,11 @@ These results are simulator evidence; they do not establish TestFlight or physic
 - Signed archive, IPA export and Apple upload: succeeded.
 - Apple processing state: `VALID`; internal beta state: `IN_BETA_TESTING`.
 - Physical TestFlight installation and acceptance were not performed in this verification.
+
+## Physical TestFlight check (2026-11-01)
+
+- iPhone 13 via iPhone Mirroring: TestFlight list showed `1.5.0 (133)` and, after update, `打开`; Drel was opened from that row.
+- Managed Action Demo: expanded/collapsed the edge capsule, opened the custom More panel, saw the link-copy success message, opened permissions and returned, dismissed the panel by tapping the backdrop, and used × to return Home.
+- Ordinary browser: opened a previous ordinary HTTPS page from Recent Visits. Cache statistics opened without a crash; Bookmarks opened and returned; hiding the navigation bar exposed the edge control, More opened the custom panel, Bookmarks returned to the immersive browser, and Show Navigation Bar restored navigation.
+- **Issue found:** with the ordinary navigation bar visible, selecting Hide Status Bar changed the menu item to Show Status Bar but the clock and indicators remained visible. An initial local fix did not change the actual status-bar display and was not retained; this remains open.
+- This record does not claim physical coverage of all menu actions or the new changes under development.
