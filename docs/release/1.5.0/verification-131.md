@@ -59,7 +59,11 @@ processing if needed.
 
 ```text
 Tag:              v1.5.0+131
-Release commit:   FILLED_BY_RELEASE
-Actions run:      FILLED_BY_RELEASE
-ASC build state:  FILLED_BY_RELEASE
+Release commit:   555d34a
+Actions run:      41254350768
+Workflow result:  PASS in 13m58s
+Archive/upload:   PASS
+ASC state:        VALID / IN_BETA_TESTING
+Artifact note:    GitHub artifact upload failed on storage quota; the signed
+                  TestFlight upload and Apple processing completed successfully.
 ```
