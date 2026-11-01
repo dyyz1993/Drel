@@ -48,4 +48,10 @@ existing controlled-action review model remains unchanged.
   surface, explicitly excluding microphone/audio.
 - Existing 6.1-inch and 6.5-inch screenshot sets are complete for both
   locales.
-- Pending: final owner confirmation and App Review submission.
+- App Review submission: 2026-11-01; App Store Connect readback shows
+  `正在等待审核` (waiting for review), with one submitted item, 1.5.1 (135).
+- Release remains manual after approval. Version 1.5.0 remains available.
+- The owner reported the other build 135 checks passed. The ordinary HTTPS
+  `drel://open` entry presents a different, two-item menu; it does not verify
+  the status-bar toggle. That toggle has simulator evidence above but no
+  confirmed physical-device verification for build 135.
