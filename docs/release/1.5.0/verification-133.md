@@ -20,3 +20,12 @@ Date: 2026-11-01
 - `tools/verify-drel-v2-action-policy.sh`: PASS.
 
 These results are simulator evidence; they do not establish TestFlight or physical-device acceptance.
+
+## TestFlight publication
+
+- Tag: `v1.5.0+133`; Drel release commit: `44726dc3103ae8b7d5cf27d50ff43022f699667b`.
+- GitHub Actions: [run 41268740776](https://github.com/dyyz1993/Drel/actions/runs/41268740776) — success.
+- Runner framework checkout: `12819e1aa0249bcd55cc74961cf1dcc3459a46eb`.
+- Signed archive, IPA export and Apple upload: succeeded.
+- Apple processing state: `VALID`; internal beta state: `IN_BETA_TESTING`.
+- Physical TestFlight installation and acceptance were not performed in this verification.
