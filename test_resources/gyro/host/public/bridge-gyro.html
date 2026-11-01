@@ -66,7 +66,7 @@
 <div id="score">得分 0 · 最佳 0</div>
 <div id="overlay">
   <h1>陀螺仪躲避</h1>
-  <p>左右倾斜手机控制飞船，躲开下落的障碍。<br>此版经 Drel Bridge 的 sensors 动作取传感器。<br>传感器属于可撤销授权；撤销后立即回触屏。</p>
+  <p>左右倾斜手机控制飞船，躲开下落的障碍。<br>此版经 Drel Bridge 的 sensors 动作取传感器。<br>传感器授权成功后才开始；撤销或拒绝不会自动开局。</p>
   <button id="btnStart">开始游戏</button>
 </div>
 <section id="debugPanel" class="hidden">
@@ -269,17 +269,19 @@ const Sensor = (() => {
   }
 
   async function enable() {
+    if (state.source === "bridge" || state.source === "simulated") return true;
     attachEventSink();
-    setChip("Bridge sensors 订阅中…", "dim");
+    setChip("等待传感器授权…", "dim");
     const res = await Debug.call("startAccelerometer", { interval: 0.033 });
     if (res) {
+      state.source = "bridge";
       setChip("Bridge 加速度计 ✓ 等待校准", "ok");
       setTimeout(() => { if (!calibrated && !calibrating) startCalibration(); }, 600);
-      return res;
+      return true;
     }
-    setChip("Bridge sensors 不可用 → 触屏模式", "bad");
+    setChip("传感器授权未完成，游戏未开始", "bad");
     Debug.open(true);
-    return null;
+    return false;
   }
 
   setInterval(() => {
@@ -435,9 +437,24 @@ const Touch = (() => {
     raf = requestAnimationFrame(loop);
   }
 
-  btnStart.addEventListener("click", () => {
-    Debug.write("INFO", `开始游戏 source=${Sensor.source()}`);
-    if (Sensor.source() === "none") { Sensor.enable(); }
+  let starting = false;
+  btnStart.addEventListener("click", async () => {
+    if (starting) return;
+    starting = true;
+    const label = btnStart.textContent;
+    btnStart.textContent = "等待传感器授权…";
+    btnStart.setAttribute("aria-busy", "true");
+    Debug.write("INFO", `等待传感器回调 source=${Sensor.source()}`);
+    const ready = await Sensor.enable();
+    btnStart.removeAttribute("aria-busy");
+    starting = false;
+    if (!ready) {
+      btnStart.textContent = "重试开始游戏";
+      overlay.classList.remove("hidden");
+      return;
+    }
+    Debug.write("INFO", `传感器回调成功 source=${Sensor.source()}`);
+    btnStart.textContent = label === "等待传感器授权…" ? "再来一局" : label;
     overlay.classList.add("hidden");
     reset(); running = true; last = performance.now();
     raf = requestAnimationFrame(loop);
