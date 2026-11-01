@@ -1,0 +1,43 @@
+# Drel 1.5.0 build 132
+
+Date: 2026-11-01
+
+Build 132 closes an authorization UX/security gap found after build 131: a
+grant-based V2 action could summon the consent panel without a recent user
+gesture.
+
+## Included changes
+
+- Every V2 controlled action now consumes the foreground user-gesture gate
+  before dispatch or consent.
+- Grant-based actions (`sensors`, `clipboard`, `getLocation`) can no longer be
+  triggered programmatically into a consent dialog.
+- Non-grant V2 actions keep their existing declaration-only behavior after the
+  gesture succeeds.
+- WebBridgeKit framework commit: `b0aa908`
+  (`fix(bridge): require gesture for grant-based actions`).
+
+## Verification
+
+```text
+Gestureless sensors grant:      DENIED
+Consent presenter requests:     0
+Bridge gesture tests:           2/2 PASS
+Gyro v10 UI flow:               1/1 PASS
+  user click -> consent -> callback gate -> simulator fallback
+Drel15Release build:            BUILD SUCCEEDED
+SwiftLint:                      exit 0 (existing warnings only)
+```
+
+The framework regression specifically proves that a gestureless `sensors` call
+is denied and the consent presenter request count remains zero. The UI flow
+proves the normal user-click path still reaches the grant panel and callback.
+
+## Release evidence
+
+```text
+Tag:              v1.5.0+132
+Release commit:   FILLED_BY_RELEASE
+Actions run:      FILLED_BY_RELEASE
+ASC build state:  FILLED_BY_RELEASE
+```
