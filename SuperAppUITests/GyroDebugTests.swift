@@ -40,7 +40,7 @@ final class GyroDebugTests: XCTestCase {
 
         let debugButton = app.webViews.buttons["传感器调试"]
         let startButton = app.webViews.buttons["开始游戏"]
-        XCTAssertTrue(startButton.waitForExistence(timeout: 20), "Gyro v10 should expose the start action")
+        XCTAssertTrue(startButton.waitForExistence(timeout: 20), "Gyro v11 should expose the start action")
         startButton.tap()
         let waiting = app.webViews.buttons["等待传感器授权…"]
         XCTAssertTrue(waiting.waitForExistence(timeout: 3), "Start must block until the sensor callback completes")
@@ -75,7 +75,7 @@ final class GyroDebugTests: XCTestCase {
             "Simulator coverage must not stop at the host allowlist"
         )
         let debugAttachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        debugAttachment.name = "gyro-v10-simulator-bridge-debug-panel"
+        debugAttachment.name = "gyro-v11-simulator-bridge-debug-panel"
         debugAttachment.lifetime = .keepAlways
         add(debugAttachment)
 
@@ -94,7 +94,7 @@ final class GyroDebugTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [scoreAdvanced], timeout: 4), .completed)
 
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = "gyro-v10-simulator-dispatch-and-synthetic-game"
+        attachment.name = "gyro-v11-simulator-dispatch-and-synthetic-game"
         attachment.lifetime = .keepAlways
         add(attachment)
         #endif
