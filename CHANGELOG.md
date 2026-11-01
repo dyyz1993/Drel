@@ -18,7 +18,10 @@ Each release line carries three pieces of evidence:
 
 ## Unreleased
 
-Nothing yet.
+- Build 133: added a custom immersive function panel, preserved browser state
+  when returning from bookmarks, and fixed a cache-statistics thread crash.
+  — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/release/1.5.0/verification-133.md](docs/release/1.5.0/verification-133.md)
 
 ## [1.5.0] — 2026-10-22
 

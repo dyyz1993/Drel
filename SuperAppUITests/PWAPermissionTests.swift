@@ -413,20 +413,116 @@ final class PWAPermissionTests: XCTestCase {
         let capsule = element("browserManager.immersiveReturnButton")
         XCTAssertTrue(capsule.waitForExistence(timeout: 12))
 
+        func snap(_ name: String) {
+            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            attachment.name = name
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        sleep(1)
+        snap("immersive-collapsed-no-top-right")
+
         // The edge capsule is a UIControl without per-cell accessibility
         // elements. Tap its collapsed sliver, then the trailing More cell.
         let expanded = app.coordinate(withNormalizedOffset: CGVector(dx: 0.025, dy: 0.19))
         expanded.tap()
         let more = app.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.19))
+        sleep(1)
+        snap("immersive-capsule-expanded-more")
         more.tap()
 
         let permissionItem = app.buttons["权限与能力"]
         XCTAssertTrue(permissionItem.waitForExistence(timeout: 5))
+        sleep(1)
+        snap("immersive-more-function-list")
+        app.buttons["关闭功能菜单"].tap()
+        XCTAssertFalse(permissionItem.waitForExistence(timeout: 1))
+        more.tap()
+        XCTAssertTrue(permissionItem.waitForExistence(timeout: 5))
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.71))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95))
+        start.press(forDuration: 0.1, thenDragTo: end)
+        XCTAssertFalse(permissionItem.waitForExistence(timeout: 1))
+        more.tap()
+        XCTAssertTrue(permissionItem.waitForExistence(timeout: 5))
         permissionItem.tap()
 
         XCTAssertTrue(element("pwa-permission.headerCard").waitForExistence(timeout: 5))
+        sleep(1)
+        snap("immersive-permission-center")
         // 未授权能力不再渲染行，中心此时应为空授权态
         XCTAssertFalse(element("pwa-permission.capability.bluetooth").exists)
+    }
+
+    func testOrdinaryImmersiveBrowserFunctionMenu() {
+        app.launch()
+        let target = "http://localhost:8081/test_resources/pwa-permission/index.html?mode=immersive"
+        var link = URLComponents(string: "webbridgekit://open")!
+        link.queryItems = [URLQueryItem(name: "url", value: target)]
+        XCUIDevice.shared.system.open(link.url!)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let confirm = springboard.buttons["打开"]
+        if confirm.waitForExistence(timeout: 3) { confirm.tap() }
+        XCTAssertTrue(element("browserManager.webView").waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["查看蓝牙状态"].waitForExistence(timeout: 30))
+        let loading = app.activityIndicators["进行中"]
+        let loadingGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: loading)
+        XCTAssertEqual(XCTWaiter.wait(for: [loadingGone], timeout: 20), .completed)
+        let capsule = element("browserManager.immersiveReturnButton")
+        XCTAssertTrue(capsule.waitForExistence(timeout: 5))
+        let screen = app.frame
+        let collapsed = capsule.frame
+        let visibleX = min(screen.maxX - 4, max(screen.minX + 4, collapsed.midX))
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: visibleX, dy: collapsed.midY)).tap()
+
+        func openMenu() {
+            let frame = capsule.frame
+            let moreX = frame.midX < screen.midX ? frame.maxX - 22 : frame.minX + 22
+            app.coordinate(withNormalizedOffset: .zero)
+                .withOffset(CGVector(dx: moreX, dy: frame.midY)).tap()
+            if !app.buttons["复制链接"].waitForExistence(timeout: 5) {
+                print("ORDINARY_MENU_HIERARCHY \(app.debugDescription)")
+                XCTFail("普通浏览器功能菜单未出现")
+            }
+        }
+        func tapMenuItem(_ label: String) {
+            let item = app.buttons[label]
+            if !item.isHittable { app.swipeUp() }
+            XCTAssertTrue(item.waitForExistence(timeout: 5))
+            item.tap()
+        }
+        openMenu()
+        app.buttons["复制链接"].tap()
+        let toast = app.staticTexts["链接已复制"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 4))
+        let toastGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: toast)
+        XCTAssertEqual(XCTWaiter.wait(for: [toastGone], timeout: 5), .completed)
+        openMenu()
+        tapMenuItem("书签")
+        XCTAssertTrue(app.navigationBars["Bookmarks"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        openMenu()
+        tapMenuItem("显示导航栏")
+        let browserMenu = app.buttons["browserManager.menuButton"]
+        XCTAssertTrue(browserMenu.waitForExistence(timeout: 5))
+        browserMenu.tap()
+        XCTAssertTrue(app.buttons["隐藏导航栏"].waitForExistence(timeout: 5))
+        app.buttons["隐藏导航栏"].tap()
+        openMenu()
+        tapMenuItem("显示状态栏")
+        openMenu()
+        tapMenuItem("隐藏状态栏")
+        openMenu()
+        tapMenuItem("缓存统计")
+        XCTAssertTrue(app.alerts["缓存统计"].waitForExistence(timeout: 10))
+        app.alerts.buttons["好"].tap()
+        openMenu()
+        tapMenuItem("权限与能力")
+        XCTAssertTrue(app.navigationBars["网页授权管理"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        openMenu()
+        app.buttons["关闭功能菜单"].tap()
     }
 
     private func element(_ identifier: String) -> XCUIElement {
