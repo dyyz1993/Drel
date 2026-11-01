@@ -313,6 +313,40 @@ final class PWAPermissionTests: XCTestCase {
         XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
     }
 
+    func testVoiceGameWaitsForMicrophoneConsentAndHandlesCancellation() {
+        app.launchArguments += ["--pwa-voice-jump", "--reset-permission-grants"]
+        app.launch()
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 15))
+        appButton.tap()
+        let start = app.webViews.buttons["开启麦克风并开始"]
+        XCTAssertTrue(start.waitForExistence(timeout: 15))
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
+        start.tap()
+        XCTAssertTrue(element("pwa.permission.prompt").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.webViews.buttons["正在游戏"].exists)
+        app.buttons["取消"].tap()
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 3))
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+    }
+
+    func testVoiceDandelionWaitsForMicrophoneConsentAndHandlesCancellation() {
+        app.launchArguments += ["--pwa-voice-dandelion", "--reset-permission-grants"]
+        app.launch()
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 15))
+        appButton.tap()
+        let start = app.webViews.buttons["开启麦克风"]
+        XCTAssertTrue(start.waitForExistence(timeout: 15))
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 2))
+        start.tap()
+        XCTAssertTrue(element("pwa.permission.prompt").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.webViews.buttons["停止"].isEnabled)
+        app.buttons["取消"].tap()
+        XCTAssertFalse(element("pwa.permission.prompt").waitForExistence(timeout: 3))
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+    }
+
     func testV2AddToHomeScreenShowsVersionOnDrelHome() {
         app.launchArguments.append("--pwa-v2-actions")
         app.launch()

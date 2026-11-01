@@ -83,7 +83,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>允许你授权的网页应用获取你的大致位置</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>允许你授权的网页应用使用麦克风录音和语音识别</string>
+	<string>允许你授权的网页应用使用麦克风，获取实时音量以控制互动内容</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>允许你授权的网页应用将你的语音转为文字</string>
 	<key>NSMotionUsageDescription</key>

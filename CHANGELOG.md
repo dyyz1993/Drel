@@ -23,6 +23,12 @@ Each release line carries three pieces of evidence:
   — Scope: `App` — Verified: `simulator` — Evidence:
   [docs/release/1.5.0/verification-133.md](docs/release/1.5.0/verification-133.md)
 
+## [1.5.2] — 2026-11-01
+
+### Added
+
+- Prepare a signed-manifest `audioLevel` action with revocable consent and two H5 voice interaction demos. — Scope: `Bridge` — Verified: `simulator` — Evidence: [docs/testing/results/drel-voice-level/verification.md](docs/testing/results/drel-voice-level/verification.md)
+
 ## [1.5.1] — 2026-11-01
 
 UI-only browser refinement release based on the owner-accepted build 134
