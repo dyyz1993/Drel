@@ -64,3 +64,10 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - Revoking the stored microphone grant removed it from the permission center; tapping start again showed a new Drel permission prompt. Cancelling kept capture stopped.
 - The page was already stopped by navigation before revocation, so the device test did not independently prove active-stream revocation; handler tests cover the cancellation path.
 - Build 137 Simulator `Drel152Release` compiled successfully with framework `3e82898`; the built app reports 1.5.2 (137). TestFlight run 41330248700 is pending.
+
+### Build 137 and Voice Jump tuning
+
+- TestFlight upload: Actions run 41330248700 succeeded. TestFlight listed 1.5.2 (137), installed on iPhone 13; Drel settings confirmed Build 137.
+- Voice Jump started via Drel Bridge on 137. The owner reported the green level meter moved but the character did not jump. This is a real-device gameplay failure, not a Bridge-delivery pass for the game.
+- A deterministic test reproduces this with a moderate calibrated sound level. The H5 update lowers the jump threshold and delays the first obstacle; automated regression passes for both quiet background and a moderate sound stimulus. The updated temporary test page is deployed; physical feedback is pending.
+- This phone had already granted iOS microphone access on 136. The exact first-ever iOS permission transition cannot be re-established by merely upgrading, so the 137 race fix is supported by state-machine tests but not a fresh-permission physical-device retest.
