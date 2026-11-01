@@ -72,3 +72,38 @@ Workflow result:  PASS in 14m34s
 Archive/upload:   PASS
 ASC state:        VALID / IN_BETA_TESTING
 ```
+
+## Post-acceptance hotfix: v11 stale sensor source
+
+Physical revocation testing exposed one remaining page-level issue in v10: if
+the user returned from the permission center after revocation, the page could
+still remember `source=bridge` and a subsequent Start could skip the native
+callback. Build 132's native gate still blocked an unauthorized call, but the
+game could enter its touch fallback instead of waiting for a fresh successful
+callback.
+
+Gateway demo v11 fixes this page state machine:
+
+- Every Start resets the local sensor state.
+- Every Start issues a fresh `startAccelerometer` call and awaits its callback.
+- Only a successful callback sets `source=bridge` and starts the game.
+- A revoked page must therefore show consent again and cannot silently fall
+  back to touch mode.
+
+```text
+v11 entry SHA-256:       09178f0d50aa9af8aae85f7358074b726ef217b3c5eedfebc99dc44a72a92a8d
+v11 entry size:          19446 bytes
+Web manifest SHA-256:    ba055b1b9afaae9207b03c5199bd441847727c757b71b137fe2e4f66ac2bcd4c
+Signed cache version:    11
+Worker asset version:    5d3bb4c6-d999-42c3-bcfa-dfc424664dad
+```
+
+Physical retest after revoking `motion=always`:
+
+- Start showed `等待传感器授权…` and the Drel consent panel.
+- Selecting `始终允许` awaited the native callback.
+- The accelerometer started and calibrated; the page returned to native Bridge
+  input rather than touch fallback.
+
+![v11 revoked restart consent](../../testing/results/drel-gesture-gate/artifacts/iphone-132-v11-revoked-restart-consent.jpg)
+![v11 regrant callback success](../../testing/results/drel-gesture-gate/artifacts/iphone-132-v11-regrant-callback-success.jpg)
