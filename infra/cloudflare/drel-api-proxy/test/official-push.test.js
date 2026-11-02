@@ -896,3 +896,31 @@ test("a direct official push carries no drelSourceChannel stamp", async () => {
     globalThis.fetch = realFetch;
   }
 });
+
+test('bare key discovery serves versioned docs without dispatching push', async () => {
+  const env = testEnv();
+  const originalFetch = globalThis.fetch;
+  let deliveries = 0;
+  globalThis.fetch = async () => { deliveries += 1; throw new Error('unexpected push'); };
+  try {
+    const base = 'https://api.example.test/testkey';
+    const browser = await handleOfficialPush(new Request(base, { headers: { accept: 'text/html' } }), env);
+    assert.equal(browser.status, 200);
+    assert.match(browser.headers.get('content-type'), /text\/html/);
+    assert.equal(browser.headers.get('referrer-policy'), 'no-referrer');
+    assert.equal(browser.headers.get('cache-control'), 'no-store');
+    const html = await browser.text();
+    assert.match(html, /drel\.app\/docs\/zh\//);
+    assert.match(html, /message-v1\.schema\.json/);
+    assert.doesNotMatch(html, /testkey/);
+    const plain = await handleOfficialPush(new Request(base), env);
+    assert.match(plain.headers.get('content-type'), /text\/markdown/);
+    assert.match(await plain.text(), /drel\.app\/docs\/zh\//);
+    const jsonResponse = await handleOfficialPush(new Request(base + '?format=json'), env);
+    const body = await jsonResponse.json();
+    assert.equal(body.schema, 'drel.push-discovery.v1');
+    assert.equal(body.api.post, 'https://api.example.test/push');
+    assert.match(body.schemas.messageV1, /message-v1\.schema\.json$/);
+    assert.equal(deliveries, 0);
+  } finally { globalThis.fetch = originalFetch; }
+});

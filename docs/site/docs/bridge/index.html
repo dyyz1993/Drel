@@ -120,7 +120,7 @@
 
         <section>
           <h2>Declared actions (Manifest v2)</h2>
-          <p>Seven actions are exposed in Drel 1.5.0. Each must be declared in the signed manifest with a purpose ID, an origin list, and a scope.</p>
+          <p>Versioned host contract: Drel 1.5.0 exposes the seven original actions and, starting with build 130, sensors. Drel 1.5.2 build 138 adds audioLevel in TestFlight; check App Store availability before relying on it. Every action requires a signed declaration and exact origin. Build 132 and later also enforce a foreground user gesture for every controlled action. <a href="/docs/zh/">中文开发指南与 Schema 下载</a>.</p>
           <div class="docs-table">
             <table>
               <thead>
@@ -136,7 +136,9 @@
                 <tr><td><code>share</code></td><td>appSession</td><td>Opens the native iOS share sheet; the user inspects content and picks the destination.</td></tr>
                 <tr><td><code>fullscreen</code></td><td>appSession</td><td>Hides host chrome while keeping a host-owned edge return control visible.</td></tr>
                 <tr><td><code>clipboard</code></td><td>always</td><td>Reads or writes the system clipboard behind a native reason prompt.</td></tr>
-                <tr><td><code>location</code></td><td>always</td><td>Reads the current position behind an explicit permission prompt.</td></tr>
+                <tr><td><code>getLocation</code></td><td>always</td><td>Drel 1.5.0+: location with permission; location is a legacy manifest alias.</td></tr>
+                <tr><td><code>sensors</code></td><td>always</td><td>Drel 1.5.0 build 130: declared motion streams; build 131+: revocable user grant; build 132+: foreground tap gate.</td></tr>
+                <tr><td><code>audioLevel</code></td><td>always</td><td>Drel 1.5.2 build 138 TestFlight: normalized foreground microphone level, consent required; raw audio is not exposed.</td></tr>
                 <tr><td><code>addToHomeScreen</code></td><td>appSession</td><td>Adds the registered app shortcut to the Drel home screen.</td></tr>
               </tbody>
             </table>
@@ -157,16 +159,16 @@
 
         <section>
           <h2>Not available</h2>
-          <p>Camera scanning, photo library, Bluetooth, microphone, speech synthesis, contacts, motion sensors, file import/export, and generic device control are rejected before dispatch. The Drel host policy blocks them even though the underlying SDK contains handler code for other hosts.</p>
+          <p>Camera scanning, photo library, Bluetooth, raw microphone audio, speech recognition, contacts, file import/export, and generic device control are not exposed as managed actions in the Drel Store host. Motion sensors and foreground audio level are separate scoped actions as listed above; audioLevel is not raw audio or speech recognition.</p>
         </section>
 
         <section>
           <h2>Calling an action</h2>
-          <pre class="docs-code">const bridgeAvailable = typeof window.BarkBridge?.call === 'function';
+          <pre class="docs-code">const bridgeAvailable = typeof window.BarkBridge?.callNative === 'function';
 
 if (bridgeAvailable) {
   try {
-    const result = await window.BarkBridge.call('clipboard', { action: 'read' });
+    const result = await window.BarkBridge.callNative('clipboard', { action: 'read' });
     if (result?.success) {
       input.value = result.data;
     }
@@ -187,7 +189,7 @@ const bridgeVersion = Number(runtime?.bridgeVersion ?? 0);</pre>
 
         <section>
           <h2>Live interactive demo</h2>
-          <p>The <a href="/test/actions/">Action Demo fixture</a> exercises every declared action, including the authorization prompt and the revocation path.</p>
+          <p>The <a href="/test/actions/">Action Demo fixture</a> covers its declared actions and authorization. Motion and audio demos are separate; the Action Demo does not exercise every action.</p>
         </section>
 
         <div class="docs-pagination">

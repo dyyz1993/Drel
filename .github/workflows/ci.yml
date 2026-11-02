@@ -551,6 +551,12 @@ jobs:
       - name: Website links, demos and asset digests
         run: python3 tools/verify-drel-site.py --dir build/drel-site-staging
 
+      - name: Developer API versions, schemas and secret scan
+        run: python3 tools/verify-drel-developer-docs.py
+
+      - name: Push discovery and dispatch regression
+        run: node --test infra/cloudflare/drel-api-proxy/test/official-push.test.js
+
       - name: Upload site staging output
         uses: actions/upload-artifact@v4
         with:
