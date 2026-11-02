@@ -2,16 +2,16 @@
   "schemaVersion": "1",
   "appId": "dev.drel.test.voice-dandelion",
   "name": "吹散蒲公英（测试）",
-  "startURL": "https://drel-voice152.legacy-infra.example.invalid:8443/v1/voice-dandelion/index.html",
+  "startURL": "https://drel.app/sound/voice-dandelion/",
   "allowedOrigins": [
-    "https://drel-voice152.legacy-infra.example.invalid:8443"
+    "https://drel.app"
   ],
   "capabilities": [],
   "capabilities_v2": [
     {
       "action": "audioLevel",
       "origins": [
-        "https://drel-voice152.legacy-infra.example.invalid:8443"
+        "https://drel.app"
       ],
       "purposeId": "voice-dandelion-level",
       "purpose": "使用麦克风的实时音量让蒲公英种子飞散",
@@ -19,11 +19,11 @@
     }
   ],
   "routes": [
-    "/v1/voice-dandelion/index.html"
+    "/sound/voice-dandelion/"
   ],
   "cache": {
     "strategy": "networkOnly",
-    "version": "1",
+    "version": "2",
     "persistent": false,
     "restoresLastState": true
   }

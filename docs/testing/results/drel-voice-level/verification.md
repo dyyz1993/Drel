@@ -71,3 +71,11 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - Voice Jump started via Drel Bridge on 137. The owner reported the green level meter moved but the character did not jump. This is a real-device gameplay failure, not a Bridge-delivery pass for the game.
 - A deterministic test reproduces this with a moderate calibrated sound level. The H5 update lowers the jump threshold and delays the first obstacle; automated regression passes for both quiet background and a moderate sound stimulus. The updated temporary test page is deployed; physical feedback is pending.
 - This phone had already granted iOS microphone access on 136. The exact first-ever iOS permission transition cannot be re-established by merely upgrading, so the 137 race fix is supported by state-machine tests but not a fresh-permission physical-device retest.
+
+### 2026-11-02 stable H5 path and voice tail
+
+- Owner confirmed the revised jump threshold responds to voice; sustained-tail descent tuning remains pending physical feel assessment. Automated game test confirms sustained sound slows falling and quiet background does not trigger jump.
+- Published the three H5 resources under `https://drel.app/sound/` using Cloudflare Pages production deployment `50c6f3db`. All three live files matched their source SHA-256; the pre-existing home page matched its previous SHA-256. All 87 previously staged public files matched the preview before production deployment; four existing ZIPs were preserved from production.
+- A path-scoped Pages Function enables web microphone permission only under `/sound/`; production returned the expected policy and 200. The original site policy remains intact elsewhere.
+- Device-scoped signed manifests updated to version 2 under `https://drel.app` and verified by Ed25519 signature and private readback. The device catalog showed both drel.app entries. Voice Jump opened through that catalog, requested a new drel.app grant, and started via Bridge after one-time consent.
+- The test apps remain device-scoped and absent from the anonymous catalog; stable public catalog distribution and physical tail feel are not yet accepted.
