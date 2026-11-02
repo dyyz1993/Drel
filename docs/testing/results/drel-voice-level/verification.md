@@ -105,3 +105,10 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - Before changing the official gateway, downloaded its deployed Worker source and compared it with the pre-change source bundle: exact match after normalization of an automatically generated bundle symbol. Deployed gateway `29b82e9f-be88-4035-9121-fbd61ac5a5f1`; `/health` reports `2026.11.02-audio-catalog`.
 - Production legacy catalog returned no audioLevel declaration; a request declaring audioLevel support returned the two additional official games with valid Ed25519 signatures and stable drel.app paths. Gateway tests 53/53; no claim of 138 device catalog verification yet.
 - Release commit `238b033`, tag `v1.5.2+138`; TestFlight Actions run `41382142553` started. Upload and physical install are pending.
+
+### 2026-11-02 TestFlight 138 physical smoke
+
+- GitHub Actions run `41382142553`: success; TestFlight showed and installed 1.5.2 (138). Drel settings reported `Drel v1.5.2 (Build 138)` on iPhone 13 / iOS 18.7.3.
+- The 138 signed catalog displayed both official `dev.drel.voice-jump` and `dev.drel.voice-dandelion` entries at `drel.app`. The two device-scoped fixtures created for development were deleted and verified absent after refreshing the catalog; both official entries remained.
+- Voice Jump opened from its official entry, required Drel microphone consent, and started with `Drel Bridge已开启` after one-time approval. Dandelion opened from its official entry, independently requested permission, started the Bridge after one-time approval, and its Stop button reported that the microphone was closed.
+- The owner requested keeping the three-jump design as is. The exact physical three-jump feel and an iOS first-ever permission transition were not verified in this pass; simulator and unit regressions are recorded above. No App Review submission or live promotional text change was made.
