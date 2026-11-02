@@ -96,7 +96,7 @@ async function checkDoubleJump() {
   vm.runInContext('calibrate=0; noise=0.012; y=-1000; vy=50; grounded=false; spawn=100; energy=0.5; last=0',context);
   for(let i=1;i<=8;i++) frames.shift()(i*16);
   assert(vm.runInContext('vy',context)>0,'continuous voice must not re-trigger jump');
-  level=0; for(let i=9;i<=45;i++) frames.shift()(i*16);
+  level=0.035; for(let i=9;i<=45;i++) frames.shift()(i*16);
   vm.runInContext('y=-1000; vy=50; grounded=false',context);
   level=0.08; for(let i=46;i<=52;i++) frames.shift()(i*16);
   assert(vm.runInContext('vy',context)<0,'renewed louder voice should trigger second jump');
@@ -104,6 +104,6 @@ async function checkDoubleJump() {
   vm.runInContext('y=-1000; vy=50; grounded=false',context);
   level=0.08; for(let i=90;i<=96;i++) frames.shift()(i*16);
   assert(vm.runInContext('vy',context)>0,'third jump in the same airtime must be blocked');
-  console.log('PASS voice-jump: release and rise triggers only one extra jump');
+  console.log('PASS voice-jump: softer tail then louder sound triggers only one extra jump');
 }
 (async () => {await check('voice-jump'); await check('voice-dandelion'); await checkJumpThreshold(); await checkSustainedVoiceFall(); await checkDoubleJump();})().catch(e => {console.error(e);process.exitCode=1;});
