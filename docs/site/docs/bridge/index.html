@@ -193,7 +193,7 @@ const viewport = runtime?.viewport;</pre>
 
         <section>
           <h2>Read-only capability query (1.5.3 TestFlight)</h2>
-          <p>Planned for 1.5.3 build 141 TestFlight; unavailable in 1.5.2 build 138. A compatible host exposes <code>getCapabilities</code>; check for an error and keep an old-version fallback. It never requests permission or consumes a user gesture.</p>
+          <p>Available in 1.5.3 build 141 TestFlight; unavailable in 1.5.2 build 138. A compatible host exposes <code>getCapabilities</code>; check for an error and keep an old-version fallback. It never requests permission or consumes a user gesture.</p>
           <pre class="docs-code">let capabilities = null;
 try {
   const result = await window.BarkBridge?.callNative('getCapabilities', {});
