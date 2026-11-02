@@ -895,7 +895,9 @@ function pushDiscovery(request, parsed, input) {
       name: "Drel Push Discovery",
       pushURL,
       api: { get: `${pushURL}/{title}/{body}`, post: `${url.origin}/push` },
-      documentation: "https://drel.app/self-hosted/",
+      documentation: "https://drel.app/docs/zh/",
+      bridge: "https://drel.app/docs/bridge/",
+      schemas: { messageV1: "https://drel.app/schemas/message-v1.schema.json", approvalSubmissionV1: "https://drel.app/schemas/approval-submission-v1.schema.json", approvalResponseV1: "https://drel.app/schemas/approval-response-v1.schema.json", approvalStatusV1: "https://drel.app/schemas/approval-status-v1.schema.json" },
       source: "https://github.com/dyyz1993/Drel",
     });
   }
@@ -903,6 +905,10 @@ function pushDiscovery(request, parsed, input) {
     "# Drel Push Discovery",
     "",
     "This address sends notifications to one Drel installation. Treat it as a secret capability.",
+    "",
+    "Developer guide: https://drel.app/docs/zh/",
+    "Bridge API: https://drel.app/docs/bridge/",
+    "Message Schema v1: https://drel.app/schemas/message-v1.schema.json",
     "",
     "## Quick start",
     "",
@@ -919,5 +925,11 @@ function pushDiscovery(request, parsed, input) {
       },
     });
   }
-  return json({ pushURL }, 200);
+  const html = `<!doctype html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drel 推送开发指南</title><style>body{font:16px/1.7 -apple-system,BlinkMacSystemFont,sans-serif;max-width:720px;margin:48px auto;padding:0 24px;color:#202a45}a{color:#4c57e8}code{background:#f1f3fb;padding:2px 5px;border-radius:5px}.box{background:#f4f5ff;border-radius:14px;padding:18px}</style></head><body><h1>Drel 推送开发指南</h1><p>这是你的个人推送地址。它相当于发送通知的密钥，请勿公开分享。</p><div class="box"><strong>从这里开始</strong><ul><li><a href="https://drel.app/docs/zh/">中文快速入门、curl 示例与版本说明</a></li><li><a href="https://drel.app/docs/push/">Push API 参考</a></li><li><a href="https://drel.app/docs/bridge/">Bridge API 参考</a></li><li><a href="https://drel.app/schemas/message-v1.schema.json">下载消息 Schema v1</a></li></ul></div><p>不带消息参数访问本页不会发送通知。发送时请从 Drel 复制个人地址并参照指南填写；不要把地址粘贴到公共代码或日志。</p></body></html>`;
+  return new Response(html, { headers: {
+    "content-type": "text/html; charset=utf-8", "cache-control": "no-store",
+    "x-robots-tag": "noindex, nofollow", "referrer-policy": "no-referrer",
+    "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+    "x-content-type-options": "nosniff",
+  }});
 }

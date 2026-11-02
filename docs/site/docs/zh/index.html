@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-Hans"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drel 开发者指南：推送与 Bridge</title><meta name="description" content="使用 curl 发送 Drel 推送，下载版本化 Schema，并为受信任网页调用原生能力。"><link rel="canonical" href="https://drel.app/docs/zh/"><link rel="stylesheet" href="/assets/site.css"></head>
+<body><header class="docs-shell nav"><a class="brand" href="/">Drel</a><nav class="nav-links"><a href="/docs/">Docs</a><a href="/docs/push/">Push API</a><a href="/docs/bridge/">Bridge API</a><a href="/test/actions/">Demo</a></nav></header>
+<main class="docs-shell"><div class="docs-content"><section class="docs-hero"><span class="eyebrow">开发者指南 · 2026-11-03</span><h1>从一条推送地址开始</h1><p>Drel 提供推送接口，也为已签名的可信网页提供受控原生能力。这是两个独立接口：发送推送不需要 Bridge，推送本身也不会授予网页权限。</p></section>
+<section><h2>1. 获取地址与发送通知</h2><p>在 Drel 首页复制“你的推送地址”，形如 <code>https://api.drel.app/&lt;YOUR_DEVICE_KEY&gt;</code>。地址就是向你的设备发送通知的凭证，不要提交到仓库、截图或公开日志。</p><p>把下列占位地址换成自己的地址；执行命令会实际发送一条通知：</p><pre class="docs-code">DREL_PUSH_URL='https://api.drel.app/YOUR_DEVICE_KEY'
+curl --get "$DREL_PUSH_URL" \
+  --data-urlencode 'title=Build complete' \
+  --data-urlencode 'body=Your build is ready'</pre><p>也可以使用 JSON；命令中的 <code>YOUR_DEVICE_KEY</code> 是占位符，先在私有环境中替换：</p><pre class="docs-code">curl https://api.drel.app/push \
+  -H 'Content-Type: application/json' \
+  -d '{"deviceKey":"YOUR_DEVICE_KEY","title":"Build complete","body":"Your build is ready"}'</pre><p>仅打开不带消息参数的个人地址可查看发现信息；追加标题、正文或填写推送字段会触发发送。请求成功不等于用户已看到通知。详见 <a href="/docs/push/">Push API</a>。</p></section>
+<section><h2>2. 版本与能力</h2><p>推送协议与 iOS App 版本分别演进。下面是已核对的版本边界；安装包、签名清单和用户授权共同决定实际可用能力。</p><div class="docs-table"><table><thead><tr><th>能力</th><th>最低 Drel 版本</th><th>条件</th></tr></thead><tbody>
+<tr><td>Bark 兼容推送、打开 HTTPS 页面</td><td>1.4.x</td><td>个人地址；无需网页 Bridge</td></tr>
+<tr><td><code>haptic</code>、<code>vibrate</code>、<code>share</code>、<code>fullscreen</code>、<code>clipboard</code>、<code>getLocation</code>、<code>addToHomeScreen</code></td><td>1.5.0</td><td>签名清单声明和可信来源；132 起受控动作均需前台用户操作</td></tr>
+<tr><td><code>sensors</code> 加速度与陀螺仪</td><td>1.5.0（130 起）</td><td>130 为声明式；131 起需用户同意且可撤销；132 起要求前台点击</td></tr>
+<tr><td><code>audioLevel</code> 实时音量</td><td>1.5.2（TestFlight 138）</td><td>签名声明、用户点击、Drel 与 iOS 麦克风授权；正式商店可用性以商店版本为准</td></tr></tbody></table></div>
+<p><code>audioLevel</code> 返回 0–1 的音量值，最高 30 次/秒，不提供原始音频或录音文件；它不是实时语音识别或翻译。<a href="/docs/bridge/">Bridge 完整参考</a> · <a href="/test/actions/">Action Demo</a>。</p></section>
+<section><h2>3. 在网页中调用 Bridge</h2><p>在受信任应用的签名清单中逐项声明 <code>capabilities_v2</code>、用途和准确 origin。声明不等于授权；敏感动作只能在前台由用户操作触发，并等待成功回调后继续。</p><pre class="docs-code">button.addEventListener('click', async () =&gt; {
+  if (typeof window.BarkBridge?.callNative !== 'function') return;
+  try {
+    const result = await window.BarkBridge.callNative('clipboard', { action: 'read' });
+    if (result?.success !== true) return; // 用户取消或授权失败
+    // 只有成功后才继续处理 result
+  } catch (error) {
+    // 展示失败原因或提供普通浏览器替代方式
+  }
+});</pre><p>位置声明使用 <code>getLocation</code>；旧清单中的 <code>location</code> 是兼容别名，JavaScript 动作名仍为 <code>getLocation</code>。普通网页不要假设拥有受控原生权限。</p></section>
+<section><h2>4. 下载协议 Schema</h2><p>以下文件是 JSON Schema Draft 2020-12。版本号是协议版本，不是 App 版本；消息 Schema v1 描述结构化 <code>webbridgekit.message.v1</code>，不是所有 Bark 简单请求的必填格式。</p><ul><li><a href="/schemas/message-v1.schema.json" download>消息 Schema v1</a></li><li><a href="/schemas/approval-submission-v1.schema.json" download>审批提交 Schema v1</a></li><li><a href="/schemas/approval-response-v1.schema.json" download>审批响应 Schema v1</a></li><li><a href="/schemas/approval-status-v1.schema.json" download>审批状态 Schema v1</a></li></ul><p>规范消息类型和示例参见 <a href="/docs/push/">Push API</a>。不同接收端可能支持不同展示类型，集成时按所用 App 版本验证。</p></section>
+<section><h2>5. 调试与安全</h2><ul><li>普通浏览器先做标准 Web 功能，Bridge 缺失、拒绝或取消时提供降级。</li><li>传感器和音量订阅不在后台持续采集；离开、撤销或停止时关闭。</li><li>不要把密钥、设备推送地址、用户位置或录音写进公开示例、Schema、截图或日志。</li></ul></section></div></main></body></html>

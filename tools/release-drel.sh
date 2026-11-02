@@ -125,6 +125,7 @@ test)
   run_gate "Design system lint" "bash tools/ci-lint.sh"
   run_gate "Go server tests" "cd Server/native && go test ./..."
   run_gate "Cloudflare Worker tests" "cd infra/cloudflare/drel-api-proxy && npm test"
+  run_gate "Developer documentation and schemas" "python3 tools/verify-drel-developer-docs.py"
   run_gate "Website links and assets" "bash tools/build-drel-site.sh && python3 tools/verify-drel-site.py --dir build/drel-site-staging"
   run_gate "Diagram sources are rendered" "bash tools/build-drel-diagrams.sh --check"
 
