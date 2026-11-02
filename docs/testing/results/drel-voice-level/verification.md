@@ -92,3 +92,9 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - The owner reported the prior two-jump version did not trigger in physical use. Its arm threshold required near-silence, conflicting with the requested retained tail.
 - A deterministic retained-tail test reproduced the failure. The trigger now detects a meaningful decrease from the airborne peak followed by an increase, without requiring complete silence. Continuous sound cannot retrigger and only one extra airborne jump is allowed; regression checks pass.
 - Pages production `a9676a30` serves the updated game with matching SHA-256 and unchanged homepage. Awaiting physical feedback; no claim of physical acceptance.
+
+### 2026-11-02 triple jump
+
+- User requested multiple jumps. The game allows two additional jumps per airborne session; each requires a meaningful drop and subsequent rise in sound, while sustained sound slows descent. The count resets on the next grounded jump.
+- Automated game tests passed: continuous sound does not repeatedly jump, retained-tail release/rise triggers second and third jumps, a fourth midair jump is blocked, and landing restores jumping.
+- Pages deployment `f1d63337` serves the revised page with matching source SHA-256; homepage matches the previous production baseline. Physical feel confirmation is pending.
