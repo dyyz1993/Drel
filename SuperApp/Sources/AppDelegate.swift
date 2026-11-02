@@ -80,7 +80,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
         WebBridgeHostCapabilityPolicy.nativeActionAllowlist = [
             "haptic", "vibrate", "share", "fullscreen",
-            "clipboard", "getLocation", "addToHomeScreen", "sensors"
+            "clipboard", "getLocation", "addToHomeScreen", "sensors", "getCapabilities"
         ]
         #if DREL_152_MICROPHONE
         WebBridgeHostCapabilityPolicy.nativeActionAllowlist?.insert("audioLevel")

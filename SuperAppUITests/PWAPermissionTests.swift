@@ -196,6 +196,21 @@ final class PWAPermissionTests: XCTestCase {
         XCTAssertTrue(app.webViews.staticTexts["Error: PWA 未获得该原生能力授权"].waitForExistence(timeout: 5))
     }
 
+    func testCapabilityQueryInWebViewDoesNotPrompt() {
+        app.launchArguments += ["--pwa-v2-actions", "--reset-permission-grants"]
+        app.launchEnvironment["WBK_PWA_PERMISSION_ORIGIN"] = "http://localhost:18082"
+        app.launch()
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 20))
+        appButton.tap()
+        let query = app.webViews.buttons["查询能力状态"]
+        XCTAssertTrue(query.waitForExistence(timeout: 15))
+        query.tap()
+        let result = app.webViews.staticTexts["查询成功 clipboard true true notDetermined"]
+        XCTAssertTrue(result.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertFalse(element("pwa.permission.prompt").exists)
+    }
+
     func testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt() {
         app.launchArguments.append("--pwa-v2-actions")
         app.launch()

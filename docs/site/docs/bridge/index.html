@@ -183,10 +183,24 @@ if (bridgeAvailable) {
           <h2>Runtime detection</h2>
           <pre class="docs-code">const runtime = window.DrelRuntime;
 const isInstalledOffline = runtime?.isOfflinePackage === true;
-const bridgeVersion = Number(runtime?.bridgeVersion ?? 0);</pre>
-          <p>Feature-detect; do not sniff the user agent string. The app version is not an authorization level.</p>
+const bridgeVersion = runtime?.bridgeVersion;
+const appVersion = runtime?.appVersion;
+const buildNumber = runtime?.buildNumber;
+const screen = runtime?.screen;
+const viewport = runtime?.viewport;</pre>
+          <p>Use DrelRuntime in web code; the UA also includes Drel app, build and protocol versions for server-side identification. Versions and UA are not authorization. Screen and viewport reflect the current environment.</p>
         </section>
 
+        <section>
+          <h2>Read-only capability query (in development)</h2>
+          <p>Not available in released builds, including 1.5.2 build 138. A future host can expose <code>getCapabilities</code>; check for an error and keep an old-version fallback. It never requests permission or consumes a user gesture.</p>
+          <pre class="docs-code">let capabilities = null;
+try {
+  const result = await window.BarkBridge?.callNative('getCapabilities', {});
+  if (result?.success === true) capabilities = result.data;
+} catch { /* older host or unavailable bridge */ }</pre>
+          <p>The versioned snapshot distinguishes host support, current signed declaration, Drel permission, iOS permission, and required gesture. It is not a hardware guarantee or an authorization grant. Requery after settings changes and handle the actual action's result. Offline documents without an unambiguous HTTP(S) origin currently fail closed as undeclared; offline identity mapping is not yet complete.</p>
+        </section>
         <section>
           <h2>Live interactive demo</h2>
           <p>The <a href="/test/actions/">Action Demo fixture</a> covers its declared actions and authorization. Motion and audio demos are separate; the Action Demo does not exercise every action.</p>
