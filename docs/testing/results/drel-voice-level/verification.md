@@ -98,3 +98,10 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - User requested multiple jumps. The game allows two additional jumps per airborne session; each requires a meaningful drop and subsequent rise in sound, while sustained sound slows descent. The count resets on the next grounded jump.
 - Automated game tests passed: continuous sound does not repeatedly jump, retained-tail release/rise triggers second and third jumps, a fourth midair jump is blocked, and landing restores jumping.
 - Pages deployment `f1d63337` serves the revised page with matching source SHA-256; homepage matches the previous production baseline. Physical feel confirmation is pending.
+
+### 2026-11-02 138 release in progress
+
+- User chose to keep the current three-jump behavior without further adjustment; this does not establish a separate physical pass for the three-jump feel.
+- Before changing the official gateway, downloaded its deployed Worker source and compared it with the pre-change source bundle: exact match after normalization of an automatically generated bundle symbol. Deployed gateway `29b82e9f-be88-4035-9121-fbd61ac5a5f1`; `/health` reports `2026.11.02-audio-catalog`.
+- Production legacy catalog returned no audioLevel declaration; a request declaring audioLevel support returned the two additional official games with valid Ed25519 signatures and stable drel.app paths. Gateway tests 53/53; no claim of 138 device catalog verification yet.
+- Release commit `238b033`, tag `v1.5.2+138`; TestFlight Actions run `41382142553` started. Upload and physical install are pending.
