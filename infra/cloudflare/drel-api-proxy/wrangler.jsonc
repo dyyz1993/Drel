@@ -19,7 +19,8 @@
     // 2026.10.29-keybind: /api/v1/html-apps accepts deviceKey-bound private
     // registration without the admin key (paired-key check, 20/key cap,
     // private manifests visible only to ?key=<deviceKey> listings).
-    "DREL_EDGE_VERSION": "2026.10.30-canonical"
+    // 2026-11-02: gate audio demo manifests by client action support.
+    "DREL_EDGE_VERSION": "2026.11.02-audio-catalog"
   },
   "durable_objects": {
     "bindings": [
