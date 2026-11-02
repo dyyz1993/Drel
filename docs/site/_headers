@@ -106,3 +106,6 @@
 /skills/drel-app-development/drel-app-development-1.2.0.zip
   Content-Type: application/zip
   Cache-Control: public, max-age=31536000, immutable
+
+/sound/*
+  X-Robots-Tag: noindex
