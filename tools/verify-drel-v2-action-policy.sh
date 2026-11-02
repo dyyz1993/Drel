@@ -27,7 +27,7 @@ rg -A 8 '^        Drel15Release:$' project.yml | rg -q 'PROVISIONING_PROFILE_SPE
 rg -A 7 '^        Drel14Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.4.1"' || fail "Drel 1.4.1 version was changed"
 rg -A 7 '^        Drel14Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "89"' || fail "Drel 1.4.1 build was changed"
 rg -q '"haptic", "vibrate", "share", "fullscreen",' SuperApp/Sources/AppDelegate.swift || fail "Drel 1.5 action allowlist mismatch"
-rg -q '"clipboard", "getLocation", "addToHomeScreen", "sensors"' SuperApp/Sources/AppDelegate.swift || fail "Drel 1.5 action allowlist mismatch"
+rg -q '"clipboard", "getLocation", "addToHomeScreen", "sensors", "getCapabilities"' SuperApp/Sources/AppDelegate.swift || fail "Drel 1.5 action allowlist mismatch"
 rg -q '^  Drel152Release: release$' project.yml || fail "microphone release configuration missing"
 rg -q '^  Drel152Store:$' project.yml || fail "microphone release scheme missing"
 rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'DREL_152_MICROPHONE' || fail "microphone policy flag missing"

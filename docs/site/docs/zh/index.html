@@ -14,6 +14,29 @@ curl --get "$DREL_PUSH_URL" \
 <tr><td><code>sensors</code> 加速度与陀螺仪</td><td>1.5.0（130 起）</td><td>130 为声明式；131 起需用户同意且可撤销；132 起要求前台点击</td></tr>
 <tr><td><code>audioLevel</code> 实时音量</td><td>1.5.2（TestFlight 138）</td><td>签名声明、用户点击、Drel 与 iOS 麦克风授权；正式商店可用性以商店版本为准</td></tr></tbody></table></div>
 <p><code>audioLevel</code> 返回 0–1 的音量值，最高 30 次/秒，不提供原始音频或录音文件；它不是实时语音识别或翻译。<a href="/docs/bridge/">Bridge 完整参考</a> · <a href="/test/actions/">Action Demo</a>。</p></section>
+<section><h2>读取版本与运行环境</h2><p>Drel 网页可读取 <code>window.DrelRuntime</code>；普通浏览器可能没有此对象。UA 也包含 Drel 版本、构建号和协议版本，但不表示某个能力已经授权。</p><pre class="docs-code">const r = window.DrelRuntime;
+console.log({ appVersion: r?.appVersion, buildNumber: r?.buildNumber,
+  bridgeVersion: r?.bridgeVersion, containerVersion: r?.containerVersion,
+  offlinePackageVersion: r?.offlinePackageVersion,
+  isOfflinePackage: r?.isOfflinePackage, screen: r?.screen, viewport: r?.viewport });</pre><p>版本与构建号是字符串；屏幕与视口会随运行环境变化。服务端可从 User-Agent 识别 Drel，网页优先使用结构化字段。不要将 UA 或版本号当成授权凭证。</p></section>
+<section><h2>能力与授权查询（开发中）</h2><p><strong>尚未随已发布 App 提供：</strong>以下 <code>getCapabilities</code> 接口在开发和验证中，最低正式版本待确认。旧版（包括 1.5.2 Build 138）请处理不支持的返回，不要假设所有用户已经升级。</p><pre class="docs-code">async function readCapabilities() {
+  const bridge = window.BarkBridge;
+  if (typeof bridge?.callNative !== 'function') return null;
+  try {
+    const result = await bridge.callNative('getCapabilities', {});
+    return result?.success === true ? result.data : null;
+  } catch { return null; } // 旧版容器或普通浏览器
+}</pre><p>返回 <code>schemaVersion: "1"</code> 和按动作名索引的 <code>actions</code>。每项的 <code>supported</code> 表示宿主允许该动作；<code>declared</code> 表示当前可信页面匹配签名声明；<code>appPermission</code> 与 <code>systemPermission</code> 分别反映 Drel 和 iOS 的授权状态。<code>requiresUserGesture</code> 表示实际操作仍需用户点击。</p><pre class="docs-code">// 示例（字段值会随页面、授权和宿主而变化）
+{
+  "schemaVersion": "1",
+  "actions": {
+    "audioLevel": {
+      "supported": true, "declared": true,
+      "appPermission": "notDetermined", "systemPermission": "notDetermined",
+      "requiresUserGesture": true
+    }
+  }
+}</pre><p><code>appPermission</code> 可能为 <code>granted</code>、<code>notDetermined</code>、<code>notRequired</code> 或 <code>unavailable</code>；<code>notDetermined</code> 也包括没有持久授权的情况，不能据此判断用户从未拒绝。<code>systemPermission</code> 可能为 <code>granted</code>、<code>denied</code>、<code>restricted</code>、<code>notDetermined</code>、<code>notRequired</code> 或 <code>unavailable</code>。只有持久授权才会包含 <code>grantScope</code>。</p><p>查询不弹窗、不申请授权，结果只是当前快照，并不保证设备硬件可用或后续调用成功。用户在设置里更改授权后应重新查询；需要授权时应由用户点击实际功能并等待成功回调。一次性授权不会被记作长期授权。当前开发方案对无法确定 HTTP(S) 来源的离线页面保守返回未声明，离线身份映射仍待完成。</p></section>
 <section><h2>3. 在网页中调用 Bridge</h2><p>在受信任应用的签名清单中逐项声明 <code>capabilities_v2</code>、用途和准确 origin。声明不等于授权；敏感动作只能在前台由用户操作触发，并等待成功回调后继续。</p><pre class="docs-code">button.addEventListener('click', async () =&gt; {
   if (typeof window.BarkBridge?.callNative !== 'function') return;
   try {
