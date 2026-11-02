@@ -81,8 +81,29 @@ async function checkSustainedVoiceFall() {
     for (let i=1;i<=20;i++) frames.shift()(i*16);
     return vm.runInContext('y', context);
   }
-  const quiet=await distance(0), voiced=await distance(0.08);
-  assert(voiced < quiet, `sustained voice should slow falling (${voiced} vs ${quiet})`);
+  const quiet=await distance(0), voiced=await distance(0.025);
+  assert(quiet - voiced >= 15, `moderate sustained voice should clearly slow falling (${voiced} vs ${quiet})`);
   console.log('PASS voice-jump: sustained sound slows descent');
 }
-(async () => {await check('voice-jump'); await check('voice-dandelion'); await checkJumpThreshold(); await checkSustainedVoiceFall();})().catch(e => {console.error(e);process.exitCode=1;});
+async function checkDoubleJump() {
+  const script=fs.readFileSync('test_resources/voice-jump/index.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1];
+  const elements=new Map(), frames=[]; let level=0.08;
+  const drawing=new Proxy({}, {get:()=>()=>{}});
+  const node=id=>{if(!elements.has(id)) elements.set(id,{disabled:false,style:{},value:'5',textContent:'',getContext:()=>drawing});return elements.get(id);};
+  class SoundLevel {async start(){return 'bridge';} stop(){} read(){return level;}}
+  const context=vm.createContext({document:{hidden:false,querySelector:node,addEventListener:()=>{}},SoundLevel,requestAnimationFrame:f=>frames.push(f),addEventListener:()=>{},Math,Number});
+  vm.runInContext(script,context); await node('#start').onclick();
+  vm.runInContext('calibrate=0; noise=0.012; y=-1000; vy=50; grounded=false; spawn=100; energy=0.5; last=0',context);
+  for(let i=1;i<=8;i++) frames.shift()(i*16);
+  assert(vm.runInContext('vy',context)>0,'continuous voice must not re-trigger jump');
+  level=0; for(let i=9;i<=45;i++) frames.shift()(i*16);
+  vm.runInContext('y=-1000; vy=50; grounded=false',context);
+  level=0.08; for(let i=46;i<=52;i++) frames.shift()(i*16);
+  assert(vm.runInContext('vy',context)<0,'renewed louder voice should trigger second jump');
+  level=0; for(let i=53;i<=89;i++) frames.shift()(i*16);
+  vm.runInContext('y=-1000; vy=50; grounded=false',context);
+  level=0.08; for(let i=90;i<=96;i++) frames.shift()(i*16);
+  assert(vm.runInContext('vy',context)>0,'third jump in the same airtime must be blocked');
+  console.log('PASS voice-jump: release and rise triggers only one extra jump');
+}
+(async () => {await check('voice-jump'); await check('voice-dandelion'); await checkJumpThreshold(); await checkSustainedVoiceFall(); await checkDoubleJump();})().catch(e => {console.error(e);process.exitCode=1;});
