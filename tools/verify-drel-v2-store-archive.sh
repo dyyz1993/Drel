@@ -51,7 +51,7 @@ for key in NSBluetoothAlwaysUsageDescription NSFaceIDUsageDescription NSMotionUs
 done
 [[ -z "$(value NSAppTransportSecurity:NSAllowsArbitraryLoads)" ]] || fail "arbitrary HTTP loading leaked"
 
-for marker in '--pwa-v2-actions' 'fixture-share-demo' 'v2-actions.html'; do
+for marker in '--pwa-v2-actions' 'fixture-share-demo' 'v2-actions.html' '--pwa-offline-query' 'OfflineQueryUITestFixture'; do
     ! strings -a "$APP_PATH/Drel" | grep -qF -- "$marker" || fail "debug fixture leaked into Store binary: $marker"
 done
 

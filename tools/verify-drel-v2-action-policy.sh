@@ -34,7 +34,7 @@ rg -q '^  Drel153Release: release$' project.yml || fail "capability query releas
 rg -q '^  Drel153Store:$' project.yml || fail "capability query release scheme missing"
 rg -A 7 '^        Drel153Release:$' project.yml | rg -q 'DREL_152_MICROPHONE' || fail "1.5.3 microphone policy flag missing"
 rg -A 7 '^        Drel153Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.5.3"' || fail "capability query version mismatch"
-rg -A 7 '^        Drel153Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "140"' || fail "capability query build mismatch"
+rg -A 7 '^        Drel153Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "141"' || fail "capability query build mismatch"
 rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'DREL_152_MICROPHONE' || fail "microphone policy flag missing"
 rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.5.2"' || fail "microphone version mismatch"
 rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "138"' || fail "microphone build mismatch"
