@@ -211,6 +211,21 @@ final class PWAPermissionTests: XCTestCase {
         XCTAssertFalse(element("pwa.permission.prompt").exists)
     }
 
+    func testCapabilityQueryInOfflineWebViewDoesNotPrompt() {
+        app.launchArguments += ["--pwa-v2-actions", "--pwa-offline-query", "--reset-permission-grants"]
+        app.launchEnvironment["WBK_PWA_PERMISSION_ORIGIN"] = "https://offline-query.example"
+        app.launch()
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 20))
+        appButton.tap()
+        let query = app.webViews.buttons["查询离线能力"]
+        XCTAssertTrue(query.waitForExistence(timeout: 15), app.debugDescription)
+        query.tap()
+        let result = app.webViews.staticTexts["离线查询 true true notDetermined"]
+        XCTAssertTrue(result.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertFalse(element("pwa.permission.prompt").exists)
+    }
+
     func testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt() {
         app.launchArguments.append("--pwa-v2-actions")
         app.launch()

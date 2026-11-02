@@ -354,6 +354,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
         let runtime = HTMLAppRuntimeCenter.shared
         let includesV2Actions = ProcessInfo.processInfo.arguments.contains("--pwa-v2-actions")
+        let includesOfflineQuery = ProcessInfo.processInfo.arguments.contains("--pwa-offline-query")
         let includesVoiceGame = ProcessInfo.processInfo.arguments.contains("--pwa-voice-jump")
         let includesVoiceDandelion = ProcessInfo.processInfo.arguments.contains("--pwa-voice-dandelion")
         // Register the fixture under the ACTIVE gateway identity when one is
@@ -442,13 +443,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 )
             ] : [],
             routes: [route],
-            cache: HTMLAppCachePolicy(
-                strategy: .networkOnly,
-                version: "2026.08.13",
-                persistent: false,
-                restoresLastState: true
-            )
+            cache: includesOfflineQuery
+                ? HTMLAppCachePolicy(strategy: .manifest, version: "offline-query-v1", persistent: true,
+                    resourceManifestURL: "\(origin)/offline-query-manifest.json",
+                    resourceManifestSHA256: String(repeating: "a", count: 64))
+                : HTMLAppCachePolicy(strategy: .networkOnly, version: "2026.08.13", persistent: false,
+                    restoresLastState: true)
         )
+        #if DEBUG
+        if includesOfflineQuery { OfflineQueryUITestFixture.install(appID: fixtureAppID) }
+        #endif
         // UI fixture registration must also satisfy the user-visible
         // activation ledger. Home filters registered manifests to apps that
         // were actually push-activated, so without this the fixture exists in
