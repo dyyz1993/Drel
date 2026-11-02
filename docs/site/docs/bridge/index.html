@@ -192,14 +192,14 @@ const viewport = runtime?.viewport;</pre>
         </section>
 
         <section>
-          <h2>Read-only capability query (in development)</h2>
-          <p>Not available in released builds, including 1.5.2 build 138. A future host can expose <code>getCapabilities</code>; check for an error and keep an old-version fallback. It never requests permission or consumes a user gesture.</p>
+          <h2>Read-only capability query (1.5.3 TestFlight)</h2>
+          <p>Planned for 1.5.3 build 139 TestFlight; unavailable in 1.5.2 build 138. A compatible host exposes <code>getCapabilities</code>; check for an error and keep an old-version fallback. It never requests permission or consumes a user gesture.</p>
           <pre class="docs-code">let capabilities = null;
 try {
   const result = await window.BarkBridge?.callNative('getCapabilities', {});
   if (result?.success === true) capabilities = result.data;
 } catch { /* older host or unavailable bridge */ }</pre>
-          <p>The versioned snapshot distinguishes host support, current signed declaration, Drel permission, iOS permission, and required gesture. It is not a hardware guarantee or an authorization grant. Requery after settings changes and handle the actual action's result. Offline documents without an unambiguous HTTP(S) origin currently fail closed as undeclared; offline identity mapping is not yet complete.</p>
+          <p>The versioned snapshot distinguishes host support, current signed declaration, Drel permission, iOS permission, and required gesture. It is not a hardware guarantee or an authorization grant. Requery after settings changes and handle the actual action's result. The verified offline entrypoint maps to the trusted launch page. Additional documents must match a retained, digest-verified resource manifest and verified file contents; reinstall older offline packages to enable additional-page mapping.</p>
         </section>
         <section>
           <h2>Live interactive demo</h2>

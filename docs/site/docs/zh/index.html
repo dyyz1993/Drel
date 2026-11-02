@@ -19,7 +19,7 @@ console.log({ appVersion: r?.appVersion, buildNumber: r?.buildNumber,
   bridgeVersion: r?.bridgeVersion, containerVersion: r?.containerVersion,
   offlinePackageVersion: r?.offlinePackageVersion,
   isOfflinePackage: r?.isOfflinePackage, screen: r?.screen, viewport: r?.viewport });</pre><p>版本与构建号是字符串；屏幕与视口会随运行环境变化。服务端可从 User-Agent 识别 Drel，网页优先使用结构化字段。不要将 UA 或版本号当成授权凭证。</p></section>
-<section><h2>能力与授权查询（开发中）</h2><p><strong>尚未随已发布 App 提供：</strong>以下 <code>getCapabilities</code> 接口在开发和验证中，最低正式版本待确认。旧版（包括 1.5.2 Build 138）请处理不支持的返回，不要假设所有用户已经升级。</p><pre class="docs-code">async function readCapabilities() {
+<section><h2>能力与授权查询（1.5.3 测试版）</h2><p><strong>计划随 1.5.3（139）TestFlight 提供：</strong>以下 <code>getCapabilities</code> 接口的正式商店可用性以实际发布为准。旧版（包括 1.5.2 Build 138）请处理不支持的返回，不要假设所有用户已经升级。</p><pre class="docs-code">async function readCapabilities() {
   const bridge = window.BarkBridge;
   if (typeof bridge?.callNative !== 'function') return null;
   try {
@@ -36,7 +36,7 @@ console.log({ appVersion: r?.appVersion, buildNumber: r?.buildNumber,
       "requiresUserGesture": true
     }
   }
-}</pre><p><code>appPermission</code> 可能为 <code>granted</code>、<code>notDetermined</code>、<code>notRequired</code> 或 <code>unavailable</code>；<code>notDetermined</code> 也包括没有持久授权的情况，不能据此判断用户从未拒绝。<code>systemPermission</code> 可能为 <code>granted</code>、<code>denied</code>、<code>restricted</code>、<code>notDetermined</code>、<code>notRequired</code> 或 <code>unavailable</code>。只有持久授权才会包含 <code>grantScope</code>。</p><p>查询不弹窗、不申请授权，结果只是当前快照，并不保证设备硬件可用或后续调用成功。用户在设置里更改授权后应重新查询；需要授权时应由用户点击实际功能并等待成功回调。一次性授权不会被记作长期授权。当前开发方案对无法确定 HTTP(S) 来源的离线页面保守返回未声明，离线身份映射仍待完成。</p></section>
+}</pre><p><code>appPermission</code> 可能为 <code>granted</code>、<code>notDetermined</code>、<code>notRequired</code> 或 <code>unavailable</code>；<code>notDetermined</code> 也包括没有持久授权的情况，不能据此判断用户从未拒绝。<code>systemPermission</code> 可能为 <code>granted</code>、<code>denied</code>、<code>restricted</code>、<code>notDetermined</code>、<code>notRequired</code> 或 <code>unavailable</code>。只有持久授权才会包含 <code>grantScope</code>。</p><p>查询不弹窗、不申请授权，结果只是当前快照，并不保证设备硬件可用或后续调用成功。用户在设置里更改授权后应重新查询；需要授权时应由用户点击实际功能并等待成功回调。一次性授权不会被记作长期授权。已验证离线入口会映射到启动时的可信地址；其他离线页面须匹配已安装包的摘要验证资源清单及文件内容。旧离线包可能需要重新下载才能识别其他页面。</p></section>
 <section><h2>3. 在网页中调用 Bridge</h2><p>在受信任应用的签名清单中逐项声明 <code>capabilities_v2</code>、用途和准确 origin。声明不等于授权；敏感动作只能在前台由用户操作触发，并等待成功回调后继续。</p><pre class="docs-code">button.addEventListener('click', async () =&gt; {
   if (typeof window.BarkBridge?.callNative !== 'function') return;
   try {
