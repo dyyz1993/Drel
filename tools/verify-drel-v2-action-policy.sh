@@ -32,7 +32,7 @@ rg -q '^  Drel152Release: release$' project.yml || fail "microphone release conf
 rg -q '^  Drel152Store:$' project.yml || fail "microphone release scheme missing"
 rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'DREL_152_MICROPHONE' || fail "microphone policy flag missing"
 rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.5.2"' || fail "microphone version mismatch"
-rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "137"' || fail "microphone build mismatch"
+rg -A 7 '^        Drel152Release:$' project.yml | rg -q 'CURRENT_PROJECT_VERSION: "138"' || fail "microphone build mismatch"
 rg -q '#if DREL_152_MICROPHONE' SuperApp/Sources/AppDelegate.swift || fail "microphone allowlist gate missing"
 rg -q 'nativeActionAllowlist\?\.insert\("audioLevel"\)' SuperApp/Sources/AppDelegate.swift || fail "microphone action missing"
 rg -q 'allowedActions.contains\(action\)' "$FRAMEWORK/Sources/Core/WebJavaScriptBridge.swift" || fail "SDK does not enforce the host action allowlist"
@@ -43,4 +43,4 @@ rg -q 'testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt' SuperAppUITests/P
 rg -q 'testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit' SuperAppUITests/PWAPermissionTests.swift || fail "fullscreen UI regression test missing"
 rg -q '^#if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY' SuperApp/Sources/Managers/TestDataSeeder.swift || fail "development fixture seeder is not excluded from Drel 1.5"
 
-echo "PASS: Drel 1.5.1 (135) keeps signed actions; 1.5.2 (137) additionally gates revocable audioLevel; 1.4.1 remains 1.4.1 (89)."
+echo "PASS: Drel 1.5.1 (135) keeps signed actions; 1.5.2 (138) additionally gates revocable audioLevel; 1.4.1 remains 1.4.1 (89)."
