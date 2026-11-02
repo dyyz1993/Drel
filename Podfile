@@ -10,7 +10,8 @@ project 'Drel.xcodeproj',
   'Release' => :release,
   'Drel14Release' => :release,
   'Drel15Release' => :release,
-  'Drel152Release' => :release
+  'Drel152Release' => :release,
+  'Drel153Release' => :release
 
 def app_pods
   wbk_path = ENV.fetch('WBK_FRAMEWORK_PATH', '../WebBridgeKit-Framework')

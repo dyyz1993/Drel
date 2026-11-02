@@ -34,7 +34,7 @@ RELEASE_ROOT = ROOT / "docs" / "release"
 APP_DELEGATE = ROOT / "SuperApp" / "Sources" / "AppDelegate.swift"
 
 # Configurations that actually reach a store or a TestFlight group.
-STORE_CONFIGS = ("Release", "Drel14Release", "Drel15Release", "Drel152Release")
+STORE_CONFIGS = ("Release", "Drel14Release", "Drel15Release", "Drel152Release", "Drel153Release")
 
 # The actions the Drel 1.5 Store host policy allows. This is the fallback
 # list, used only when the AppDelegate allowlist cannot be parsed. The
@@ -185,7 +185,7 @@ def mentioned_actions(text: str) -> set[str]:
     """Return the action names a release document actually discusses."""
     return {
         action
-        for action in STORE_ACTION_ALLOWLIST | {"audioLevel"}
+        for action in STORE_ACTION_ALLOWLIST | {"audioLevel", "getCapabilities"}
         if action in text
     }
 
@@ -337,7 +337,7 @@ def main() -> int:
                                          notes, re.M | re.S):
                     flattened = " ".join(bullet.split())
                     for entry in FORBIDDEN_CLAIMS:
-                        if args.marketing == "1.5.2" and entry[0] == "microphone":
+                        if args.marketing in {"1.5.2", "1.5.3"} and entry[0] == "microphone":
                             continue
                         label, *wording = entry
                         for term in wording:
@@ -358,7 +358,7 @@ def main() -> int:
             if review_path.is_file():
                 review = review_path.read_text(encoding="utf-8")
                 allowlist, source = store_allowlist()
-                if args.marketing == "1.5.2":
+                if args.marketing in {"1.5.2", "1.5.3"}:
                     allowlist.add("audioLevel")
                 missing = sorted(allowlist - mentioned_actions(review))
                 if missing:
