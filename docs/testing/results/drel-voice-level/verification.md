@@ -86,3 +86,9 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - Old 1.5.1 controlled-action decoding rejects unknown `audioLevel` declarations and gateway decoding treats the manifest list as a whole. The public catalog must not expose those entries to legacy clients.
 - A locally implemented opt-in catalog filter requires `supportedActions=audioLevel`; the 1.5.2 (138) client advertises it for its scoped official gateway. The gateway keeps full signed manifests intact, removes unsupported dynamic audio manifests from legacy lists, and adds the two official games only for opted-in clients. Not deployed yet.
 - Gateway tests: 53 passed, 0 failed. Client gateway-key scope tests: 6 passed, 0 failed on iOS Simulator; 138 `Drel152Release` Simulator build succeeded and the compiled product contains the negotiation marker. Design/repository lint: 18 passed, 0 failed. No claim of public-catalog live verification or TestFlight 138 delivery.
+
+### 2026-11-02 retained-tail second-jump correction
+
+- The owner reported the prior two-jump version did not trigger in physical use. Its arm threshold required near-silence, conflicting with the requested retained tail.
+- A deterministic retained-tail test reproduced the failure. The trigger now detects a meaningful decrease from the airborne peak followed by an increase, without requiring complete silence. Continuous sound cannot retrigger and only one extra airborne jump is allowed; regression checks pass.
+- Pages production `a9676a30` serves the updated game with matching SHA-256 and unchanged homepage. Awaiting physical feedback; no claim of physical acceptance.
