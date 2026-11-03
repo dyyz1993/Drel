@@ -19,7 +19,7 @@ console.log({ appVersion: r?.appVersion, buildNumber: r?.buildNumber,
   bridgeVersion: r?.bridgeVersion, containerVersion: r?.containerVersion,
   offlinePackageVersion: r?.offlinePackageVersion,
   isOfflinePackage: r?.isOfflinePackage, screen: r?.screen, viewport: r?.viewport });</pre><p>版本与构建号是字符串；屏幕与视口会随运行环境变化。服务端可从 User-Agent 识别 Drel，网页优先使用结构化字段。不要将 UA 或版本号当成授权凭证。</p></section>
-<section><h2>能力与授权查询（1.5.3 测试版）</h2><p><strong>已随 1.5.3（141）TestFlight 提供：</strong>以下 <code>getCapabilities</code> 接口的正式商店可用性以实际发布为准。旧版（包括 1.5.2 Build 138）请处理不支持的返回，不要假设所有用户已经升级。</p><pre class="docs-code">async function readCapabilities() {
+<section><h2>能力与授权查询（1.5.3 测试版）</h2><p><strong>已随 1.5.3（142）TestFlight 提供：</strong>以下 <code>getCapabilities</code> 接口的正式商店可用性以实际发布为准。旧版（包括 1.5.2 Build 138）请处理不支持的返回，不要假设所有用户已经升级。</p><pre class="docs-code">async function readCapabilities() {
   const bridge = window.BarkBridge;
   if (typeof bridge?.callNative !== 'function') return null;
   try {
