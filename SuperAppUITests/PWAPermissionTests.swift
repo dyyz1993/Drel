@@ -618,6 +618,38 @@ final class PWAPermissionTests: XCTestCase {
         app.buttons["关闭功能菜单"].tap()
     }
 
+    func testWhiteScreenImmersiveBrowserStillShowsFunctionMenu() {
+        app.launch()
+        let target = "http://localhost:8081/test_resources/pwa-permission/white-screen.html?mode=immersive"
+        var link = URLComponents(string: "webbridgekit://open")!
+        link.queryItems = [URLQueryItem(name: "url", value: target)]
+        XCUIDevice.shared.system.open(link.url!)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let confirm = springboard.buttons["打开"]
+        if confirm.waitForExistence(timeout: 3) { confirm.tap() }
+
+        XCTAssertTrue(element("browserManager.webView").waitForExistence(timeout: 15))
+        let capsule = element("browserManager.immersiveReturnButton")
+        XCTAssertTrue(capsule.waitForExistence(timeout: 5))
+
+        let collapsed = capsule.frame
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: max(4, collapsed.maxX - 4), dy: collapsed.midY))
+            .tap()
+        let expanded = capsule.frame
+        let moreX = expanded.midX < app.frame.midX ? expanded.maxX - 22 : expanded.minX + 22
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: moreX, dy: expanded.midY))
+            .tap()
+
+        XCTAssertTrue(element("immersive.functionSheet").waitForExistence(timeout: 5), app.debugDescription)
+        let copyLink = app.buttons["复制链接"]
+        XCTAssertTrue(copyLink.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertEqual(capsule.label, "显示浏览器控制条")
+        copyLink.tap()
+        XCTAssertTrue(app.staticTexts["链接已复制"].waitForExistence(timeout: 4))
+    }
+
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)[identifier]
     }
