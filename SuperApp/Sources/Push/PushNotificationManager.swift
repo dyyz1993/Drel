@@ -596,6 +596,7 @@ class PushNotificationManager: NSObject {
     let body: [String: Any] = [
       "deviceToken": token,
       "key": key,
+      "apnsEnvironment": Self.apnsEnvironment,
     ]
     request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
@@ -622,6 +623,14 @@ class PushNotificationManager: NSObject {
         DispatchQueue.main.async { completion?(.failed(L10n.tr("official.push.error.server"))) }
       }
     }.resume()
+  }
+
+  private static var apnsEnvironment: String {
+    #if DEBUG
+      return "sandbox"
+    #else
+      return "production"
+    #endif
   }
 
   /// Revokes exactly one public push identity for this APNs token. Address

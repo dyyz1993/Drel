@@ -108,6 +108,42 @@ Drel 的审批状态，也不自行判断 ticket 是否过期或已使用。点�
 `GET /api/v1/approvals/{requestId}` 对它返回 `404`；状态查询由 `submit.url`
 对应的系统提供。
 
+
+## 时序与归属边界
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CI as GitHub Actions / release.yml
+    participant Gate as Release Gate<br/>legacy-approve.example.invalid
+    participant Edge as Drel Edge<br/>api.drel.app
+    participant APNs as Apple APNs
+    participant App as Drel App
+    participant GH as GitHub API
+
+    CI->>GH: 进入 production environment
+    GH-->>CI: run waiting
+    CI->>Gate: POST /ticket
+    Gate-->>CI: opaque ticket（约 15 分钟）
+    CI->>Edge: POST /push（approval.submit = {url, ticket}）
+    Edge->>APNs: 按设备环境投递
+    APNs->>App: 通知 payload
+    Note over App,Edge: 有 submit 时不调用旧 /respond
+    App->>Gate: POST /api/review
+    Gate->>Gate: 验票 / scope / 过期 / 一次性 claim
+    Gate->>GH: POST pending_deployments
+    GH-->>Gate: approved
+    Gate-->>App: {requestId, state, revision}
+    GH-->>CI: production gate 放行，继续发布
+```
+
+`legacy-approve.example.invalid`、`dyyz1993/xbrowser`、`production` 属于当前 xbrowser
+发布门禁的第三方实现，不是 Drel 官方协议的一部分。其他应用复用同一份
+`approval.submit` 合同时，应提供自己的 HTTPS 审批服务和 ticket，例如
+`https://approve.example.com/api/review`。Drel 官方 `api.drel.app` 仍负责消息
+投递、历史和 `poll`/`webhook` 审批状态；`thirdParty` 模式不在官方侧保存
+可查询状态。
+
 ## Webhook
 
 将 `approval.responseMode` 设置为 `webhook` 并提供 HTTPS `approval.responseURL`。WebBridgeKit 使用以下请求头：

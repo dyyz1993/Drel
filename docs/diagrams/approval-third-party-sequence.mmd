@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant CI as GitHub Actions / release.yml
+    participant Gate as Release Gate<br/>legacy-approve.example.invalid
+    participant Edge as Drel Edge<br/>api.drel.app
+    participant APNs as Apple APNs
+    participant App as Drel App
+    participant GH as GitHub API
+
+    CI->>GH: 进入 production environment
+    GH-->>CI: run waiting
+    CI->>Gate: POST /ticket {repo, environment, runId, requestId}
+    Gate-->>CI: opaque ticket（约 15 分钟）
+    CI->>Edge: POST /push（approval.submit = {url, ticket}）
+    Edge->>Edge: Durable Object 历史 / 审批注册
+    Edge->>APNs: 按设备环境选择 production / sandbox
+    APNs->>App: 通知 payload
+    Note over App,Edge: 有 submit 时不调用旧 /respond
+    App->>Gate: POST /api/review {ticket, requestId, actionId, expectedRevision, values}
+    Gate->>Gate: 验票 / scope / 过期 / 一次性 claim
+    Gate->>GH: POST pending_deployments
+    GH-->>Gate: approved
+    Gate-->>App: {requestId, state, revision}
+    App->>App: 更新本地状态并收起按钮
+    GH-->>CI: production gate 放行，继续发布

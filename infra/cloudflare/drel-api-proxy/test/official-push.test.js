@@ -488,6 +488,59 @@ test("deliverPlainAPNs posts the payload to Apple over the right shape", async (
   void createPrivateKey;
 });
 
+test("deliverPlainAPNs uses Apple's sandbox endpoint for debug registrations", async () => {
+  const env = testEnv();
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const deliveries = [];
+  const fetchImpl = async (url, init) => {
+    deliveries.push({ url: String(url), init });
+    return { ok: true, status: 200, text: async () => "" };
+  };
+
+  await deliverPlainAPNs(
+    { ...env, APNS_AUTH_KEY_P8: privateKey.export({ format: "pem", type: "pkcs8" }) },
+    "sandbox-token",
+    buildPlainAPNsPayload({ title: "t", body: "b" }, "m-sandbox", "chan"),
+    fetchImpl,
+    "sandbox",
+  );
+
+  assert.equal(deliveries.length, 1);
+  assert.ok(
+    deliveries[0].url.startsWith("https://api.sandbox.push.apple.com/3/device/sandbox-token"),
+  );
+});
+
+test("registration preserves the APNs environment and defaults legacy records to production", async () => {
+  const { state } = mockStorage();
+  const registry = new OfficialPushRegistry(state, testEnv());
+
+  await registry.fetch(new Request("https://edge/device", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      deviceKey: "debug-device",
+      deviceToken: "tok-debug",
+      apnsEnvironment: "sandbox",
+    }),
+  }));
+  const debug = await registry.fetch(
+    new Request("https://edge/device?key=debug-device")
+  );
+  assert.equal((await debug.json()).apnsEnvironment, "sandbox");
+
+  await registry.fetch(new Request("https://edge/device", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ deviceKey: "legacy-device", deviceToken: "tok-legacy" }),
+  }));
+  const legacy = await registry.fetch(
+    new Request("https://edge/device?key=legacy-device")
+  );
+  assert.equal((await legacy.json()).apnsEnvironment, "production");
+});
+
 test("passive pushes go out at priority 5 with no sound, matching the Swift wire", async () => {
   const { generateKeyPairSync } = await import("node:crypto");
   const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
@@ -765,6 +818,51 @@ test("register accepts the official app's {deviceToken, key} field names", async
   assert.equal(response.status, 200);
   const stored = await registry.fetch(new Request("https://registry/device?key=key-official"));
   assert.equal((await stored.json()).deviceToken, "tok-official");
+});
+
+test("register routes a sandbox registration to Apple's sandbox APNs host", async () => {
+  const { state } = mockStorage();
+  const devices = new OfficialPushRegistry(state, testEnv());
+  const namespace = { idFromName: () => "test-id", get: () => devices };
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const env = testEnv({
+    OFFICIAL_PUSH_REGISTRY: namespace,
+    APNS_AUTH_KEY_P8: privateKey.export({ format: "pem", type: "pkcs8" }),
+  });
+
+  const registered = await handleOfficialPush(new Request("https://edge/register", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      deviceToken: "sandbox-token",
+      key: "sandbox-device",
+      apnsEnvironment: "sandbox",
+    }),
+  }), env);
+  assert.equal(registered.status, 200);
+  assert.equal((await registered.json()).apnsEnvironment, "sandbox");
+
+  const deliveries = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    deliveries.push({ url: String(url), init });
+    return { ok: true, status: 200, text: async () => "" };
+  };
+  try {
+    const pushed = await handleOfficialPush(new Request("https://edge/push", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deviceKey: "sandbox-device", title: "t", body: "b" }),
+    }), env);
+    assert.equal(pushed.status, 200);
+    assert.equal(deliveries.length, 1);
+    assert.ok(
+      deliveries[0].url.startsWith("https://api.sandbox.push.apple.com/3/device/sandbox-token"),
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });
 
 test("register rejects device keys that cannot travel in URL paths", async () => {
