@@ -210,7 +210,13 @@ function validatePushRequest(input) {
   return null;
 }
 
-export async function deliverPlainAPNs(env, deviceToken, payload, fetchImpl = fetch) {
+export async function deliverPlainAPNs(
+  env,
+  deviceToken,
+  payload,
+  fetchImpl = fetch,
+  apnsEnvironment = "production",
+) {
   const token = await apnsJWT(env);
   // Wire parity with the retired Swift relay: passive notifications are
   // delivered at priority 5 (they do not need to wake the device this
@@ -222,7 +228,7 @@ export async function deliverPlainAPNs(env, deviceToken, payload, fetchImpl = fe
   const expiration = Number.isFinite(ttl) && ttl > 0
     ? String(Math.floor(Date.now() / 1000) + Math.min(ttl, 30 * 24 * 3600))
     : undefined;
-  const response = await fetchImpl(`${apnsProductionBaseURL()}/3/device/${encodeURIComponent(deviceToken)}`, {
+  const response = await fetchImpl(`${apnsBaseURL(apnsEnvironment)}/3/device/${encodeURIComponent(deviceToken)}`, {
     method: "POST",
     headers: {
       authorization: `bearer ${token}`,
@@ -240,8 +246,14 @@ export async function deliverPlainAPNs(env, deviceToken, payload, fetchImpl = fe
   }
 }
 
-function apnsProductionBaseURL() {
-  return "https://api.push.apple.com";
+function normalizeAPNsEnvironment(value) {
+  return value === "sandbox" ? "sandbox" : "production";
+}
+
+function apnsBaseURL(environment) {
+  return environment === "sandbox"
+    ? "https://api.sandbox.push.apple.com"
+    : "https://api.push.apple.com";
 }
 
 /* ── Bark path parsing (/:key[/:title[/:body]] plus query fields) ──── */
@@ -334,6 +346,7 @@ export class OfficialPushRegistry {
       await this.state.storage.put(`device:${body.deviceKey}`, {
         deviceToken: body.deviceToken,
         deviceKey: body.deviceKey,
+        apnsEnvironment: normalizeAPNsEnvironment(body.apnsEnvironment),
         encryptionPublicKey: body.encryptionPublicKey ?? "",
         platform: body.platform ?? "",
         appVersion: body.appVersion ?? "",
@@ -360,6 +373,7 @@ export class OfficialPushRegistry {
         await this.state.storage.put(`device:${device.deviceKey}`, {
           deviceToken: device.deviceToken,
           deviceKey: device.deviceKey,
+          apnsEnvironment: normalizeAPNsEnvironment(device.apnsEnvironment),
           encryptionPublicKey: device.encryptionPublicKey ?? "",
           platform: device.platform ?? "",
           appVersion: device.appVersion ?? "",
@@ -694,6 +708,13 @@ export async function handleOfficialPush(request, env) {
     // self-hosted surfaces use deviceKey. Accept every documented spelling.
     const deviceKey = body.deviceKey ?? body.device_key ?? body.key;
     const deviceToken = body.deviceToken ?? body.device_token;
+    // The registration contract lets modern clients state their APNs
+    // environment explicitly. Older app builds cannot, so they keep the
+    // original production default.
+    const apnsEnvironment =
+      body.apnsEnvironment === "sandbox" || body.apns_environment === "sandbox"
+        ? "sandbox"
+        : "production";
     if (!deviceKey || !deviceToken) {
       return failure(400, "a device key and a device token are required");
     }
@@ -718,6 +739,7 @@ export async function handleOfficialPush(request, env) {
       body: JSON.stringify({
         deviceToken,
         deviceKey,
+        apnsEnvironment,
         encryptionPublicKey: body.encryptionPublicKey ?? "",
         platform: body.platform ?? "",
         appVersion: body.appVersion ?? "",
@@ -730,6 +752,7 @@ export async function handleOfficialPush(request, env) {
       message: "Device registered",
       deviceKey,
       deviceToken,
+      apnsEnvironment,
     });
   }
 
@@ -848,7 +871,13 @@ async function deliverPushRequest(env, input, origin) {
   const payload = buildPlainAPNsPayload(input, messageID, input.drelSourceChannel);
 
   try {
-    await deliverPlainAPNs(env, device.deviceToken, payload);
+    await deliverPlainAPNs(
+      env,
+      device.deviceToken,
+      payload,
+      fetch,
+      normalizeAPNsEnvironment(device.apnsEnvironment),
+    );
   } catch (error) {
     return failure(502, String(error.message || error));
   }
