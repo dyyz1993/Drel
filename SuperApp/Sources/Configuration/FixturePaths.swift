@@ -141,6 +141,8 @@ enum FixturePaths {
     /// The v2-action variant of the permission fixture, registered by the UI
     /// test harness with `--pwa-v2-actions`.
     static let localPermissionV2Actions = "\(localBasePath)/pwa-permission/v2-actions.html"
+    static let localVoiceJump = "\(localBasePath)/voice-jump/index.html"
+    static let localVoiceDandelion = "\(localBasePath)/voice-dandelion/index.html"
 
     /// Local fixtures that still exist on disk. The `cache-demo.html`,
     /// `cache-showcase.html`, `images/` and `cases/` paths some panels used

@@ -16,6 +16,28 @@ Each release line carries three pieces of evidence:
 - **Evidence** — a link to the verification record under
   `docs/testing/results/` or `docs/release/`.
 
+## [1.5.3] — 2026-11-06
+
+Metadata-only release. The App binary is unchanged from the shipped 1.5.2
+train; 1.5.3 ships App Store listing work only.
+
+### Added
+
+- Japanese, Korean, and German App Store descriptions and search keywords.
+  — Scope: `Website` — Verified: `none` — Evidence:
+  [docs/release/1.5.3/app-store-metadata.json](docs/release/1.5.3/app-store-metadata.json)
+- Refined English App Store description aligned with the Simplified Chinese
+  listing (inbox/favorites and signed-app bullets). — Scope: `Website` —
+  Verified: `none` — Evidence:
+  [docs/release/1.5.3/app-store-metadata-localizations-draft.md](docs/release/1.5.3/app-store-metadata-localizations-draft.md)
+
+### Changed
+
+- Primary App Store locale switches to `en-US` so markets without a
+  localized listing fall back to English instead of Simplified Chinese.
+  — Scope: `Website` — Verified: `none` — Evidence:
+  [docs/release/1.5.3/app-store-metadata-localizations-draft.md](docs/release/1.5.3/app-store-metadata-localizations-draft.md)
+
 ## Unreleased
 
 - Build 134: fix ordinary-browser status-bar visibility, unify short feedback

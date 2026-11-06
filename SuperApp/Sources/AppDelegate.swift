@@ -82,6 +82,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             "haptic", "vibrate", "share", "fullscreen",
             "clipboard", "getLocation", "addToHomeScreen", "sensors"
         ]
+        #if DREL_151_MICROPHONE
+        WebBridgeHostCapabilityPolicy.nativeActionAllowlist?.insert("audioLevel")
+        #endif
         WebBrowserManager.shared.webGrantsPresenter = nil
         #else
         WebBridgeHostCapabilityPolicy.containerOnlyOverride = false
@@ -351,6 +354,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
         let runtime = HTMLAppRuntimeCenter.shared
         let includesV2Actions = ProcessInfo.processInfo.arguments.contains("--pwa-v2-actions")
+        let includesVoiceGame = ProcessInfo.processInfo.arguments.contains("--pwa-voice-jump")
+        let includesVoiceDandelion = ProcessInfo.processInfo.arguments.contains("--pwa-voice-dandelion")
         // Register the fixture under the ACTIVE gateway identity when one is
         // configured: the permission center syncs runtime.gatewayIdentity to
         // the active gateway on open, and that sync wipes grants recorded
@@ -378,9 +383,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             runtime.permissionLedger.revokeAll(appID: "com.webbridgekit.fixture.permissions")
         }
         let origin = ProcessInfo.processInfo.environment["WBK_PWA_PERMISSION_ORIGIN"] ?? "http://localhost:8081"
-        let route = includesV2Actions
-            ? FixturePaths.localPermissionV2Actions
-            : FixturePaths.Local.pwaPermission.indexPath
+        let route = includesVoiceDandelion ? FixturePaths.localVoiceDandelion : (
+            includesVoiceGame ? FixturePaths.localVoiceJump :
+            includesV2Actions ? FixturePaths.localPermissionV2Actions : FixturePaths.Local.pwaPermission.indexPath
+        )
         let startURL = includesV2Actions
             ? "\(origin)\(route)?revision=20261030-route-lab"
             : "\(origin)\(route)"
@@ -390,7 +396,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             startURL: startURL,
             allowedOrigins: [origin],
             capabilities: [.bluetooth, .clipboard, .camera, .location, .fileImport, .share],
-            capabilitiesV2: includesV2Actions ? [
+            capabilitiesV2: includesVoiceGame || includesVoiceDandelion ? [
+                HTMLAppActionDeclaration(
+                    action: .audioLevel,
+                    origins: [origin],
+                    purposeId: "fixture-audio-level-demo",
+                    purpose: "使用实时音量控制游戏跳跃",
+                    scope: .always
+                )
+            ] : includesV2Actions ? [
                 HTMLAppActionDeclaration(
                     action: .clipboard,
                     origins: [origin],

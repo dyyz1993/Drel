@@ -27,6 +27,13 @@ KEY_ID="${WBK_ASC_KEY_ID:?需要设置 WBK_ASC_KEY_ID（App Store Connect API Ke
 KEY_ISSUER="${WBK_ASC_ISSUER_ID:?需要设置 WBK_ASC_ISSUER_ID（App Store Connect Issuer ID）}"
 KEY_PATH="${WBK_ASC_KEY_PATH:?需要设置 WBK_ASC_KEY_PATH（AuthKey_<ID>.p8 私钥路径）}"
 MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.0}"
+case "$MARKETING_VERSION" in
+  1.5.0) RELEASE_SCHEME=Drel15Store ;;
+  1.5.1) RELEASE_SCHEME=Drel151Store ;;
+  1.5.2|1.5.3) RELEASE_SCHEME=Drel15Store ;;
+  *) echo "Unsupported release version: $MARKETING_VERSION" >&2; exit 1 ;;
+esac
+export DREL_V2_EXPECTED_VERSION="$MARKETING_VERSION"
 # Prefer the repository's self-contained helper so the script also runs in CI,
 # where the author's ~/Project/study-mac-app checkout does not exist.
 # asc-api.sh takes ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH from the env.
@@ -128,7 +135,7 @@ if [[ -n "$SIGNING_KEYCHAIN" ]]; then
   security list-keychains -d user -s "$SIGNING_KEYCHAIN" "${ORIGINAL_KEYCHAINS[@]}" >/dev/null
   ARCHIVE_SIGN_ARGS+=("OTHER_CODE_SIGN_FLAGS=--keychain $SIGNING_KEYCHAIN")
 fi
-if ! xcodebuild archive -workspace Drel.xcworkspace -scheme Drel15Store \
+if ! xcodebuild archive -workspace Drel.xcworkspace -scheme "$RELEASE_SCHEME" \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
   -allowProvisioningUpdates "${ARCHIVE_SIGN_ARGS[@]}" \
   MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1; then
@@ -207,7 +214,7 @@ for i in $(seq 1 30); do
     BUILD_ID=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" 2>/dev/null \
       | { grep -oE '"id" *: *"[a-f0-9-]{36}"' || true; } | head -1 | grep -oE '[a-f0-9-]{36}')
     $ASC_API get "/v1/builds/$BUILD_ID/buildBetaDetail" 2>/dev/null | grep -E "internalBuildState"
-    ok "Drel 1.5.0 ($BUILD) 处理完成，TestFlight 可安装"
+    ok "Drel $MARKETING_VERSION ($BUILD) 处理完成，TestFlight 可安装"
     echo
     echo "接下来：在 TestFlight 上做真机验收（三档面板 / 允许一次重复弹窗 / 权限中心 / 主屏幕引导）"
     exit 0
