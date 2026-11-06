@@ -38,6 +38,13 @@ train; 1.5.3 ships App Store listing work only.
   — Scope: `Website` — Verified: `none` — Evidence:
   [docs/release/1.5.3/app-store-metadata-localizations-draft.md](docs/release/1.5.3/app-store-metadata-localizations-draft.md)
 
+## [1.5.1] — 2026-10-23
+
+Maintenance release (build 135), shipped between 1.5.0 and 1.5.2. Detailed
+release notes were not recorded at release time; no capability changes are
+documented for this train. Backfilled 2026-11-06 so the changelog covers
+every version configured in `project.yml`.
+
 ## Unreleased
 
 - Build 134: fix ordinary-browser status-bar visibility, unify short feedback
