@@ -200,6 +200,8 @@ UI-related development and verification must default to the iOS Simulator:
   DerivedData artifacts — then resume the simulator-first flow instead of
   migrating the work to a real device.
 
+- 真机 PUA 出现 `Timed out while enabling automation mode` 且 8100 拒绝连接时，先检查手机解锁与「设置 → 开发者 → 启用 UI 自动化」，不要反复启动 Runner。
+
 ### Automation First, Device Assist Last（自动化自测优先，真机协助兜底）
 
 排查与修复必须按此顺序收敛，不得跳级请求用户真机：
@@ -762,3 +764,9 @@ xcrun simctl launch booted com.webbridgekit.superapp --show-component-catalog
 | `4f53c00` | fix(build): UI build quality pass — warnings 25→4, UI audit, packaging (#1) |
 | `d826dc1` | feat(productization): bookmarks, history, manifest preview, diagnostics, UI polish |
 | `5218431` | feat(quality): accessibility audit, UI tests, CI hardening, release docs, screenshots |
+
+- 跨仓库读文件或运行脚本前，先核对命令工作目录与目标文件所属仓库。
+
+- 验证 Cloudflare 正式站静态资源时，HTTP 客户端显式设置 User-Agent；默认 Python urllib 请求可能被 403 拦截。
+
+- 跨 Drel 与 WebBridgeKit 工作区修改时，先核对当前工作目录和目标文件所属仓库，避免相对路径写错位置。

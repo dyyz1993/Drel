@@ -201,3 +201,11 @@ tools/__pycache__/
 build/cf-secrets/
 Server/native/drel-selfhosted
 .learnings/
+
+# Versioned H5 voice game sources (the rest of test_resources remains ignored).
+!test_resources/voice-games/
+!test_resources/voice-games/**
+!test_resources/voice-jump/
+!test_resources/voice-jump/**
+!test_resources/voice-dandelion/
+!test_resources/voice-dandelion/**

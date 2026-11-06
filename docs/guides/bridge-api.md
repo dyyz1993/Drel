@@ -55,7 +55,7 @@ Handler 执行 → receiveResult 回调回网页
 
 ## 3. Manifest v2 声明式动作
 
-Drel 1.5.0 的动作运行时。**每一项都必须在签名清单的 `capabilities_v2` 中逐条声明**。
+Drel 1.5.0 引入动作运行时；`audioLevel` 从 Drel 1.5.1 开始。**每一项都必须在签名清单的 `capabilities_v2` 中逐条声明**。
 
 | 动作 | 授权 scope | 说明 | 明确不做 |
 |---|---|---|---|
@@ -65,6 +65,8 @@ Drel 1.5.0 的动作运行时。**每一项都必须在签名清单的 `capabili
 | `fullscreen` | `appSession` | 隐藏宿主导航与状态栏，保留边缘返回控件 | 旋转设备、锁死用户、禁用滚动、关闭 Drel |
 | `clipboard` | `always` | 读写系统剪贴板 | 静默读取；每次都有原生理由说明 |
 | `location` | `always` | 获取当前位置 | 后台采集；可在权限中心撤销 |
+| `sensors` | `always` | 订阅加速度计 / 陀螺仪流 | 后台采集；可在权限中心撤销 |
+| `audioLevel` | `always` | 订阅实时麦克风音量（0–1，最多 30Hz） | 上传原始音频、录音、后台采集；可在权限中心撤销 |
 | `addToHomeScreen` | `appSession` | 把已注册应用添加到 Drel 首页 | 添加未注册的应用 |
 
 ### 声明格式
@@ -93,15 +95,17 @@ Drel 1.5.0 的动作运行时。**每一项都必须在签名清单的 `capabili
 
 ### 前台手势要求
 
-`haptic`、`vibrate`、`share`、`fullscreen`、`addToHomeScreen` 都要求**最近一次用户点按**。页面在后台或没有点按上下文时调用会被拒绝——这防止了远程内容在你不知情时驱动设备。
+授权动作的首次 `start` 都要求**最近一次用户点按**。页面在后台或没有点按上下文时调用会被拒绝——这防止了远程内容在你不知情时驱动设备。授权后的 `stop` 不需要新手势，用户撤销、切后台或离开页面时原生层会主动停止流。
+
+`audioLevel` 只回传 `onAudioLevelChange` 里的数值 `level`；原始 PCM、录音文件和上传路径不开放。普通浏览器中继续使用标准 `getUserMedia` 与 Web Audio 降级。
 
 ---
 
 ## 4. 未开放的能力
 
-以下能力在 Drel Store 版**明确不开放**，调用会在到达 handler 之前被拒绝：
+以下能力在 Drel Store 版**明确不开放**，调用会在到达 handler 之前被拒绝（`sensors` 已在 1.5.0 开放，`audioLevel` 已在 1.5.1 开放）：
 
-> 相机扫码 · 相册 · 蓝牙 · 麦克风 · 语音 · 通讯录 · 位置（旧版 `getLocation`）· 运动传感器 · 文件导入导出 · 通用设备控制 · 通用 JS Bridge
+> 相机扫码 · 相册 · 蓝牙 · 原始麦克风访问 · 语音 · 通讯录 · 文件导入导出 · 通用设备控制 · 通用 JS Bridge
 
 底层 SDK 保留了这些 handler 供其他宿主使用，但 Drel 的宿主策略在分发前就拦截它们。**不要在应用里假设它们存在**。
 
@@ -153,10 +157,10 @@ window.webkit.messageHandlers.BarkBridge.postMessage({
 在普通浏览器里调试时，Bridge 不存在。你的应用必须能正常降级：
 
 ```js
-const bridgeAvailable = typeof window.BarkBridge?.call === 'function';
+const bridgeAvailable = typeof window.BarkBridge?.callNative === 'function';
 if (bridgeAvailable) {
   try {
-    const result = await window.BarkBridge.call('clipboard', { action: 'read' });
+    const result = await window.BarkBridge.callNative('clipboard', { action: 'read' });
     if (!result?.success) {
       // 能力不可用或用户拒绝 —— 走普通网页方案
     }
