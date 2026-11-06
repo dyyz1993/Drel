@@ -190,3 +190,12 @@ App Store 支持的语言数量没有上限，可以随时新增本地化，不�
 3. 主语言切换为 en-US（见上节）。
 4. 截图复用已批准素材，不需要新截图。
 5. 提交后用 itunes lookup 抽查 jp / kr / br 验证回退语言。
+
+## 提交记录（2026-11-06）
+
+- build 142（从 `de5a7dc` 工作区重新打包；复用 build 138 被 ASC 拒绝——一个构建只能挂一个版本）。
+  TestFlight 内部测试就绪后附加到 1.5.3；构建 142 内测零崩溃反馈。
+- 五语言元数据（zh-Hans / en-US / ja / ko / de-DE）+ 截图（5×8 张）+ 顶部图与搜索图位置全部 ACTIVE。
+- 主语言已切换为 en-US 并保存持久化（App 信息页硬重载验证）。
+- 提交审核：`asc review submit` → submissionId `7dd61e86-254c-4572-9ae6-0d4d679c1d69`，
+  2026-11-06T13:31:21Z；版本状态 `WAITING_FOR_REVIEW`（API 复核）。
