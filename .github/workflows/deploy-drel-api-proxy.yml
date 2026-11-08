@@ -27,6 +27,8 @@ jobs:
           node-version: 22
       - run: npm run test
       - run: npm run check
+        env:
+          npm_config_cache: ${{ runner.temp }}/drel-wrangler-npm-cache
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -55,6 +57,8 @@ jobs:
           fi
       - if: steps.credentials.outputs.configured == 'true'
         run: npm run deploy
+        env:
+          npm_config_cache: ${{ runner.temp }}/drel-wrangler-npm-cache
       - if: steps.credentials.outputs.configured == 'true'
         run: bash ../../tools/verify-approval-v1.sh
       - if: steps.credentials.outputs.configured != 'true'
