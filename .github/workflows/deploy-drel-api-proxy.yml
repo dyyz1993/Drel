@@ -41,8 +41,6 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       WBK_APPROVAL_URL: https://api.drel.app
-      WBK_APPROVAL_DEVICE_KEY: approval-deploy-gate
-      WBK_APPROVAL_REGISTER_DEVICE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -60,7 +58,26 @@ jobs:
         env:
           npm_config_cache: ${{ runner.temp }}/drel-wrangler-npm-cache
       - if: steps.credentials.outputs.configured == 'true'
-        run: bash ../../../tools/verify-approval-v1.sh
+        name: Verify edge health and route validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS https://api.drel.app/health > "$RUNNER_TEMP/health.json"
+          python3 - <<'PY'
+          import os
+          import json
+          health = json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "health.json")))
+          assert health["status"] == "ok"
+          assert health["servedBy"] == "edge"
+          assert health["version"] == "2026.11.08-route-schema"
+          PY
+          KEY="ci-route-$(date +%s)-$RANDOM"
+          printf '%s' "{\"deviceKey\":\"$KEY\",\"title\":\"route validation\",\"body\":\"missing appId\",\"route\":\"/tasks/42\"}" > "$RUNNER_TEMP/missing.json"
+          printf '%s' "{\"deviceKey\":\"$KEY\",\"title\":\"route validation\",\"body\":\"canonical route\",\"appId\":\"dev.drel.validation\",\"route\":\"/tasks/42\",\"params\":{\"id\":\"42\"}}" > "$RUNNER_TEMP/canonical.json"
+          MISSING_STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -H 'content-type: application/json' --data-binary "@$RUNNER_TEMP/missing.json" https://api.drel.app/push)
+          CANONICAL_STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -H 'content-type: application/json' --data-binary "@$RUNNER_TEMP/canonical.json" https://api.drel.app/push)
+          [[ "$MISSING_STATUS" == "400" ]]
+          [[ "$CANONICAL_STATUS" == "404" ]]
       - if: steps.credentials.outputs.configured != 'true'
         run: |
           echo "Cloudflare deployment skipped: configure CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN as GitHub Actions secrets."
