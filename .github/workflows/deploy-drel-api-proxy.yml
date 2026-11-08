@@ -60,7 +60,7 @@ jobs:
         env:
           npm_config_cache: ${{ runner.temp }}/drel-wrangler-npm-cache
       - if: steps.credentials.outputs.configured == 'true'
-        run: bash ../../tools/verify-approval-v1.sh
+        run: bash ../../../tools/verify-approval-v1.sh
       - if: steps.credentials.outputs.configured != 'true'
         run: |
           echo "Cloudflare deployment skipped: configure CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN as GitHub Actions secrets."
