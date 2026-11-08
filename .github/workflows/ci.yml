@@ -57,6 +57,10 @@ jobs:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
           WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
+      - name: Reclaim self-hosted build disk
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("/tmp/wbk-rel-gate", ignore_errors=True); shutil.rmtree("build/BuildResults.xcresult", ignore_errors=True)'
+
       - name: Verify deliverable boundaries
         run: bash tools/verify-deliverable-boundaries.sh
 
@@ -232,6 +236,11 @@ jobs:
             ~/Library/Logs/DiagnosticReports/Drel*.ips
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Reclaim smoke-test disk
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True)'
 
   # ─── Job 4: UI Fidelity Tests (with retry) ──────────────────────
   ui-fidelity:
@@ -417,6 +426,11 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Reclaim UI-test disk
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True); shutil.rmtree("build/screenshots", ignore_errors=True)'
+
   # ─── Job 5: Design System Lint ──────────────────────────────────
   design-lint:
     name: 🎨 Design System Lint
@@ -498,3 +512,8 @@ jobs:
 
       - name: Architecture lint (includes DEBUG-wrap Rule 9)
         run: bash tools/architecture-lint.sh
+
+      - name: Reclaim release-gate disk
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("/tmp/wbk-rel-gate", ignore_errors=True)'
