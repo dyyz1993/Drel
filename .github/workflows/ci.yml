@@ -59,7 +59,7 @@ jobs:
 
       - name: Reclaim self-hosted build disk
         shell: bash
-        run: python3 -c 'import shutil; shutil.rmtree("/tmp/wbk-rel-gate", ignore_errors=True); shutil.rmtree("build/BuildResults.xcresult", ignore_errors=True)'
+        run: python3 -c 'import shutil; shutil.rmtree("/tmp/wbk-rel-gate", ignore_errors=True); shutil.rmtree("build/BuildResults.xcresult", ignore_errors=True); shutil.rmtree("build/DerivedData", ignore_errors=True)'
 
       - name: Verify deliverable boundaries
         run: bash tools/verify-deliverable-boundaries.sh
@@ -69,6 +69,7 @@ jobs:
           set -o pipefail
           xcodebuild build \
             -workspace Drel.xcworkspace \
+            -derivedDataPath build/DerivedData \
             -scheme Drel \
             -sdk iphonesimulator \
             -arch arm64 \
@@ -95,6 +96,11 @@ jobs:
           name: derived-data
           path: ~/Library/Developer/Xcode/DerivedData/Drel-*/
           retention-days: 1
+
+      - name: Reclaim build outputs
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("build/DerivedData", ignore_errors=True); shutil.rmtree("build/BuildResults.xcresult", ignore_errors=True)'
 
   # ─── Job 3: Smoke Tests (with retry) ────────────────────────────
   smoke-tests:
@@ -147,6 +153,7 @@ jobs:
 
             if xcodebuild test \
               -workspace Drel.xcworkspace \
+              -derivedDataPath build/DerivedData \
               -scheme Drel \
               -destination "$DESTINATION" \
               -configuration Debug \
@@ -240,7 +247,7 @@ jobs:
       - name: Reclaim smoke-test disk
         if: always()
         shell: bash
-        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True)'
+        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True); shutil.rmtree("build/DerivedData", ignore_errors=True)'
 
   # ─── Job 4: UI Fidelity Tests (with retry) ──────────────────────
   ui-fidelity:
@@ -293,6 +300,7 @@ jobs:
 
             if xcodebuild test \
               -workspace Drel.xcworkspace \
+              -derivedDataPath build/DerivedData \
               -scheme Drel \
               -destination "$DESTINATION" \
               -configuration Debug \
@@ -429,7 +437,7 @@ jobs:
       - name: Reclaim UI-test disk
         if: always()
         shell: bash
-        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True); shutil.rmtree("build/screenshots", ignore_errors=True)'
+        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True); shutil.rmtree("build/DerivedData", ignore_errors=True); shutil.rmtree("build/screenshots", ignore_errors=True)'
 
   # ─── Job 5: Design System Lint ──────────────────────────────────
   design-lint:
