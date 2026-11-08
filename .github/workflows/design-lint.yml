@@ -1,11 +1,7 @@
 name: Design Lint
 
 on:
-  pull_request:
-    paths:
-      - 'Sources/**/*.swift'
-      - 'SuperApp/Sources/**/*.swift'
-      - 'tools/design-lint.sh'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}

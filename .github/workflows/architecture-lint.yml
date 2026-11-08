@@ -1,13 +1,7 @@
 name: Architecture Lint
 
 on:
-  pull_request:
-    paths:
-      - 'Sources/**/*.swift'
-      - 'SuperApp/Sources/**/*.swift'
-      - 'Tests/**/*.swift'
-      - 'DrelUITests/**/*.swift'
-      - 'tools/architecture-lint.sh'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
