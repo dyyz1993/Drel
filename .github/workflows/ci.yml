@@ -115,53 +115,20 @@ jobs:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
           WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
-      - name: Cleanup & Prepare Simulators
+      - name: Cleanup & Prepare Simulator
         id: prep
         run: |
           set -euo pipefail
-          echo "=== Pre-boot cleanup ==="
-          xcrun simctl shutdown all 2>/dev/null || true
+          xcrun simctl shutdown all >/dev/null 2>&1 || true
           sleep 2
-          xcrun simctl erase all 2>/dev/null || true
-
-          echo "=== SDK Info ==="
           xcodebuild -version
-          SDK_VER=$(xcrun --sdk iphonesimulator --show-sdk-version 2>/dev/null | cut -d. -f1 || echo "18")
-          xcodebuild -downloadPlatform iOS 2>/dev/null || true
-          xcrun simctl list runtimes
-
-          DESTINATION=""
-          for DEVICE_TYPE in "iPhone 16 Pro" "iPhone 16" "iPhone 15 Pro" "iPhone 15" "iPhone 14" "iPhone SE (3rd generation)"; do
-            echo "--- Trying: $DEVICE_TYPE ---"
-            if xcodebuild test \
-                -workspace Drel.xcworkspace \
-                -scheme Drel \
-                -destination "platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest" \
-                -configuration Debug \
-                -resultBundlePath /tmp/smoke-probe.xcresult \
-                -only-testing:DrelUITests/DrelSmokeTests \
-                -skip-testing:DrelUITests/DrelSmokeTests \
-                CODE_SIGN_IDENTITY="" \
-                CODE_SIGNING_REQUIRED=NO \
-                CODE_SIGNING_ALLOWED=NO \
-                -quiet 2>&1 | head -5; then
-              DESTINATION="platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest"
-              echo "✅ Valid destination: $DESTINATION"
-              break
-            else
-              echo "   ⚠️ Not usable, trying next..."
-            fi
-          done
-
-          rm -rf /tmp/smoke-probe.xcresult 2>/dev/null || true
-
+          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; print("id=" + devices[0]["udid"] if devices else "")')"
           if [ -z "$DESTINATION" ]; then
-            echo "::warning::Falling back to generic destination"
-            DESTINATION="generic/platform=iOS Simulator"
+            echo "::error::No available iOS Simulator device"
+            exit 1
           fi
-
-          echo "destination=$DESTINATION" >> $GITHUB_OUTPUT
-
+          echo "Using $DESTINATION"
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
       - name: Run Smoke Tests (retry 3x)
         env:
           CI: "true"
@@ -289,47 +256,20 @@ jobs:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
           WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
-      - name: Cleanup & Prepare Simulators
+      - name: Cleanup & Prepare Simulator
         id: prep
         run: |
           set -euo pipefail
-          xcrun simctl shutdown all 2>/dev/null || true
+          xcrun simctl shutdown all >/dev/null 2>&1 || true
           sleep 2
-          xcrun simctl erase all 2>/dev/null || true
-
-          echo "=== SDK Info ==="
           xcodebuild -version
-          xcodebuild -downloadPlatform iOS 2>/dev/null || true
-          xcrun simctl list runtimes
-
-          DESTINATION=""
-          for DEVICE_TYPE in "iPhone 16 Pro" "iPhone 16" "iPhone 15 Pro" "iPhone 15" "iPhone 14" "iPhone SE (3rd generation)"; do
-            echo "--- Trying: $DEVICE_TYPE ---"
-            if xcodebuild test \
-                -workspace Drel.xcworkspace \
-                -scheme Drel \
-                -destination "platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest" \
-                -configuration Debug \
-                -resultBundlePath /tmp/uifidelity-probe.xcresult \
-                -only-testing:DrelUITests/UIFidelityTests \
-                -skip-testing:DrelUITests/UIFidelityTests \
-                CODE_SIGN_IDENTITY="" \
-                CODE_SIGNING_REQUIRED=NO \
-                CODE_SIGNING_ALLOWED=NO \
-                -quiet 2>&1 | head -5; then
-              DESTINATION="platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest"
-              break
-            fi
-          done
-
-          rm -rf /tmp/uifidelity-probe.xcresult 2>/dev/null || true
-
+          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; print("id=" + devices[0]["udid"] if devices else "")')"
           if [ -z "$DESTINATION" ]; then
-            DESTINATION="generic/platform=iOS Simulator"
+            echo "::error::No available iOS Simulator device"
+            exit 1
           fi
-
-          echo "destination=$DESTINATION" >> $GITHUB_OUTPUT
-
+          echo "Using $DESTINATION"
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
       - name: Run UI Fidelity Tests (retry 3x)
         env:
           CI: "true"

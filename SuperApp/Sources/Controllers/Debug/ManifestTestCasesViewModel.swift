@@ -1,3 +1,4 @@
+#if DEBUG
 //
 //  ManifestTestCasesViewModel.swift
 //  SuperApp
@@ -6,7 +7,6 @@
 //  Copyright © 2025年 WebBridgeKit. All rights reserved.
 //
 
-#if DEBUG
 import Foundation
 import RxSwift
 import RxCocoa
