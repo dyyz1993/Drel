@@ -75,7 +75,7 @@ jobs:
             | xcpretty --color
 
       - name: Upload Build Artifacts
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: build-results
@@ -84,7 +84,7 @@ jobs:
           retention-days: 7
 
       - name: Upload DerivedData
-        if: success()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: derived-data
@@ -102,6 +102,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download DerivedData
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/download-artifact@v4
         with:
           name: derived-data
@@ -197,7 +198,7 @@ jobs:
           exit 1
 
       - name: Upload Test Results
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: smoke-test-results
@@ -214,7 +215,7 @@ jobs:
           [ -n "$BOOTED_ID" ] && xcrun simctl io "$BOOTED_ID" screenshot screenshots/smoke_final.png 2>/dev/null || true
 
       - name: Upload Screenshots
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: screenshots-smoke-tests
@@ -239,7 +240,7 @@ jobs:
           fi
 
       - name: Upload Diagnostics
-        if: always() && failure()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: smoke-diagnostics
@@ -255,7 +256,7 @@ jobs:
         run: bash scripts/scan-crash-logs.sh --json || true
 
       - name: Upload Crash Logs
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: crash-logs-smoke
@@ -275,6 +276,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download DerivedData
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/download-artifact@v4
         with:
           name: derived-data
@@ -407,7 +409,7 @@ jobs:
           fi
 
       - name: Upload Screenshots
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: ui-fidelity-screenshots
@@ -415,7 +417,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Diff Report
-        if: always() && steps.references.outputs.has_references == 'true'
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: ui-fidelity-diff-report
@@ -423,7 +425,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Test Results
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: ui-fidelity-test-results
@@ -465,7 +467,7 @@ jobs:
         run: bash scripts/scan-crash-logs.sh --json || true
 
       - name: Upload Crash Logs
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: crash-logs-ui-fidelity
@@ -525,6 +527,7 @@ jobs:
         run: node --test infra/cloudflare/drel-api-proxy/test/official-push.test.js
 
       - name: Upload site staging output
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: drel-site-staging
