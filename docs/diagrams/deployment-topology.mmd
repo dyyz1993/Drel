@@ -4,7 +4,7 @@ flowchart TB
     subgraph together["A · One host, one domain, one certificate"]
         direction TB
         a1["Nginx / Caddy<br/>TLS · one hostname"]
-        a2["WebBridgeServer<br/>gateway routes · push routes"]
+        a2["Go self-hosted service<br/>gateway routes · push routes"]
         a3["Node admin console<br/>/admin-push · device list"]
         a4["Apple APNs<br/>HTTP/2 · provider JWT"]
         a5["Your web app<br/>Cloudflare Pages · Vercel · Nginx · anywhere"]

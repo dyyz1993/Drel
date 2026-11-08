@@ -6,6 +6,7 @@ runs:
   steps:
     - name: Cache Homebrew
       id: cache-brew
+      if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
       uses: actions/cache@v4
       with:
         path: ~/Library/Caches/Homebrew
@@ -29,6 +30,7 @@ runs:
         command -v xcpretty >/dev/null || gem install --user-install xcpretty --no-document
 
     - name: Cache CocoaPods
+      if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
       uses: actions/cache@v4
       with:
         path: Pods
@@ -36,6 +38,7 @@ runs:
         restore-keys: pods-${{ runner.os }}-
 
     - name: Cache DerivedData
+      if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
       uses: actions/cache@v4
       with:
         path: ~/Library/Developer/Xcode/DerivedData

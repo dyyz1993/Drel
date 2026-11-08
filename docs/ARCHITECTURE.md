@@ -1,5 +1,9 @@
 # WebBridgeKit 架构总览
 
+> **当前生产拓扑（2026-11-08）**：官方 `api.drel.app` 由
+> `infra/cloudflare/drel-api-proxy/` 的 Cloudflare Worker 全量承载。本文中的
+> Swift/Hummingbird 架构是历史记录和自托管迁移参考，不是官方 API 实现。
+
 > 生成时间: 2026-05-09 | 基于 Phase 1-11 全部完成状态
 
 ---
