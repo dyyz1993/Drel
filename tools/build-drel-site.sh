@@ -23,5 +23,7 @@ cp "$ROOT/test_resources/voice-jump/index.html" "$STAGE/sound/voice-jump/index.h
 cp "$ROOT/test_resources/voice-dandelion/index.html" "$STAGE/sound/voice-dandelion/index.html"
 cp "$ROOT/test_resources/voice-games/audio-level.js" "$STAGE/sound/voice-games/audio-level.js"
 # Diagrams are rendered from the Mermaid sources under docs/diagrams/.
-bash "$ROOT/tools/build-drel-diagrams.sh"
+if [[ "${DREL_SKIP_DIAGRAMS:-0}" != "1" ]]; then
+  bash "$ROOT/tools/build-drel-diagrams.sh"
+fi
 echo "Complete website: $STAGE"

@@ -470,6 +470,8 @@ jobs:
         run: bash tools/build-drel-diagrams.sh --check
 
       - name: Build the website
+        env:
+          DREL_SKIP_DIAGRAMS: "1"
         run: bash tools/build-drel-site.sh
 
       - name: Website links, demos and asset digests
