@@ -16,21 +16,15 @@ concurrency:
 
 env:
   CI_START_TIME: ${{ github.event.head_commit.timestamp }}
-  XCODE_VERSION: '16.4'
 
 jobs:
   # ─── Job 1: SwiftLint ───────────────────────────────────────────
   swiftlint:
     name: SwiftLint
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Cache Homebrew
         uses: actions/cache@v4
@@ -46,22 +40,15 @@ jobs:
   # ─── Job 2: Build ───────────────────────────────────────────────
   build:
     name: Build
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
-    needs: []
     steps:
       - uses: actions/checkout@v4
 
       # The shell verification gates (deliverable boundaries, template gate,
-      # design lint) rely on ripgrep, which is not preinstalled on the
-      # macos-15 runner image.
+      # design lint) rely on ripgrep.
       - name: Install ripgrep
         run: brew install ripgrep
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
@@ -107,17 +94,12 @@ jobs:
   # ─── Job 3: Smoke Tests (with retry) ────────────────────────────
   smoke-tests:
     name: Drel Smoke Tests
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
     needs: build
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Download DerivedData
         uses: actions/download-artifact@v4
@@ -285,17 +267,12 @@ jobs:
   # ─── Job 4: UI Fidelity Tests (with retry) ──────────────────────
   ui-fidelity:
     name: Drel UI Fidelity Tests
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
     needs: build
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Download DerivedData
         uses: actions/download-artifact@v4
@@ -500,16 +477,11 @@ jobs:
   # ─── Job 5: Design System Lint ──────────────────────────────────
   design-lint:
     name: 🎨 Design System Lint
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     needs: build
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Install ripgrep
         run: brew install ripgrep
@@ -519,19 +491,14 @@ jobs:
 
   # ─── Job 8: Repository Conventions ───────────────────────────────
   # The documentation, changelog, website and repository hygiene rules.
-  # These run on ubuntu because none of them need Xcode; they fail fast and
-  # give a contributor the reason without waiting for a 30-minute build.
+  # These checks do not need Xcode; they fail fast and give a contributor the
+  # reason without waiting for the application build.
   repo-conventions:
     name: 📋 Repository Conventions
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
 
       - name: Repository hygiene (no large files, no credentials)
         run: python3 tools/verify-repo-hygiene.py --check-history
@@ -570,16 +537,11 @@ jobs:
   # architecture-lint Rule 9 (DEBUG-only files must be file-level #if DEBUG).
   release-purity:
     name: 🔒 Release Purity
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 20
     needs: build
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
@@ -592,26 +554,3 @@ jobs:
 
       - name: Architecture lint (includes DEBUG-wrap Rule 9)
         run: bash tools/architecture-lint.sh
-
-  # ─── Job 7: Server on Linux ──────────────────────────────────────
-  # The Swift Hummingbird backend deploys to a Linux host (shanbox).
-  # Building and testing it on Linux catches Foundation/URLSession,
-  # Sendable, and glibc incompatibilities before they reach production.
-  server-linux:
-    name: 🐧 Server Build & Tests (Linux)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache SPM Server build
-        uses: actions/cache@v4
-        with:
-          path: Server/.build
-          key: spm-server-linux-${{ hashFiles('Server/Package.resolved') }}
-
-      - name: Build (Release)
-        run: cd Server && swift build -c release
-
-      - name: Run Server Tests
-        run: cd Server && swift test

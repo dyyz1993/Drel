@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     defaults:
       run:
         working-directory: infra/cloudflare/drel-api-proxy
@@ -31,7 +31,7 @@ jobs:
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     defaults:
       run:
         working-directory: infra/cloudflare/drel-api-proxy

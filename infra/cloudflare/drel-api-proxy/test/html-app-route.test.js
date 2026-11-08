@@ -23,6 +23,7 @@ test("HTML app routes require a valid appId and structured params", async () => 
     { deviceKey: "test", title: "VOT", body: "open", appID: "app.example", route: "/" },
     { deviceKey: "test", title: "VOT", body: "open", appId: "bad id", route: "/" },
     { deviceKey: "test", title: "VOT", body: "open", appId: "app.example", route: "example.com" },
+    { deviceKey: "test", title: "VOT", body: "open", appId: "app.example", route: "//example.com" },
     {
       deviceKey: "test",
       title: "VOT",
@@ -30,6 +31,14 @@ test("HTML app routes require a valid appId and structured params", async () => 
       appId: "app.example",
       route: "/",
       params: { version: 1 },
+    },
+    {
+      deviceKey: "test",
+      title: "VOT",
+      body: "open",
+      appId: "app.example",
+      route: "/",
+      params: null,
     },
   ];
 

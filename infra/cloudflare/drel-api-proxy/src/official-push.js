@@ -162,14 +162,15 @@ export function buildPlainAPNsPayload(input, messageID, sourceChannel) {
 
 function validatePushRequest(input) {
   if (input.route) {
-    if (typeof input.route !== "string" || !input.route.startsWith("/")) {
+    if (typeof input.route !== "string" || !input.route.startsWith("/")
+      || input.route.startsWith("//") || input.route.length > 2048) {
       return "HTML app route must be an absolute path";
     }
     if (typeof input.appId !== "string" || !HTML_APP_ID.test(input.appId)) {
       return "HTML app route requires an appId";
     }
-    if (input.params !== undefined && input.params !== null
-      && (typeof input.params !== "object" || Array.isArray(input.params)
+    if (input.params !== undefined
+      && (typeof input.params !== "object" || input.params === null || Array.isArray(input.params)
         || !Object.values(input.params).every((value) => typeof value === "string"))) {
       return "HTML app params must be an object with string values";
     }
