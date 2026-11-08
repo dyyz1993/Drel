@@ -1,11 +1,7 @@
 name: Design Lint
 
 on:
-  pull_request:
-    paths:
-      - 'Sources/**/*.swift'
-      - 'SuperApp/Sources/**/*.swift'
-      - 'tools/design-lint.sh'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -17,7 +13,7 @@ permissions:
 jobs:
   design-lint:
     name: Design System Lint
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

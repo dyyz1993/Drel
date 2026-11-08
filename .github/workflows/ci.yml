@@ -16,23 +16,18 @@ concurrency:
 
 env:
   CI_START_TIME: ${{ github.event.head_commit.timestamp }}
-  XCODE_VERSION: '16.4'
 
 jobs:
   # ─── Job 1: SwiftLint ───────────────────────────────────────────
   swiftlint:
     name: SwiftLint
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
       - name: Cache Homebrew
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/Homebrew
@@ -46,28 +41,25 @@ jobs:
   # ─── Job 2: Build ───────────────────────────────────────────────
   build:
     name: Build
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
-    needs: []
     steps:
       - uses: actions/checkout@v4
 
       # The shell verification gates (deliverable boundaries, template gate,
-      # design lint) rely on ripgrep, which is not preinstalled on the
-      # macos-15 runner image.
+      # design lint) rely on ripgrep.
       - name: Install ripgrep
         run: brew install ripgrep
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
           WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
+
+      - name: Reclaim self-hosted build disk
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("/tmp/wbk-rel-gate", ignore_errors=True); shutil.rmtree("build/BuildResults.xcresult", ignore_errors=True); shutil.rmtree("build/DerivedData", ignore_errors=True)'
 
       - name: Verify deliverable boundaries
         run: bash tools/verify-deliverable-boundaries.sh
@@ -77,6 +69,7 @@ jobs:
           set -o pipefail
           xcodebuild build \
             -workspace Drel.xcworkspace \
+            -derivedDataPath build/DerivedData \
             -scheme Drel \
             -sdk iphonesimulator \
             -arch arm64 \
@@ -88,7 +81,7 @@ jobs:
             | xcpretty --color
 
       - name: Upload Build Artifacts
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: build-results
@@ -97,29 +90,30 @@ jobs:
           retention-days: 7
 
       - name: Upload DerivedData
-        if: success()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: derived-data
           path: ~/Library/Developer/Xcode/DerivedData/Drel-*/
           retention-days: 1
 
+      - name: Reclaim build outputs
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("build/DerivedData", ignore_errors=True); shutil.rmtree("build/BuildResults.xcresult", ignore_errors=True)'
+
   # ─── Job 3: Smoke Tests (with retry) ────────────────────────────
   smoke-tests:
     name: Drel Smoke Tests
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
     needs: build
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
       - name: Download DerivedData
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/download-artifact@v4
         with:
           name: derived-data
@@ -131,53 +125,20 @@ jobs:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
           WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
-      - name: Cleanup & Prepare Simulators
+      - name: Cleanup & Prepare Simulator
         id: prep
         run: |
           set -euo pipefail
-          echo "=== Pre-boot cleanup ==="
-          xcrun simctl shutdown all 2>/dev/null || true
+          xcrun simctl shutdown all >/dev/null 2>&1 || true
           sleep 2
-          xcrun simctl erase all 2>/dev/null || true
-
-          echo "=== SDK Info ==="
           xcodebuild -version
-          SDK_VER=$(xcrun --sdk iphonesimulator --show-sdk-version 2>/dev/null | cut -d. -f1 || echo "18")
-          xcodebuild -downloadPlatform iOS 2>/dev/null || true
-          xcrun simctl list runtimes
-
-          DESTINATION=""
-          for DEVICE_TYPE in "iPhone 16 Pro" "iPhone 16" "iPhone 15 Pro" "iPhone 15" "iPhone 14" "iPhone SE (3rd generation)"; do
-            echo "--- Trying: $DEVICE_TYPE ---"
-            if xcodebuild test \
-                -workspace Drel.xcworkspace \
-                -scheme Drel \
-                -destination "platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest" \
-                -configuration Debug \
-                -resultBundlePath /tmp/smoke-probe.xcresult \
-                -only-testing:DrelUITests/DrelSmokeTests \
-                -skip-testing:DrelUITests/DrelSmokeTests \
-                CODE_SIGN_IDENTITY="" \
-                CODE_SIGNING_REQUIRED=NO \
-                CODE_SIGNING_ALLOWED=NO \
-                -quiet 2>&1 | head -5; then
-              DESTINATION="platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest"
-              echo "✅ Valid destination: $DESTINATION"
-              break
-            else
-              echo "   ⚠️ Not usable, trying next..."
-            fi
-          done
-
-          rm -rf /tmp/smoke-probe.xcresult 2>/dev/null || true
-
+          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; print("id=" + devices[0]["udid"] if devices else "")')"
           if [ -z "$DESTINATION" ]; then
-            echo "::warning::Falling back to generic destination"
-            DESTINATION="generic/platform=iOS Simulator"
+            echo "::error::No available iOS Simulator device"
+            exit 1
           fi
-
-          echo "destination=$DESTINATION" >> $GITHUB_OUTPUT
-
+          echo "Using $DESTINATION"
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
       - name: Run Smoke Tests (retry 3x)
         env:
           CI: "true"
@@ -192,6 +153,7 @@ jobs:
 
             if xcodebuild test \
               -workspace Drel.xcworkspace \
+              -derivedDataPath build/DerivedData \
               -scheme Drel \
               -destination "$DESTINATION" \
               -configuration Debug \
@@ -215,7 +177,7 @@ jobs:
           exit 1
 
       - name: Upload Test Results
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: smoke-test-results
@@ -232,7 +194,7 @@ jobs:
           [ -n "$BOOTED_ID" ] && xcrun simctl io "$BOOTED_ID" screenshot screenshots/smoke_final.png 2>/dev/null || true
 
       - name: Upload Screenshots
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: screenshots-smoke-tests
@@ -257,7 +219,7 @@ jobs:
           fi
 
       - name: Upload Diagnostics
-        if: always() && failure()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: smoke-diagnostics
@@ -273,7 +235,7 @@ jobs:
         run: bash scripts/scan-crash-logs.sh --json || true
 
       - name: Upload Crash Logs
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: crash-logs-smoke
@@ -282,22 +244,23 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Reclaim smoke-test disk
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True); shutil.rmtree("build/DerivedData", ignore_errors=True)'
+
   # ─── Job 4: UI Fidelity Tests (with retry) ──────────────────────
   ui-fidelity:
     name: Drel UI Fidelity Tests
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
     needs: build
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
       - name: Download DerivedData
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/download-artifact@v4
         with:
           name: derived-data
@@ -309,47 +272,20 @@ jobs:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
           WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
-      - name: Cleanup & Prepare Simulators
+      - name: Cleanup & Prepare Simulator
         id: prep
         run: |
           set -euo pipefail
-          xcrun simctl shutdown all 2>/dev/null || true
+          xcrun simctl shutdown all >/dev/null 2>&1 || true
           sleep 2
-          xcrun simctl erase all 2>/dev/null || true
-
-          echo "=== SDK Info ==="
           xcodebuild -version
-          xcodebuild -downloadPlatform iOS 2>/dev/null || true
-          xcrun simctl list runtimes
-
-          DESTINATION=""
-          for DEVICE_TYPE in "iPhone 16 Pro" "iPhone 16" "iPhone 15 Pro" "iPhone 15" "iPhone 14" "iPhone SE (3rd generation)"; do
-            echo "--- Trying: $DEVICE_TYPE ---"
-            if xcodebuild test \
-                -workspace Drel.xcworkspace \
-                -scheme Drel \
-                -destination "platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest" \
-                -configuration Debug \
-                -resultBundlePath /tmp/uifidelity-probe.xcresult \
-                -only-testing:DrelUITests/UIFidelityTests \
-                -skip-testing:DrelUITests/UIFidelityTests \
-                CODE_SIGN_IDENTITY="" \
-                CODE_SIGNING_REQUIRED=NO \
-                CODE_SIGNING_ALLOWED=NO \
-                -quiet 2>&1 | head -5; then
-              DESTINATION="platform=iOS Simulator,name=${DEVICE_TYPE},OS=latest"
-              break
-            fi
-          done
-
-          rm -rf /tmp/uifidelity-probe.xcresult 2>/dev/null || true
-
+          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; print("id=" + devices[0]["udid"] if devices else "")')"
           if [ -z "$DESTINATION" ]; then
-            DESTINATION="generic/platform=iOS Simulator"
+            echo "::error::No available iOS Simulator device"
+            exit 1
           fi
-
-          echo "destination=$DESTINATION" >> $GITHUB_OUTPUT
-
+          echo "Using $DESTINATION"
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
       - name: Run UI Fidelity Tests (retry 3x)
         env:
           CI: "true"
@@ -364,6 +300,7 @@ jobs:
 
             if xcodebuild test \
               -workspace Drel.xcworkspace \
+              -derivedDataPath build/DerivedData \
               -scheme Drel \
               -destination "$DESTINATION" \
               -configuration Debug \
@@ -430,7 +367,7 @@ jobs:
           fi
 
       - name: Upload Screenshots
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: ui-fidelity-screenshots
@@ -438,7 +375,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Diff Report
-        if: always() && steps.references.outputs.has_references == 'true'
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: ui-fidelity-diff-report
@@ -446,7 +383,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Test Results
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: ui-fidelity-test-results
@@ -488,7 +425,7 @@ jobs:
         run: bash scripts/scan-crash-logs.sh --json || true
 
       - name: Upload Crash Logs
-        if: always()
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: crash-logs-ui-fidelity
@@ -497,19 +434,19 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Reclaim UI-test disk
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("build/test-results", ignore_errors=True); shutil.rmtree("build/DerivedData", ignore_errors=True); shutil.rmtree("build/screenshots", ignore_errors=True)'
+
   # ─── Job 5: Design System Lint ──────────────────────────────────
   design-lint:
     name: 🎨 Design System Lint
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     needs: build
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Install ripgrep
         run: brew install ripgrep
@@ -519,19 +456,14 @@ jobs:
 
   # ─── Job 8: Repository Conventions ───────────────────────────────
   # The documentation, changelog, website and repository hygiene rules.
-  # These run on ubuntu because none of them need Xcode; they fail fast and
-  # give a contributor the reason without waiting for a 30-minute build.
+  # These checks do not need Xcode; they fail fast and give a contributor the
+  # reason without waiting for the application build.
   repo-conventions:
     name: 📋 Repository Conventions
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
 
       - name: Repository hygiene (no large files, no credentials)
         run: python3 tools/verify-repo-hygiene.py --check-history
@@ -546,6 +478,8 @@ jobs:
         run: bash tools/build-drel-diagrams.sh --check
 
       - name: Build the website
+        env:
+          DREL_SKIP_DIAGRAMS: "1"
         run: bash tools/build-drel-site.sh
 
       - name: Website links, demos and asset digests
@@ -558,6 +492,7 @@ jobs:
         run: node --test infra/cloudflare/drel-api-proxy/test/official-push.test.js
 
       - name: Upload site staging output
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
         uses: actions/upload-artifact@v4
         with:
           name: drel-site-staging
@@ -570,16 +505,11 @@ jobs:
   # architecture-lint Rule 9 (DEBUG-only files must be file-level #if DEBUG).
   release-purity:
     name: 🔒 Release Purity
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 20
     needs: build
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
@@ -593,25 +523,7 @@ jobs:
       - name: Architecture lint (includes DEBUG-wrap Rule 9)
         run: bash tools/architecture-lint.sh
 
-  # ─── Job 7: Server on Linux ──────────────────────────────────────
-  # The Swift Hummingbird backend deploys to a Linux host (legacy-infra).
-  # Building and testing it on Linux catches Foundation/URLSession,
-  # Sendable, and glibc incompatibilities before they reach production.
-  server-linux:
-    name: 🐧 Server Build & Tests (Linux)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache SPM Server build
-        uses: actions/cache@v4
-        with:
-          path: Server/.build
-          key: spm-server-linux-${{ hashFiles('Server/Package.resolved') }}
-
-      - name: Build (Release)
-        run: cd Server && swift build -c release
-
-      - name: Run Server Tests
-        run: cd Server && swift test
+      - name: Reclaim release-gate disk
+        if: always()
+        shell: bash
+        run: python3 -c 'import shutil; shutil.rmtree("/tmp/wbk-rel-gate", ignore_errors=True)'

@@ -45,7 +45,7 @@ HTML App/PWA 的渐进式接入（零改造打开 → 推送深链 → 原生能
 | `expiresAt`, `ttl` | string/number | 过期时间或相对秒数 |
 | `actionState` | string | `pending`, `approved`, `rejected`, `cancelled`, `expired`；只有 `pending` 进入“待处理” |
 | `requestId` | string | 通知与 PWA 业务请求共享的标识 |
-| `appId`, `route`, `params` | mixed | 路由到已注册 HTML App；路由和来源仍需本地清单校验 |
+| `appId`, `route`, `params` | mixed | 路由到已注册 HTML App。服务端会拒绝非空 `route` 缺少合法 `appId`、协议相对路径或非字符串 `params` 值；最终路由仍需本地清单校验 |
 | `display` | string | `sheet`, `full`, `inline`；当前原生版支持 sheet/full，inline 暂回退为 sheet |
 | `statePath` | string | 交给目标 PWA 的状态查询路径；宿主不携带业务凭据代替 PWA 审批 |
 

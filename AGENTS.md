@@ -1,5 +1,12 @@
 # WebBridgeKit Project
 
+> **生产入口提醒（2026-11-08 起）**：官方 `api.drel.app` 由
+> `infra/cloudflare/drel-api-proxy/` 的 Cloudflare Worker 全量承载。
+> Swift relay / legacy-infra / `Server/Sources/WebBridgeServer` 只是遗留自建路径，
+> 不是官方生产入口，也不是官方 API 的修改入口。不要为官方 API 修复或部署 Swift
+> relay；自托管新部署使用 `Server/native/` 的 Go 实现，Swift 既有部署仅按
+> `docs/legacy/swift-relay-decommission.md` 的废弃策略处理。
+
 ## Deliverable Boundaries
 
 This repository ships three distinct deliverables. Keep their responsibilities
@@ -14,11 +21,15 @@ separate in source, documentation, and verification:
 - `SuperApp/` is the complete WebBridgeKit product App. It owns end-user
   journeys, product copy, navigation, Inbox, App Center, settings, and the
   official-hosted/self-hosted experience.
-- `Server/` and `docs/api/` own shared gateway, push, approval, and callback
-  contracts. AppTemplate is not the self-hosted client.
+- `infra/cloudflare/drel-api-proxy/` owns the official hosted API.
+  `Server/native/` is the supported self-hosted Go relay, `Server/node/` is a
+  legacy local admin surface, and `Server/Sources/WebBridgeServer/` is a
+  deprecated Swift implementation retained only for documented existing
+  self-hosted deployments. `docs/api/` owns the portable contracts, and
+  AppTemplate is not the self-hosted client.
 
-Before adding a reusable feature, prove the contract in `Sources/` or `Server/`,
-then complete the product journey in `SuperApp/`. Update AppTemplate only after
+Before adding a reusable feature, prove the contract in `Sources/` or the
+official Worker, then complete the product journey in `SuperApp/`. Update AppTemplate only after
 the public API is stable and only with the minimum integration example. Run
 `bash tools/verify-deliverable-boundaries.sh` after boundary-related changes,
 `bash tools/run-template-gate.sh` for AppTemplate, and keep the SuperApp release

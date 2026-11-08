@@ -1,4 +1,10 @@
-# Drel self-hosted push
+# Drel self-hosted push (Go recommended)
+
+> **Swift implementation deprecated (2026-11-08).** New self-hosted deployments
+> use `Server/native/`. `Server/Sources/WebBridgeServer/` and the Swift Compose
+> files remain only so documented existing deployments can be audited and
+> migrated; they are not the official `api.drel.app` implementation, and CI no
+> longer treats them as the production server.
 
 This optional direct APNs relay does not call `api.drel.app`: a paired iPhone
 registers only with its selected server, and that server sends APNs payloads
