@@ -27,6 +27,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Cache Homebrew
+        if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/Homebrew
