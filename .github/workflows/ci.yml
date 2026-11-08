@@ -475,6 +475,8 @@ jobs:
         run: python3 tools/verify-release-notes.py
 
       - name: Diagram sources are rendered (Mermaid)
+        env:
+          npm_config_cache: ${{ runner.temp }}/drel-mermaid-npm-cache
         run: bash tools/build-drel-diagrams.sh --check
 
       - name: Build the website

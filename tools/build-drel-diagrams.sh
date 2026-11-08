@@ -80,8 +80,19 @@ for source in "${SOURCES[@]}"; do
     # check is for is "does the .mmd source still match the published
     # diagram", and a font-metric difference is not that.
     temp="$(mktemp -d)"
-    npx --yes @mermaid-js/mermaid-cli -i "$source" -o "$temp/$name.svg" -c "$CONFIG" ${PUPPETEER_CONFIG:+-p "$PUPPETEER_CONFIG"} \
-      >/dev/null 2>&1 || { rm -rf "$temp"; bad "Failed to render $name"; }
+    rendered=0
+    for attempt in 1 2 3; do
+      if npx --yes @mermaid-js/mermaid-cli -i "$source" -o "$temp/$name.svg" -c "$CONFIG" ${PUPPETEER_CONFIG:+-p "$PUPPETEER_CONFIG"} \
+        >/dev/null 2>&1; then
+        rendered=1
+        break
+      fi
+      sleep 2
+    done
+    if [[ "$rendered" != "1" ]]; then
+      rm -rf "$temp"
+      bad "Failed to render $name"
+    fi
     if [[ ! -f "$target" ]]; then
       echo "MISSING  $name.svg"
       STALE=1
@@ -100,8 +111,16 @@ for source in "${SOURCES[@]}"; do
     continue
   fi
 
-  npx --yes @mermaid-js/mermaid-cli -i "$source" -o "$target" -c "$CONFIG" ${PUPPETEER_CONFIG:+-p "$PUPPETEER_CONFIG"} \
-    >/dev/null 2>&1 || bad "Failed to render $name"
+  rendered=0
+  for attempt in 1 2 3; do
+    if npx --yes @mermaid-js/mermaid-cli -i "$source" -o "$target" -c "$CONFIG" ${PUPPETEER_CONFIG:+-p "$PUPPETEER_CONFIG"} \
+      >/dev/null 2>&1; then
+      rendered=1
+      break
+    fi
+    sleep 2
+  done
+  [[ "$rendered" == "1" ]] || bad "Failed to render $name"
   size="$(wc -c <"$target" | tr -d ' ')"
   printf '  %-28s %6s bytes\n' "$name.svg" "$size"
 done
