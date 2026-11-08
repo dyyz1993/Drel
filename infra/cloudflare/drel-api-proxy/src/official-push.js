@@ -35,6 +35,7 @@ const APPROVAL_SCHEMA = "webbridgekit.approval-status.v1";
 const APPROVAL_STATES = ["pending", "approved", "rejected", "cancelled", "expired"];
 const APPROVAL_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 const APPROVAL_ACTION_ID = /^[A-Za-z0-9._-]{1,64}$/;
+const HTML_APP_ID = /^[A-Za-z0-9._-]{1,64}$/;
 
 function json(value, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -160,6 +161,20 @@ export function buildPlainAPNsPayload(input, messageID, sourceChannel) {
 }
 
 function validatePushRequest(input) {
+  if (input.route) {
+    if (typeof input.route !== "string" || !input.route.startsWith("/")) {
+      return "HTML app route must be an absolute path";
+    }
+    if (typeof input.appId !== "string" || !HTML_APP_ID.test(input.appId)) {
+      return "HTML app route requires an appId";
+    }
+    if (input.params !== undefined && input.params !== null
+      && (typeof input.params !== "object" || Array.isArray(input.params)
+        || !Object.values(input.params).every((value) => typeof value === "string"))) {
+      return "HTML app params must be an object with string values";
+    }
+  }
+
   if (input.type !== "approval") return null;
   const presentation = input.presentation ?? "native";
   const required = [
@@ -768,6 +783,7 @@ export async function handleOfficialPush(request, env) {
       return failure(400, "invalid JSON push");
     }
     body.deviceKey = body.deviceKey ?? body.device_key;
+    body.appId = body.appId ?? body.appid;
     return deliverPushRequest(env, body, url.origin);
   }
 
