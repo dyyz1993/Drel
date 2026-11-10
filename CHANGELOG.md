@@ -29,7 +29,8 @@ Each release line carries three pieces of evidence:
 ### Changed
 
 - No app logic changes; the binary is rebuilt solely to carry the new
-  entitlement in the provisioning profile. — Scope: `App` — Verified: `none`
+  entitlement in the provisioning profile. — Scope: `App` — Verified: `none` —
+  Evidence: [docs/release/1.5.4/RELEASE-NOTES.md](docs/release/1.5.4/RELEASE-NOTES.md)
 
 ## [1.5.3] — 2026-11-06
 
