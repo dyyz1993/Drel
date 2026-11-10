@@ -47,6 +47,14 @@ EXPORT_OPTS="${WBK_EXPORT_OPTS:-/tmp/drel-export-options.plist}"
 DD="${WBK_RELEASE_DD:-/tmp/wbk-dd-publish}"
 SKIP_UPLOAD="${WBK_SKIP_UPLOAD:-0}"
 ARCHIVE_SIGNING="${WBK_ARCHIVE_SIGNING:-development}"
+ASC_AUTH_ARGS=()
+if [[ -n "${WBK_ASC_KEY_PATH:-}" && -n "${WBK_ASC_KEY_ID:-}" && -n "${WBK_ASC_ISSUER_ID:-}" ]]; then
+  ASC_AUTH_ARGS=(
+    -authenticationKeyPath "$WBK_ASC_KEY_PATH"
+    -authenticationKeyID "$WBK_ASC_KEY_ID"
+    -authenticationKeyIssuerID "$WBK_ASC_ISSUER_ID"
+  )
+fi
 SIGNING_KEYCHAIN="${WBK_SIGNING_KEYCHAIN:-}"
 SIGNING_KEYCHAIN_PASSWORD_SERVICE="${WBK_SIGNING_KEYCHAIN_PASSWORD_SERVICE:-drel-release-keychain}"
 SIGNING_KEYCHAIN_PASSWORD_ACCOUNT="${WBK_SIGNING_KEYCHAIN_PASSWORD_ACCOUNT:-codex-drel-release}"
@@ -137,7 +145,7 @@ if [[ -n "$SIGNING_KEYCHAIN" ]]; then
 fi
 if ! xcodebuild archive -workspace Drel.xcworkspace -scheme "$RELEASE_SCHEME" \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
-  -allowProvisioningUpdates "${ARCHIVE_SIGN_ARGS[@]}" \
+  -allowProvisioningUpdates "${ASC_AUTH_ARGS[@]}" "${ARCHIVE_SIGN_ARGS[@]}" \
   MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1; then
   echo "---- archive-$BUILD.log (tail) ----" >&2
   tail -n 160 "$ROOT/build/archive-$BUILD.log" >&2 || true
@@ -159,7 +167,7 @@ ok "版本号/签名/隐私文案/定位文案/推送权限 全部符合"
 say "导出 App Store Connect IPA"
 rm -rf "$EXPORT_DIR"
 xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportOptionsPlist "$EXPORT_OPTS" \
-  -exportPath "$EXPORT_DIR" -allowProvisioningUpdates >"$ROOT/build/export-$BUILD.log" 2>&1 \
+  -exportPath "$EXPORT_DIR" -allowProvisioningUpdates "${ASC_AUTH_ARGS[@]}" >"$ROOT/build/export-$BUILD.log" 2>&1 \
   || bad "导出失败，详见 build/export-$BUILD.log"
 IPA="$EXPORT_DIR/Drel.ipa"
 [[ -f "$IPA" ]] || bad "IPA 不存在：$IPA"
