@@ -16,6 +16,21 @@ Each release line carries three pieces of evidence:
 - **Evidence** — a link to the verification record under
   `docs/testing/results/` or `docs/release/`.
 
+## [1.5.4] — 2026-11-10
+
+### Added
+
+- Time Sensitive Notifications entitlement
+  (`com.apple.developer.usernotifications.time-sensitive`) so that pushes with
+  `interruption-level=time-sensitive` break through Focus mode and the silent
+  switch, matching Bark's behavior. — Scope: `App` — Verified: `none` —
+  Evidence: [docs/release/1.5.4/RELEASE-NOTES.md](docs/release/1.5.4/RELEASE-NOTES.md)
+
+### Changed
+
+- No app logic changes; the binary is rebuilt solely to carry the new
+  entitlement in the provisioning profile. — Scope: `App` — Verified: `none`
+
 ## [1.5.3] — 2026-11-06
 
 Metadata-only release. The App binary is unchanged from the shipped 1.5.2
