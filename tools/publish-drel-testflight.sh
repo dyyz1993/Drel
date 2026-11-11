@@ -88,7 +88,8 @@ ARCHIVE="/tmp/drel-1-5-0-build-${BUILD}-${STAMP}.xcarchive"
 EXPORT_DIR="/tmp/drel-${BUILD}-export-${STAMP}"
 mkdir -p "$(dirname "$ARCHIVE")"
 
-cat > "$EXPORT_OPTS" <<'PLIST'
+if [[ -z "${WBK_EXPORT_OPTS:-}" ]]; then
+  cat > "$EXPORT_OPTS" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -100,6 +101,7 @@ cat > "$EXPORT_OPTS" <<'PLIST'
 <key>uploadSymbols</key><true/>
 </dict></plist>
 PLIST
+fi
 
 say "发布前规范门禁（版本身份 / 发布材料 / 仓库卫生）"
 python3 tools/verify-release-identity.py --marketing "$MARKETING_VERSION" --build "$BUILD" \
