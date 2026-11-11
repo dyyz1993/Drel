@@ -25,10 +25,13 @@ value() {
 [[ "$(value CFBundleIdentifier)" == "com.webbridgekit.superapp" ]] || fail "unexpected bundle identifier"
 [[ "$(value CFBundleDisplayName)" == "Drel" ]] || fail "unexpected display name"
 # WebBridgeKit remains linked as the reusable SDK. Apple scans its public
-# Contacts/Speech/audio implementation even though the Drel Store runtime is
-# compile-time container-only and cannot expose the bridge to a remote page.
+# Contacts/Bluetooth/Speech/audio implementation even though the Drel Store
+# runtime is compile-time container-only and cannot expose the bridge to a
+# remote page. Builds 141-143 were rejected with ITMS-90683 for the missing
+# NSBluetoothAlwaysUsageDescription, so it must stay present.
 for key in \
     NSCameraUsageDescription \
+    NSBluetoothAlwaysUsageDescription \
     NSContactsUsageDescription \
     NSMicrophoneUsageDescription \
     NSSpeechRecognitionUsageDescription; do
@@ -36,13 +39,15 @@ for key in \
 done
 
 for key in \
-    NSBluetoothAlwaysUsageDescription \
     NSFaceIDUsageDescription \
     NSLocationWhenInUseUsageDescription \
     NSMotionUsageDescription \
     NSPhotoLibraryUsageDescription; do
     [[ -z "$(value "$key")" ]] || fail "Bridge-only privacy prompt leaked: $key"
 done
+
+bash "$ROOT/tools/privacy-surface-check.sh" "$APP_PATH" \
+    || fail "shipped binary needs a purpose string that the Store build strips"
 
 [[ -z "$(value NSAppTransportSecurity:NSAllowsArbitraryLoads)" ]] || fail "arbitrary HTTP loading leaked"
 

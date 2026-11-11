@@ -73,7 +73,7 @@ targets:
           CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
           PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store
         Drel15Release:
-          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY DREL_151_MICROPHONE
           MARKETING_VERSION: "1.5.0"
           CURRENT_PROJECT_VERSION: "134"
           CODE_SIGN_STYLE: Manual
@@ -96,12 +96,18 @@ targets:
             PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
             if [ -f "${PLIST}" ]; then
               for KEY in \
-                NSBluetoothAlwaysUsageDescription \
                 NSFaceIDUsageDescription \
                 NSMotionUsageDescription \
                 NSPhotoLibraryUsageDescription; do
                 /usr/libexec/PlistBuddy -c "Delete :${KEY}" "${PLIST}" 2>/dev/null || true
               done
+              # The linked WebBridgeKit SDK still instantiates CBCentralManager
+              # (HTMLAppSystemPermissionAdapter), so App Store Connect rejects
+              # the build with ITMS-90683 without this key (builds 141-143).
+              # The prompt only appears if a feature asks for Bluetooth; keep it.
+              if [ -z "$(/usr/libexec/PlistBuddy -c "Print :NSBluetoothAlwaysUsageDescription" "${PLIST}" 2>/dev/null)" ]; then
+                /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 允许你授权的 PWA 扫描附近的蓝牙低功耗设备" "${PLIST}"
+              fi
               # Drel 1.5 exposes the managed getLocation action, so its Store
               # build must retain the matching iOS authorization prompt.
               if [ "${CONFIGURATION}" != "Drel15Release" ] && [ "${CONFIGURATION}" != "Drel151Release" ]; then
