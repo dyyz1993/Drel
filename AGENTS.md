@@ -496,6 +496,7 @@ Use these scripts as the repeatable evidence source before declaring a module "a
 | `bash scripts/scan-crash-logs.sh --json` | Scans app crash logs, diagnostic reports, simulator logs, OOM/jetsam signals | JSON contains `"total": 0` | After launch, UI tests, real-device/simulator smoke, or when user asks about crashes |
 | `swiftlint --quiet` | SwiftLint quality gate | No output, exit 0 | Before every commit |
 | `bash tools/ci-lint.sh` | Design-system lint wrapper: colors, icons, fonts, `.opencode`, crash logs, token JSON, touch targets, deliverable boundaries | `17 passed, 0 failed`; warnings may remain documented debt | Before UI/design commits and release gates |
+| `bash tools/privacy-surface-check.sh <App.app>` | Derives required purpose strings from the shipped binary's Objective-C classes (`CBCentralManager`, `CNContactStore`, `AVCaptureDevice`, …) instead of a hand-kept list | `PASS: every enforced privacy API…`; missing keys fail | Automatically inside both Store archive gates; run directly when adding an SDK capability |
 
 ### Repository Convention Gates (文档与发布规范，2026-10-22 起)
 

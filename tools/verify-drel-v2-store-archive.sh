@@ -43,12 +43,16 @@ if [[ "$SIGNING_MODE" == "distribution" ]]; then
 fi
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.usernotifications.communication' "$PROFILE_PLIST" 2>/dev/null || true)" == "true" ]] || fail "profile lacks Communication Notifications entitlement"
 
-for key in NSCameraUsageDescription NSPhotoLibraryAddUsageDescription NSContactsUsageDescription NSMicrophoneUsageDescription NSSpeechRecognitionUsageDescription NSLocationWhenInUseUsageDescription; do
+for key in NSCameraUsageDescription NSPhotoLibraryAddUsageDescription NSContactsUsageDescription NSMicrophoneUsageDescription NSSpeechRecognitionUsageDescription NSLocationWhenInUseUsageDescription NSBluetoothAlwaysUsageDescription; do
     [[ -n "$(value "$key")" ]] || fail "required privacy usage string missing: $key"
 done
-for key in NSBluetoothAlwaysUsageDescription NSFaceIDUsageDescription NSMotionUsageDescription NSPhotoLibraryUsageDescription; do
+for key in NSFaceIDUsageDescription NSMotionUsageDescription NSPhotoLibraryUsageDescription; do
     [[ -z "$(value "$key")" ]] || fail "deferred capability usage string leaked: $key"
 done
+strings -a "$APP_PATH/Drel" | grep -qF -- 'drel.action.audioLevel.allowlisted' \
+    || fail "audioLevel allowlist marker missing: DREL_151_MICROPHONE is not enabled"
+DREL_PRIVACY_REQUIRE_LOCATION=1 bash "$ROOT/tools/privacy-surface-check.sh" "$APP_PATH" \
+    || fail "shipped binary needs a purpose string that the Store build strips"
 [[ -z "$(value NSAppTransportSecurity:NSAllowsArbitraryLoads)" ]] || fail "arbitrary HTTP loading leaked"
 
 for marker in '--pwa-v2-actions' 'fixture-share-demo' 'v2-actions.html'; do

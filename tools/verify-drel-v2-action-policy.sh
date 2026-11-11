@@ -22,6 +22,7 @@ rg -q '^  Drel15Store:$' project.yml || fail "Drel 1.5 Store scheme missing"
 rg -A 7 '^        Drel15Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.5.0"' || fail "Drel 1.5 version mismatch"
 rg -A 7 '^        Drel15Release:$' project.yml | rg -q "CURRENT_PROJECT_VERSION: \"$EXPECTED_BUILD\"" || fail "Drel 1.5 build mismatch"
 rg -A 2 '^        Drel15Release:$' project.yml | rg -q 'DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY' || fail "Drel 1.5 host policy flags missing"
+rg -A 2 '^        Drel15Release:$' project.yml | rg -q 'DREL_151_MICROPHONE' || fail "Drel 1.5 microphone allowlist flag missing"
 rg -A 8 '^        Drel15Release:$' project.yml | rg -q 'CODE_SIGN_STYLE: Manual' || fail "Drel 1.5 must use manual App Store signing"
 rg -A 8 '^        Drel15Release:$' project.yml | rg -q 'PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store' || fail "Drel 1.5 App Store profile missing"
 rg -A 7 '^        Drel14Release:$' project.yml | rg -q 'MARKETING_VERSION: "1.4.1"' || fail "Drel 1.4.1 version was changed"
@@ -43,4 +44,4 @@ rg -q 'testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt' SuperAppUITests/P
 rg -q 'testV2FullscreenUsesGestureWithoutPermissionPromptAndKeepsNativeExit' SuperAppUITests/PWAPermissionTests.swift || fail "fullscreen UI regression test missing"
 rg -q '^#if !DREL_CONTAINER_ONLY && !DREL_V2_MANAGED_ACTIONS_ONLY' SuperApp/Sources/Managers/TestDataSeeder.swift || fail "development fixture seeder is not excluded from Drel 1.5"
 
-echo "PASS: Drel 1.5 keeps signed display/share actions plus revocable sensors/clipboard/location; 1.5.1 (135) adds gated revocable audioLevel; 1.4.1 remains 1.4.1 (89)."
+echo "PASS: Drel 1.5 keeps signed display/share actions plus revocable sensors/clipboard/location and the gated revocable audioLevel action; 1.4.1 remains 1.4.1 (89)."
