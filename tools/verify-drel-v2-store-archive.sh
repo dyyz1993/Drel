@@ -49,7 +49,7 @@ done
 for key in NSFaceIDUsageDescription NSMotionUsageDescription NSPhotoLibraryUsageDescription; do
     [[ -z "$(value "$key")" ]] || fail "deferred capability usage string leaked: $key"
 done
-strings -a "$APP_PATH/Drel" | grep -qF -- 'drel.action.audioLevel.allowlisted' \
+strings -a "$APP_PATH/Drel" | grep -F -- 'drel.action.audioLevel.allowlisted' >/dev/null \
     || fail "audioLevel allowlist marker missing: DREL_151_MICROPHONE is not enabled"
 DREL_PRIVACY_REQUIRE_LOCATION=1 bash "$ROOT/tools/privacy-surface-check.sh" "$APP_PATH" \
     || fail "shipped binary needs a purpose string that the Store build strips"
