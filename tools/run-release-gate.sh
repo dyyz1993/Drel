@@ -97,9 +97,9 @@ run_gate "APNs single-attempt policy" "bash tools/verify-apns-single-attempt.sh"
 if [[ "$ARCHIVE_READY" == "1" ]]; then
     if [[ "$RELEASE_SCHEME" == "Drel15Store" ]]; then
         if [[ "${DREL_RELEASE_GATE_AUTOMATIC_SIGNING:-}" == "1" ]]; then
-            run_gate "Drel 1.5 staging archive surface" "DREL_V2_EXPECTED_BUILD='$V2_EXPECTED_BUILD' DREL_V2_ARCHIVE_SIGNING=development bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
+            run_gate "Drel 1.5 staging archive surface" "DREL_V2_EXPECTED_VERSION='${DREL_RELEASE_GATE_MARKETING_VERSION:-1.5.1}' DREL_V2_EXPECTED_BUILD='${DREL_RELEASE_GATE_BUILD_NUMBER:-$V2_EXPECTED_BUILD}' DREL_V2_ARCHIVE_SIGNING=development bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
         else
-            run_gate "Drel 1.5 Store archive surface" "DREL_V2_EXPECTED_BUILD='$V2_EXPECTED_BUILD' bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
+            run_gate "Drel 1.5 Store archive surface" "DREL_V2_EXPECTED_VERSION='${DREL_RELEASE_GATE_MARKETING_VERSION:-1.5.1}' DREL_V2_EXPECTED_BUILD='${DREL_RELEASE_GATE_BUILD_NUMBER:-$V2_EXPECTED_BUILD}' bash tools/verify-drel-v2-store-archive.sh '$ARCHIVE_PATH'"
         fi
     else
         run_gate "Drel Store archive surface" "bash tools/verify-drel-store-archive.sh '$ARCHIVE_PATH'"
