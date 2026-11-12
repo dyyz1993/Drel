@@ -6,12 +6,12 @@ Status: ready-to-execute checklist as of 2026-11-12. Do not submit until every
 ## Release identity
 
 - Marketing version: `1.5.4`.
-- Latest repository tag: `v1.5.3+142`; choose the next unused ASC build and
-  never reuse builds 141-143.
-- Final build number: **PENDING**.
+- Latest repository tag: `v1.5.3+142`; builds 141-144 are used, so 1.5.4 uses
+  build 145.
+- Final build number: `145`.
 - Release train: `Drel15Store` with `MARKETING_VERSION=1.5.4` and
   `CURRENT_PROJECT_VERSION=<BUILD>` overrides.
-- Final tag after archive/upload passes: `v1.5.4+<BUILD>` (**PENDING**).
+- Final tag after archive/upload passes: `v1.5.4+145`.
 
 ## Owner decisions
 
