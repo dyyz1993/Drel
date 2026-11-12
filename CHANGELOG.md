@@ -38,12 +38,12 @@ Each release line carries three pieces of evidence:
   WebBridgeKit SDK still instantiates `CBCentralManager`, so App Store Connect
   rejected builds 141–143 with `ITMS-90683`; the prompt now ships, and the
   release gates assert it is present. — Scope: `App` — Verified: `simulator` —
-  Evidence: [.learnings/ERRORS.md](.learnings/ERRORS.md)
+  Evidence: [docs/release/1.5.4/RELEASE-NOTES.md](docs/release/1.5.4/RELEASE-NOTES.md)
 - Store builds re-enable `DREL_151_MICROPHONE`, restoring the revocable
   `audioLevel` action that builds 141–143 dropped from the nine-action
   allowlist described in the review notes; the archive gate checks its binary
   marker. — Scope: `App` — Verified: `simulator` — Evidence:
-  [.learnings/ERRORS.md](.learnings/ERRORS.md)
+  [docs/release/1.5.4/app-review-notes.md](docs/release/1.5.4/app-review-notes.md)
 
 ## [1.5.3] — 2026-11-06
 

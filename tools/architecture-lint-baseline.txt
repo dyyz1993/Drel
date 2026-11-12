@@ -1,4 +1,4 @@
-SuperApp/Sources/AppDelegate.swift 1282
+SuperApp/Sources/AppDelegate.swift 1288
 SuperApp/Sources/Controllers/Cache/CacheSubsystemDetailViewController.swift 670
 SuperApp/Sources/Controllers/Debug/DebugPanelViewController.swift 699
 SuperApp/Sources/Controllers/Debug/ManifestCacheTestViewController.swift 634
