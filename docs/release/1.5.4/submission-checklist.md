@@ -1,14 +1,15 @@
 # Drel 1.5.4 Submission Checklist
 
-Status: ready-to-execute checklist as of 2026-11-12. Do not submit until every
-`PENDING` item has a dated, linked result.
+Status: build 145 is archived, uploaded, and accepted by App Store Connect as
+of 2026-11-12. TestFlight physical acceptance and App Store submission remain.
 
 ## Release identity
 
 - Marketing version: `1.5.4`.
-- Latest repository tag: `v1.5.3+142`; builds 141-144 are used, so 1.5.4 uses
-  build 145.
+- Latest previous repository tag: `v1.5.3+142`; builds 141-144 are used, so
+  1.5.4 uses build 145.
 - Final build number: `145`.
+- Source commit: `7d46d91`.
 - Release train: `Drel15Store` with `MARKETING_VERSION=1.5.4` and
   `CURRENT_PROJECT_VERSION=<BUILD>` overrides.
 - Final tag after archive/upload passes: `v1.5.4+145`.
@@ -79,8 +80,8 @@ Focus-mode and silent-switch behavior.
   `docs/release/1.5.4/app-review-notes.md`.
 - Declare the Time Sensitive Notifications entitlement exactly as implemented;
   do not describe it as bypassing notification permission.
-- Record the uploaded IPA SHA-256, archive path, upload receipt, and ASC build
-  processing state.
+- Record the uploaded IPA SHA-256, delivery UUID, and ASC build processing
+  state in `verification-145.md`.
 - After Apple accepts the build, attach the TestFlight acceptance evidence
   before pressing Submit for Review.
 
