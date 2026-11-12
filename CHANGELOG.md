@@ -16,6 +16,64 @@ Each release line carries three pieces of evidence:
 - **Evidence** — a link to the verification record under
   `docs/testing/results/` or `docs/release/`.
 
+## [1.5.4] — 2026-11-10
+
+### Added
+
+- Time Sensitive Notifications entitlement
+  (`com.apple.developer.usernotifications.time-sensitive`) so that pushes with
+  `interruption-level=time-sensitive` break through Focus mode and the silent
+  switch, matching Bark's behavior. — Scope: `App` — Verified: `none` —
+  Evidence: [docs/release/1.5.4/RELEASE-NOTES.md](docs/release/1.5.4/RELEASE-NOTES.md)
+
+### Changed
+
+- No app logic changes; the binary is rebuilt solely to carry the new
+  entitlement in the provisioning profile. — Scope: `App` — Verified: `none` —
+  Evidence: [docs/release/1.5.4/RELEASE-NOTES.md](docs/release/1.5.4/RELEASE-NOTES.md)
+
+### Fixed
+
+- Store builds no longer strip `NSBluetoothAlwaysUsageDescription`. The linked
+  WebBridgeKit SDK still instantiates `CBCentralManager`, so App Store Connect
+  rejected builds 141–143 with `ITMS-90683`; the prompt now ships, and the
+  release gates assert it is present. — Scope: `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.4/RELEASE-NOTES.md](docs/release/1.5.4/RELEASE-NOTES.md)
+- Store builds re-enable `DREL_151_MICROPHONE`, restoring the revocable
+  `audioLevel` action that builds 141–143 dropped from the nine-action
+  allowlist described in the review notes; the archive gate checks its binary
+  marker. — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/release/1.5.4/app-review-notes.md](docs/release/1.5.4/app-review-notes.md)
+
+## [1.5.3] — 2026-11-06
+
+Metadata-only release. The App binary is unchanged from the shipped 1.5.2
+train; 1.5.3 ships App Store listing work only.
+
+### Added
+
+- Japanese, Korean, and German App Store descriptions and search keywords.
+  — Scope: `Website` — Verified: `none` — Evidence:
+  [docs/release/1.5.3/app-store-metadata.json](docs/release/1.5.3/app-store-metadata.json)
+- Refined English App Store description aligned with the Simplified Chinese
+  listing (inbox/favorites and signed-app bullets). — Scope: `Website` —
+  Verified: `none` — Evidence:
+  [docs/release/1.5.3/app-store-metadata-localizations-draft.md](docs/release/1.5.3/app-store-metadata-localizations-draft.md)
+
+### Changed
+
+- Primary App Store locale switches to `en-US` so markets without a
+  localized listing fall back to English instead of Simplified Chinese.
+  — Scope: `Website` — Verified: `none` — Evidence:
+  [docs/release/1.5.3/app-store-metadata-localizations-draft.md](docs/release/1.5.3/app-store-metadata-localizations-draft.md)
+
+## [1.5.1] — 2026-10-23
+
+Maintenance release (build 135), shipped between 1.5.0 and 1.5.2. Detailed
+release notes were not recorded at release time; no capability changes are
+documented for this train. Backfilled 2026-11-06 so the changelog covers
+every version configured in `project.yml`.
+
 ## Unreleased
 
 - Build 133: added a custom immersive function panel, preserved browser state
