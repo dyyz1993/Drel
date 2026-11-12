@@ -49,6 +49,16 @@ Both names resolve on the authoritative Aliyun DNS servers. Public HTTP access t
 
 Do not submit another filing order while `179438096735610449` remains active.
 
+### App API domain decision
+
+Decision recorded on 2026-11-12: keep the production App default at
+`https://api.drel.app` while the filing is pending. Do not switch the runtime
+default to `https://api.drel.dyyz1993.com` merely as a precaution. If the
+filing is approved and China-mainland availability works, keep the global
+default unchanged. Only plan a coordinated App release switch if JD Cloud,
+MIIT, or App Store review requires the China default to match the filed
+domain.
+
 ## Remaining owner gates
 
 - Review JD Cloud provider feedback or correction requests for 1-3 business days.
