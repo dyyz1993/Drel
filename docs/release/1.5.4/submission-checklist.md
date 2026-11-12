@@ -44,7 +44,7 @@ Required archive assertions:
 - ITMS-90683 regression: release bundle contains
   `NSBluetoothAlwaysUsageDescription`.
 - Release binary contains the `audioLevel` action marker.
-- Release policy exposes exactly the nine documented actions.
+- Release policy exposes exactly the ten documented actions.
 - Archive/App version is `1.5.4 (<BUILD>)`.
 - Release gate report and individual logs are retained under
   `build/reports/`.
@@ -64,7 +64,7 @@ Focus-mode and silent-switch behavior.
 5. Verify the microphone permission prompt appears only for `audioLevel`, then
    run the Voice demo and confirm the live level updates.
 6. Revoke the microphone grant in Settings and verify app behavior is safe.
-7. Verify the nine-action surface matches
+7. Verify the ten-action surface matches
    `docs/release/1.5.4/app-review-notes.md`.
 8. Record device model, iOS version, payload identifiers, screenshots, and
    command exit codes in a new verification file under this directory or
