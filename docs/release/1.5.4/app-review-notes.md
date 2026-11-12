@@ -13,11 +13,13 @@ previously approved 1.5.3 build.
 
 ## Capability surface
 
-The Store build exposes the same 9 native actions as 1.5.3:
+The Store build exposes 10 native actions. Version 1.5.3 added the permission
+status query; 1.5.4 restores `audioLevel`:
 
 - `haptic`, `vibrate`, `share`, `fullscreen`, `addToHomeScreen` — transient, in-session, no standing grant
 - `clipboard`, `getLocation` — require explicit persistent, user-revocable grant
 - `sensors` — transient accelerometer/gyroscope stream, no standing grant
+- `getCapabilities` — read-only query for actions declared and granted to the current trusted app
 - `audioLevel` — live microphone sound level, requires system microphone permission + explicit grant
 
 ## Time Sensitive Notifications
