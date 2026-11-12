@@ -10,6 +10,7 @@ project 'Drel.xcodeproj',
   'Release' => :release,
   'Drel14Release' => :release,
   'Drel15Release' => :release,
+  'Drel151Release' => :release,
   'Drel152Release' => :release,
   'Drel153Release' => :release
 

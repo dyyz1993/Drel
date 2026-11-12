@@ -82,8 +82,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             "haptic", "vibrate", "share", "fullscreen",
             "clipboard", "getLocation", "addToHomeScreen", "sensors", "getCapabilities"
         ]
-        #if DREL_152_MICROPHONE
+        #if DREL_151_MICROPHONE || DREL_152_MICROPHONE
         WebBridgeHostCapabilityPolicy.nativeActionAllowlist?.insert("audioLevel")
+        // Release-verification probe: the archive gate greps this literal to
+        // prove the audioLevel allowlist entry was compiled in. Inert unless
+        // the launch argument is passed.
+        if ProcessInfo.processInfo.arguments.contains("--wbk-audio-allowlist-probe") {
+            NSLog("drel.action.audioLevel.allowlisted")
+        }
         #endif
         WebBrowserManager.shared.webGrantsPresenter = nil
         #else

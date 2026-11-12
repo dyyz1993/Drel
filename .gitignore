@@ -179,6 +179,7 @@ docs/design-tokens-v2-backup.json
 # local agent state and runtime data
 .brainstorm/
 .data/
+output/
 .uploads/
 Server/data/
 Server/secrets/

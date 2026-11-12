@@ -15,6 +15,7 @@ configs:
   Release: release
   Drel14Release: release
   Drel15Release: release
+  Drel151Release: release
   Drel152Release: release
   Drel153Release: release
 
@@ -74,7 +75,7 @@ targets:
           CODE_SIGN_IDENTITY: 4AFA8471A600DE35F54E34594597F01325FD50CE
           PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store
         Drel15Release:
-          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY DREL_151_MICROPHONE
           MARKETING_VERSION: "1.5.1"
           CURRENT_PROJECT_VERSION: "135"
           CODE_SIGN_STYLE: Manual
@@ -94,25 +95,38 @@ targets:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: 0707C42E144EFA8577D252C53160C71E3EDA5131
           PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store 113
+        Drel151Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DREL_CONTAINER_ONLY DREL_RELEASE_MINIMAL_SETTINGS DREL_V2_MANAGED_ACTIONS_ONLY DREL_151_MICROPHONE
+          MARKETING_VERSION: "1.5.1"
+          CURRENT_PROJECT_VERSION: "135"
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 0707C42E144EFA8577D252C53160C71E3EDA5131
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit App Store 113
     postBuildScripts:
       - name: Retain Required SDK Privacy Prompts for Store Build
         basedOnDependencyAnalysis: false
         outputFiles:
           - $(DERIVED_FILE_DIR)/strip-bridge-privacy-prompts.stamp
         script: |
-          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ] || [ "${CONFIGURATION}" = "Drel15Release" ] || [ "${CONFIGURATION}" = "Drel152Release" ] || [ "${CONFIGURATION}" = "Drel153Release" ]; then
+          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ] || [ "${CONFIGURATION}" = "Drel15Release" ] || [ "${CONFIGURATION}" = "Drel151Release" ] || [ "${CONFIGURATION}" = "Drel152Release" ] || [ "${CONFIGURATION}" = "Drel153Release" ]; then
             PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
             if [ -f "${PLIST}" ]; then
               for KEY in \
-                NSBluetoothAlwaysUsageDescription \
                 NSFaceIDUsageDescription \
                 NSMotionUsageDescription \
                 NSPhotoLibraryUsageDescription; do
                 /usr/libexec/PlistBuddy -c "Delete :${KEY}" "${PLIST}" 2>/dev/null || true
               done
+              # The linked WebBridgeKit SDK still instantiates CBCentralManager
+              # (HTMLAppSystemPermissionAdapter), so App Store Connect rejects
+              # the build with ITMS-90683 without this key (builds 141-143).
+              # The prompt only appears if a feature asks for Bluetooth; keep it.
+              if [ -z "$(/usr/libexec/PlistBuddy -c "Print :NSBluetoothAlwaysUsageDescription" "${PLIST}" 2>/dev/null)" ]; then
+                /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 允许你授权的 PWA 扫描附近的蓝牙低功耗设备" "${PLIST}"
+              fi
               # Drel 1.5 exposes the managed getLocation action, so its Store
               # build must retain the matching iOS authorization prompt.
-              if [ "${CONFIGURATION}" != "Drel15Release" ] && [ "${CONFIGURATION}" != "Drel152Release" ] && [ "${CONFIGURATION}" != "Drel153Release" ]; then
+              if [ "${CONFIGURATION}" != "Drel15Release" ] && [ "${CONFIGURATION}" != "Drel151Release" ] && [ "${CONFIGURATION}" != "Drel152Release" ] && [ "${CONFIGURATION}" != "Drel153Release" ]; then
                 /usr/libexec/PlistBuddy -c "Delete :NSLocationWhenInUseUsageDescription" "${PLIST}" 2>/dev/null || true
               fi
               /usr/libexec/PlistBuddy -c "Delete :NSAppTransportSecurity:NSAllowsArbitraryLoads" "${PLIST}" 2>/dev/null || true
@@ -123,7 +137,7 @@ targets:
         outputFiles:
           - $(DERIVED_FILE_DIR)/strip-test-resources.stamp
         script: |
-          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ] || [ "${CONFIGURATION}" = "Drel15Release" ] || [ "${CONFIGURATION}" = "Drel152Release" ] || [ "${CONFIGURATION}" = "Drel153Release" ]; then
+          if [ "${CONFIGURATION}" = "Release" ] || [ "${CONFIGURATION}" = "Drel14Release" ] || [ "${CONFIGURATION}" = "Drel15Release" ] || [ "${CONFIGURATION}" = "Drel151Release" ] || [ "${CONFIGURATION}" = "Drel152Release" ] || [ "${CONFIGURATION}" = "Drel153Release" ]; then
             echo "Stripping test/debug HTML resources from Release bundle..."
             cd "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app" || exit 0
             # Every HTML file in Resources is a test or debug fixture. The
@@ -227,6 +241,14 @@ targets:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: 0707C42E144EFA8577D252C53160C71E3EDA5131
           PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store 113
+        Drel151Release:
+          MARKETING_VERSION: "1.5.1"
+          CURRENT_PROJECT_VERSION: "135"
+          DEVELOPMENT_TEAM: B45VZCNYU3
+          PRODUCT_BUNDLE_IDENTIFIER: com.webbridgekit.superapp.nse
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: 0707C42E144EFA8577D252C53160C71E3EDA5131
+          PROVISIONING_PROFILE_SPECIFIER: WebBridgeKit NSE App Store 113
 
   DrelTests:
     type: bundle.unit-test
@@ -297,6 +319,15 @@ schemes:
       config: Drel15Release
     archive:
       config: Drel15Release
+
+  Drel151Store:
+    build:
+      targets:
+        Drel: all
+    run:
+      config: Drel151Release
+    archive:
+      config: Drel151Release
 
   Drel152Store:
     build:

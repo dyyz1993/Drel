@@ -1,0 +1,25 @@
+{
+  "appName": "Drel",
+  "bundleId": "com.webbridgekit.superapp",
+  "appleTeamId": "B45VZCNYU3",
+  "platform": "iOS",
+  "certificateSha1": "4AFA8471A600DE35F54E34594597F01325FD50CE",
+  "certificatePublicKeySha1": "41FC6F874A9B21F86305852E4E4D19D8542E32DC",
+  "certificatePublicKeyFile": "ios-distribution-public-key.pem",
+  "globalBackendDomainsNotFileable": [
+    "api.drel.app",
+    "drel.app"
+  ],
+  "recommendedChinaFilingBackendDomains": [
+    "api.drel.filing-backend.example.invalid",
+    "drel.filing-backend.example.invalid"
+  ],
+  "recommendedChinaDomainSuffix": ".com",
+  "appLanguages": [
+    "zh-Hans",
+    "en"
+  ],
+  "contentClassification": "developer-productivity-tool",
+  "publicThirdPartyServiceSdks": [],
+  "currentAccessProviderBlocker": "The .app suffix is not MIIT-approved for filing, and both global domains resolve through Cloudflare. Use filing-backend.example.invalid subdomains and attach them to a Mainland provider access resource."
+}
