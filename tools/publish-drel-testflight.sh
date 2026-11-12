@@ -97,7 +97,12 @@ if [[ -z "${WBK_EXPORT_OPTS:-}" ]]; then
 <plist version="1.0"><dict>
 <key>method</key><string>app-store-connect</string>
 <key>destination</key><string>export</string>
-<key>signingStyle</key><string>automatic</string>
+<key>signingStyle</key><string>manual</string>
+<key>signingCertificate</key><string>4AFA8471A600DE35F54E34594597F01325FD50CE</string>
+<key>provisioningProfiles</key><dict>
+<key>com.webbridgekit.superapp</key><string>Drel App Store 143 TS Local</string>
+<key>com.webbridgekit.superapp.nse</key><string>Drel NSE App Store 143 TS Local</string>
+</dict>
 <key>manageAppVersionAndBuildNumber</key><false/>
 <key>teamID</key><string>B45VZCNYU3</string>
 <key>uploadSymbols</key><true/>
