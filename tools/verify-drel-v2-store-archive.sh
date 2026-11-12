@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCHIVE_PATH="${1:-/tmp/wbk-v2-runtime-release/Drel-1.5.0-90.xcarchive}"
 EXPECTED_BUILD="${DREL_V2_EXPECTED_BUILD:-90}"
-EXPECTED_VERSION="${DREL_V2_EXPECTED_VERSION:-1.5.0}"
+EXPECTED_VERSION="${DREL_V2_EXPECTED_VERSION:-1.5.1}"
 SIGNING_MODE="${DREL_V2_ARCHIVE_SIGNING:-distribution}"
 APP_PATH="${DREL_V2_EXPORTED_APP_PATH:-$ARCHIVE_PATH/Products/Applications/Drel.app}"
 PLIST="$APP_PATH/Info.plist"
@@ -55,7 +55,7 @@ DREL_PRIVACY_REQUIRE_LOCATION=1 bash "$ROOT/tools/privacy-surface-check.sh" "$AP
     || fail "shipped binary needs a purpose string that the Store build strips"
 [[ -z "$(value NSAppTransportSecurity:NSAllowsArbitraryLoads)" ]] || fail "arbitrary HTTP loading leaked"
 
-for marker in '--pwa-v2-actions' 'fixture-share-demo' 'v2-actions.html'; do
+for marker in '--pwa-v2-actions' 'fixture-share-demo' 'v2-actions.html' '--pwa-offline-query' 'OfflineQueryUITestFixture'; do
     ! strings -a "$APP_PATH/Drel" | grep -qF -- "$marker" || fail "debug fixture leaked into Store binary: $marker"
 done
 

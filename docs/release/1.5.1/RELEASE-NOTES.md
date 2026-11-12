@@ -1,11 +1,23 @@
-# Drel 1.5.1 Release Notes (backfill)
+# Drel 1.5.1 Release Notes
 
-Status: backfilled 2026-11-06. 1.5.1 (build 135) shipped on 2026-10-23 as a
-maintenance release between 1.5.0 and 1.5.2. Detailed notes were not recorded
-at release time. No capability changes are documented for this train; the
-capability surface carried forward from 1.5.0 and was later extended in
-1.5.2 (see [docs/release/1.5.3/app-review-notes.md](../1.5.3/app-review-notes.md)
-for the full current surface).
+UI-only release. This release intentionally contains no microphone or audio capability.
 
-Evidence for this train lives with the 1.5.0 verification records and the
-TestFlight internal-distribution history for build 135.
+## App Store Chinese
+
+```text
+Drel 1.5.1 更新
+
+• 修复普通浏览器里状态栏的显示与隐藏
+• 全屏功能面板打开时，边缘控制条会自动收起
+• 统一轻提示样式，并保留加载和进度类阻塞反馈
+```
+
+## App Store English
+
+```text
+What’s new in Drel 1.5.1
+
+• Fixed status-bar show and hide in the ordinary browser
+• Collapsed the immersive edge control while the function panel is open
+• Unified short feedback while retaining blocking loading and progress states
+```

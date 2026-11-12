@@ -64,6 +64,23 @@ final class DrelPushAppCatalogCoordinatorKeyScopeTests: XCTestCase {
         XCTAssertEqual(scoped.manifestPath, "/api/v1/html-apps?key=simtestkey000001")
     }
 
+    func testAudioCapableClientAdvertisesSupportedAction() {
+        let scoped = DrelPushAppCatalogCoordinator.deviceKeyScopedGateway(
+            DrelGatewayConfiguration.official, supportsAudioLevel: true
+        )
+        let items = URLComponents(string: scoped.manifestPath)?.queryItems ?? []
+        XCTAssertTrue(items.contains(URLQueryItem(name: "key", value: "simtestkey000001")))
+        XCTAssertTrue(items.contains(URLQueryItem(name: "supportedActions", value: "audioLevel")))
+        XCTAssertTrue(scoped.validate().isValid)
+    }
+
+    func testLegacyClientDoesNotAdvertiseUnsupportedAudio() {
+        let scoped = DrelPushAppCatalogCoordinator.deviceKeyScopedGateway(
+            DrelGatewayConfiguration.official, supportsAudioLevel: false
+        )
+        XCTAssertEqual(scoped.manifestPath, "/api/v1/html-apps?key=simtestkey000001")
+    }
+
     func testNonOfficialGatewayIsLeftUnchanged() throws {
         let selfHosted = HTMLAppGatewayConfiguration(
             name: "Self-hosted Gateway",

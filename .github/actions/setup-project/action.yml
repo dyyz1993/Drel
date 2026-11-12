@@ -6,6 +6,7 @@ runs:
   steps:
     - name: Cache Homebrew
       id: cache-brew
+      if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
       uses: actions/cache@v4
       with:
         path: ~/Library/Caches/Homebrew
@@ -29,6 +30,7 @@ runs:
         command -v xcpretty >/dev/null || gem install --user-install xcpretty --no-document
 
     - name: Cache CocoaPods
+      if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
       uses: actions/cache@v4
       with:
         path: Pods
@@ -36,6 +38,7 @@ runs:
         restore-keys: pods-${{ runner.os }}-
 
     - name: Cache DerivedData
+      if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
       uses: actions/cache@v4
       with:
         path: ~/Library/Developer/Xcode/DerivedData
@@ -49,9 +52,15 @@ runs:
         # xcodegen validates framework source paths while generating the project,
         # so the private framework must exist before generation.
         python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
-        git clone --depth 1 \
+        git clone --depth 1 --branch main \
           "https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git" \
           ../WebBridgeKit-Framework
+        EXPECTED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
+        ACTUAL_FRAMEWORK_REVISION="$(git -C ../WebBridgeKit-Framework rev-parse HEAD)"
+        [[ "$ACTUAL_FRAMEWORK_REVISION" == "$EXPECTED_FRAMEWORK_REVISION" ]] || {
+          echo "::error::Framework revision does not match the pinned release revision"
+          exit 1
+        }
     - name: Generate & Install
       shell: bash
       run: |

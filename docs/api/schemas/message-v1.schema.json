@@ -26,8 +26,8 @@
     "expiresAt": { "type": "string", "format": "date-time" },
     "presentation": { "enum": ["native", "web", "pwa"] },
     "url": { "type": "string", "format": "uri", "pattern": "^https://" },
-    "appId": { "type": "string", "minLength": 1, "maxLength": 64 },
-    "route": { "type": "string", "pattern": "^/", "maxLength": 2048 },
+    "appId": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" },
+    "route": { "type": "string", "pattern": "^(/[^/]|/$)", "maxLength": 2048 },
     "params": {
       "type": "object",
       "description": "Route parameters are strings so the same payload is preserved by APNs, native routing, and URL query construction.",

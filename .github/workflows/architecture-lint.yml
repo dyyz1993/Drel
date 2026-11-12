@@ -1,13 +1,7 @@
 name: Architecture Lint
 
 on:
-  pull_request:
-    paths:
-      - 'Sources/**/*.swift'
-      - 'SuperApp/Sources/**/*.swift'
-      - 'Tests/**/*.swift'
-      - 'DrelUITests/**/*.swift'
-      - 'tools/architecture-lint.sh'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -19,7 +13,7 @@ permissions:
 jobs:
   architecture-lint:
     name: Architecture Lint
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

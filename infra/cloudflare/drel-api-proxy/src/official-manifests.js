@@ -78,3 +78,24 @@ export const OFFICIAL_MANIFESTS = Object.freeze([
     },
   },
 ]);
+
+// Returned only to clients explicitly declaring audioLevel support. Legacy
+// clients reject unknown action enum cases while decoding the whole catalog.
+export const OPTIONAL_AUDIO_MANIFESTS = Object.freeze([
+  ...['voice-jump', 'voice-dandelion'].map((slug) => ({
+    schemaVersion: '1',
+    appId: `dev.drel.${slug}`,
+    name: slug === 'voice-jump' ? '声音跳跳' : '吹散蒲公英',
+    startURL: `https://drel.app/sound/${slug}/`,
+    allowedOrigins: ['https://drel.app'],
+    capabilities: [],
+    capabilities_v2: [{
+      action: 'audioLevel', origins: ['https://drel.app'],
+      purposeId: `${slug}-level`,
+      purpose: slug === 'voice-jump' ? '使用麦克风的实时音量控制角色跳跃' : '使用麦克风的实时音量控制蒲公英飞散',
+      scope: 'always',
+    }],
+    routes: [`/sound/${slug}/`],
+    cache: { strategy: 'networkOnly', version: '2', persistent: false, restoresLastState: true },
+  })),
+]);

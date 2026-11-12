@@ -4,7 +4,7 @@ Drel 的原生能力通过网页内的 JavaScript 调用。**但它不是一个"
 
 本文是 Drel Store 版当前公开的能力契约。
 
-> **当前版本**：Drel 1.5.0 · Manifest v2 动作运行时
+> **版本范围**：Drel 1.5.0 / 1.5.1；1.5.2（138）为 TestFlight 构建，正式商店可用性以 App Store 为准。
 > **在线演示**：`https://drel.app/test/actions/`
 
 ---
@@ -13,7 +13,7 @@ Drel 的原生能力通过网页内的 JavaScript 调用。**但它不是一个"
 
 ```
 你的网页
-   │  window.BarkBridge.call(action, params)
+   │  window.BarkBridge.callNative(action, params)
    ▼
 Drel 判定链（仅对"受控能力"）
    ① 应用身份：必须在信任清单里（网关签名注册过的应用）
@@ -28,34 +28,19 @@ Handler 执行 → receiveResult 回调回网页
 
 **三个必须理解的事实**：
 
-1. **普通网页也能用部分能力**（触感、震动等低影响动作），但**没有应用身份就没有受控能力**。
+1. **普通网页不要假设能使用受控能力**；触感、震动也属于 Drel 受控动作。
 2. **声明 ≠ 授权**。签名清单里的 `capabilities_v2` 是白名单，不是用户同意。每次分享仍然由 iOS 系统面板决定去向。
 3. **网页无法枚举授权，也无法自行撤销**。查看和撤销只在原生界面里做。
 
 ---
 
-## 2. 免授权能力
+## 2. 宿主与 SDK 的区别
 
-以下动作**不在能力门控清单里**，任何页面无需注册、无需授权即可调用：
-
-| 分类 | 动作 | 说明 |
-|---|---|---|
-| 设备信息 | `getSystemInfo` | 屏幕尺寸、系统版本、深浅色模式 |
-| 设备信息 | `getNetworkInfo` | 网络类型（WiFi / 蜂窝 / 离线） |
-| 容器导航 | `goBack` `closePage` | 返回上一页 / 退出当前容器 |
-| 容器导航 | `openPage` `setModal` `page` | 容器内导航与弹窗控制 |
-| 容器交互 | `gesture` `layout` `screen` `mirroring` | 触控、布局、屏幕与投屏状态 |
-| 上下文 | `getHistory` `getPayload` | 本页启动参数与历史 |
-| 反馈 | `haptic` `vibrate` `tts` | 触感、振动、朗读 |
-| 调试 | `cacheDebug` | 缓存调试（getInfo / listRules / clearAll） |
-| 系统 | `openSettings` | 跳系统设置 |
-| 权限查询 | `getPermissionStatus` | 只读三态，见 §5 |
-
----
+WebBridgeKit SDK 包含比 Drel Store 宿主更多的处理器；SDK 中存在某个处理器，不代表 Drel Store 包允许网页调用它。Drel Store 的受控动作以本页第 3 节和宿主白名单为准。请勿将旧版 SDK 示例中的免授权方法当作 Store 版承诺。
 
 ## 3. Manifest v2 声明式动作
 
-Drel 1.5.0 引入动作运行时；`audioLevel` 从 Drel 1.5.1 开始。**每一项都必须在签名清单的 `capabilities_v2` 中逐条声明**。
+Drel 1.5.0 引入动作运行时；`sensors` 从 1.5.0（130）起可用，131 起须授权且可撤销，132 起受控动作须前台用户点击；`audioLevel` 从 1.5.2（138）TestFlight 起提供。**每一项都必须在签名清单的 `capabilities_v2` 中逐条声明**。
 
 | 动作 | 授权 scope | 说明 | 明确不做 |
 |---|---|---|---|
@@ -64,7 +49,7 @@ Drel 1.5.0 引入动作运行时；`audioLevel` 从 Drel 1.5.1 开始。**每一
 | `share` | `appSession` | 拉起 iOS 系统分享面板 | 后台发送、自选目的地、留存用户选择 |
 | `fullscreen` | `appSession` | 隐藏宿主导航与状态栏，保留边缘返回控件 | 旋转设备、锁死用户、禁用滚动、关闭 Drel |
 | `clipboard` | `always` | 读写系统剪贴板 | 静默读取；每次都有原生理由说明 |
-| `location` | `always` | 获取当前位置 | 后台采集；可在权限中心撤销 |
+| `getLocation`（旧清单兼容 `location`） | `always` | 获取当前位置 | 后台采集；可在权限中心撤销 |
 | `sensors` | `always` | 订阅加速度计 / 陀螺仪流 | 后台采集；可在权限中心撤销 |
 | `audioLevel` | `always` | 订阅实时麦克风音量（0–1，最多 30Hz） | 上传原始音频、录音、后台采集；可在权限中心撤销 |
 | `addToHomeScreen` | `appSession` | 把已注册应用添加到 Drel 首页 | 添加未注册的应用 |
@@ -103,7 +88,7 @@ Drel 1.5.0 引入动作运行时；`audioLevel` 从 Drel 1.5.1 开始。**每一
 
 ## 4. 未开放的能力
 
-以下能力在 Drel Store 版**明确不开放**，调用会在到达 handler 之前被拒绝（`sensors` 已在 1.5.0 开放，`audioLevel` 已在 1.5.1 开放）：
+以下能力在 Drel Store 版**明确不开放**，调用会在到达 handler 之前被拒绝（`sensors` 已在 1.5.0 开放，`audioLevel` 在 1.5.2（138）TestFlight 开放）：
 
 > 相机扫码 · 相册 · 蓝牙 · 原始麦克风访问 · 语音 · 通讯录 · 文件导入导出 · 通用设备控制 · 通用 JS Bridge
 
@@ -113,12 +98,7 @@ Drel 1.5.0 引入动作运行时；`audioLevel` 从 Drel 1.5.1 开始。**每一
 
 ## 5. 权限状态查询
 
-```js
-const status = await window.BarkBridge.call('getPermissionStatus');
-// authorized / denied / notDetermined / limited
-```
-
-这返回的是**系统层状态**，不含应用层授权账本。网页无权枚举"我被授过什么权"。
+Drel Store 宿主只公开受控动作白名单。不要依赖底层 SDK 的 `getPermissionStatus`；用户在 Drel 的权限中心查看或撤销授权。网页应处理调用失败与用户取消。
 
 ---
 
@@ -140,16 +120,18 @@ const status = await window.BarkBridge.call('getPermissionStatus');
 
 ### 调用形式
 
-```js
-// Promise 风格（推荐）
-const info = await window.BarkBridge.call('getSystemInfo');
+在用户点击处理函数内调用已声明的动作，并等待回调：
 
-// 原始消息风格
-window.webkit.messageHandlers.BarkBridge.postMessage({
-    action: 'getSystemInfo',
-    params: {}
+```js
+button.addEventListener('click', async () => {
+  try {
+    const result = await window.BarkBridge.callNative('clipboard', { action: 'read' });
+    if (result?.success !== true) return; // 拒绝或失败
+    // 仅在成功后继续
+  } catch (error) {
+    // 展示错误或降级
+  }
 });
-// 结果经 window.BarkBridge.receiveResult({success, data, callbackId}) 回调
 ```
 
 ### 优雅降级（必须写）
@@ -179,7 +161,7 @@ if (bridgeAvailable) {
 ```js
 if (!window.BarkBridge) {
   window.BarkBridge = {
-    call: async (action) => ({ success: false, available: false, code: 'NATIVE_MODULE_UNAVAILABLE', action }),
+    callNative: async (action) => ({ success: false, available: false, code: 'NATIVE_MODULE_UNAVAILABLE', action }),
     receiveResult: () => {},
   };
 }
@@ -209,7 +191,7 @@ const bridgeVersion = Number(runtime?.bridgeVersion ?? 0);
 Drel 每次都打开 iOS 系统分享面板，由你检查内容并选择目的地。Drel 不记录分享内容与目的地。
 
 **Q: 能查"我都被授过什么权"吗？**
-不能。安全设计：网页只能查单个能力的系统层三态，授权账本只对原生 UI 开放。
+不能。安全设计：Drel Store 不向网页开放授权账本；在原生权限中心查看。
 
 **Q: 授权能由网页主动放弃吗？**
 不能。撤销只能在原生界面操作。

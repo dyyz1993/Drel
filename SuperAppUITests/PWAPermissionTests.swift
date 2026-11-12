@@ -196,6 +196,36 @@ final class PWAPermissionTests: XCTestCase {
         XCTAssertTrue(app.webViews.staticTexts["Error: PWA 未获得该原生能力授权"].waitForExistence(timeout: 5))
     }
 
+    func testCapabilityQueryInWebViewDoesNotPrompt() {
+        app.launchArguments += ["--pwa-v2-actions", "--reset-permission-grants"]
+        app.launchEnvironment["WBK_PWA_PERMISSION_ORIGIN"] = "http://localhost:18082"
+        app.launch()
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 20))
+        appButton.tap()
+        let query = app.webViews.buttons["查询能力状态"]
+        XCTAssertTrue(query.waitForExistence(timeout: 15))
+        query.tap()
+        let result = app.webViews.staticTexts["查询成功 clipboard true true notDetermined"]
+        XCTAssertTrue(result.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertFalse(element("pwa.permission.prompt").exists)
+    }
+
+    func testCapabilityQueryInOfflineWebViewDoesNotPrompt() {
+        app.launchArguments += ["--pwa-v2-actions", "--pwa-offline-query", "--reset-permission-grants"]
+        app.launchEnvironment["WBK_PWA_PERMISSION_ORIGIN"] = "https://offline-query.example"
+        app.launch()
+        let appButton = element("pwaHome.app.com.webbridgekit.fixture.permissions")
+        XCTAssertTrue(appButton.waitForExistence(timeout: 20))
+        appButton.tap()
+        let query = app.webViews.buttons["查询离线能力"]
+        XCTAssertTrue(query.waitForExistence(timeout: 15), app.debugDescription)
+        query.tap()
+        let result = app.webViews.staticTexts["离线查询 true true notDetermined"]
+        XCTAssertTrue(result.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertFalse(element("pwa.permission.prompt").exists)
+    }
+
     func testV2ShareUsesSystemSheetWithoutExtraPermissionPrompt() {
         app.launchArguments.append("--pwa-v2-actions")
         app.launch()
@@ -586,6 +616,38 @@ final class PWAPermissionTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
         openMenu()
         app.buttons["关闭功能菜单"].tap()
+    }
+
+    func testWhiteScreenImmersiveBrowserStillShowsFunctionMenu() {
+        app.launch()
+        let target = "http://localhost:8081/test_resources/pwa-permission/white-screen.html?mode=immersive"
+        var link = URLComponents(string: "webbridgekit://open")!
+        link.queryItems = [URLQueryItem(name: "url", value: target)]
+        XCUIDevice.shared.system.open(link.url!)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let confirm = springboard.buttons["打开"]
+        if confirm.waitForExistence(timeout: 3) { confirm.tap() }
+
+        XCTAssertTrue(element("browserManager.webView").waitForExistence(timeout: 15))
+        let capsule = element("browserManager.immersiveReturnButton")
+        XCTAssertTrue(capsule.waitForExistence(timeout: 5))
+
+        let collapsed = capsule.frame
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: max(4, collapsed.maxX - 4), dy: collapsed.midY))
+            .tap()
+        let expanded = capsule.frame
+        let moreX = expanded.midX < app.frame.midX ? expanded.maxX - 22 : expanded.minX + 22
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: moreX, dy: expanded.midY))
+            .tap()
+
+        XCTAssertTrue(element("immersive.functionSheet").waitForExistence(timeout: 5), app.debugDescription)
+        let copyLink = app.buttons["复制链接"]
+        XCTAssertTrue(copyLink.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertEqual(capsule.label, "显示浏览器控制条")
+        copyLink.tap()
+        XCTAssertTrue(app.staticTexts["链接已复制"].waitForExistence(timeout: 4))
     }
 
     private func element(_ identifier: String) -> XCUIElement {

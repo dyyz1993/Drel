@@ -1,64 +1,20 @@
-# Drel 1.5.3 App Review Notes
+# Drel 1.5.3 App Review Notes — Draft
 
-Status: owner-review draft for the 1.5.3 App Store submission. This release
-contains no app changes: the binary is the same code train as the
-`READY_FOR_SALE` 1.5.2 (build 138) release, re-uploaded as build 142 because
-App Store Connect binds a build to a single version. The capability surface
-below is unchanged from the shipped 1.5.2 build and is restated here so the
-reviewer sees the exact, complete list.
+This document is a draft. Public demo links and physical-device acceptance must be verified before App Review submission.
 
-## Summary
+Drel 1.5.3 adds `audioLevel` for signed, trusted HTML applications only. The app declares its purpose and exact allowed origin in the signed manifest; a foreground user tap is required to request access. Drel presents a revocable user consent choice, followed by iOS microphone authorization where required. It passes normalized sound level only to the game: raw microphone samples and recording files are not exposed by this action. Capture stops on stop, leaving the page, app background, interruption, or revocation. It is not available to arbitrary untrusted pages.
 
-Drel is a developer push-notification utility and a container for HTML apps
-that the user has explicitly trusted. The Store build exposes exactly nine
-native actions, and no others:
+The existing actions are `haptic`, `vibrate`, `share`, `fullscreen`, `clipboard`, `getLocation`, `addToHomeScreen`, and `sensors`. Clipboard, getLocation, sensors and audioLevel require consent and support revocation where applicable. The remaining actions are gesture-gated; share presents the system sheet.
 
-- `haptic`
-- `vibrate`
-- `share`
-- `fullscreen`
-- `clipboard`
-- `getLocation`
-- `addToHomeScreen`
-- `sensors`
-- `audioLevel`
+## Reviewer walkthrough — pending deployed demo URLs
 
-This is not a general JavaScript-to-native Bridge and it is not remotely
-extensible. Ordinary web pages, strong-offline packages, and unregistered
-apps do not receive the Bridge.
+1. Open a trusted signed Voice Jump or Dandelion demo from the app catalog.
+2. Tap the microphone start button. Cancel and verify the game does not start.
+3. Tap again, consent in Drel and the iOS microphone prompt, then make sound to interact.
+4. Revoke the microphone grant in the app permission center; verify sound updates stop.
 
-## Trust and runtime boundary
+Hardware verification, stable demo links, privacy disclosures, and final App Store metadata remain pending.
 
-1. A network-managed HTML app must have an Ed25519-signed gateway manifest.
-2. Every action must be declared in that signed manifest for the exact app
-   action and origin.
-3. Drel's build policy exposes only the nine actions listed above; all other
-   Bridge actions are rejected before handler dispatch.
-4. The page must be active in the foreground, and the call must consume a
-   recent one-use touch gesture.
-5. `haptic`, `vibrate`, `share`, `fullscreen`, `addToHomeScreen`, and
-   `sensors` write no persistent privacy grant; a manifest declaration is an
-   allowlist, not standing user consent.
+## Read-only capability query
 
-## Permissions and privacy
-
-- `clipboard` and `getLocation` read device/user data. Both require an
-  explicit, persistent, user-revocable grant: Drel asks separately before a
-  trusted app reads either, and the grant can be revoked at any time in the
-  permission center, which stops further reads immediately.
-- `audioLevel` exposes a live sound-level value so trusted web apps can drive
-  sound-powered interactions (the Voice Jump and Dandelion demos shipped in
-  1.5.2). It runs only after the user grants the system audio-input
-  permission for Drel; without that grant the action is unavailable, and the
-  grant can be revoked at any time in iOS Settings or Drel's permission
-  center.
-- No other sensitive capability is offered: the Store build does not enable
-  camera scanning, photo library access, Bluetooth, speech recognition,
-  contacts, file import/export, or generic device control.
-
-## What changed in this submission
-
-Nothing in the binary. 1.5.3 adds Japanese, Korean, and German App Store
-metadata, refines the English listing, and switches the primary store locale
-to English (US). Screenshots and the review account are unchanged from
-1.5.2.
+`getCapabilities` reports whether each host action is supported, declared for the current trusted page, and its Drel and iOS permission state. It does not trigger a prompt, request access, or expose sensor or microphone data. Actual actions remain foreground gesture-gated and retain their consent requirements. Verified installed offline entrypoints map to their trusted launch page; additional installed pages require a digest-verified resource manifest and matching file.

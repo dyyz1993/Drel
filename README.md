@@ -23,7 +23,8 @@ Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark �
 - **`SuperApp/`**：完整产品宿主源码（首页、收信箱 Inbox、PWA 应用中心、发现页、设置、审批流、展示目录）与资源。
 - **`NotificationServiceExtension/`**：独立 APNs 通知扩展（负责 `PushCipher` 对称加密消息与 `drel.push-envelope.v1` X25519 自托管信封的端到端解密及自定义头像处理，零 CocoaPods 依赖）。
 - **`DrelUITests/`**：28 个 XCUITest 端到端与 UI 保真度测试套件。
-- **`Server/`**：Swift 6 + Hummingbird 2 推送与网关后端（`:8080`）、Go 原生自托管服务端（`Server/native/`）及 Node 管理后台（`Server/node/`）。
+- **官方 API**：`infra/cloudflare/drel-api-proxy/`（Cloudflare Worker，承载 `api.drel.app`）。
+- **自托管服务端**：`Server/native/`（Go 二进制，推荐）；`Server/Sources/WebBridgeServer/` 为已废弃的 Swift 旧实现，仅保留给既有部署迁移。
 - **`deploy/` & `infra/`**：网关 Nginx 配置与 Cloudflare Worker 边缘代理（`infra/cloudflare/drel-api-proxy/`）。
 - **`tools/` & `scripts/`**：应用层发布门禁、真机冒烟、容器安全策略校验与本地三服务管理脚本。
 

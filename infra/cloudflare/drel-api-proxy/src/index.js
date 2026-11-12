@@ -15,7 +15,7 @@ import {
   gatewayPublicKey,
   signGatewayManifest,
 } from "./gateway.js";
-import { OFFICIAL_MANIFESTS } from "./official-manifests.js";
+import { OFFICIAL_MANIFESTS, OPTIONAL_AUDIO_MANIFESTS } from "./official-manifests.js";
 import {
   ApprovalRegistry,
   OfficialPushRegistry,
@@ -26,21 +26,21 @@ import {
 
 export { ManagedPushRegistry, GatewayManifestRegistry, OfficialPushRegistry, ApprovalRegistry };
 
-const OFFICIAL_MANIFESTS_BY_APP_ID = new Map(
-  OFFICIAL_MANIFESTS.map((manifest) => [manifest.appId, manifest])
-);
-
-async function signedOfficialManifests(env) {
-  return Promise.all(
-    OFFICIAL_MANIFESTS.map((manifest) => signGatewayManifest(env, manifest))
-  );
+function officialManifestsFor(request) {
+  const supportsAudio = new URL(request.url).searchParams.getAll('supportedActions').includes('audioLevel');
+  return supportsAudio ? [...OFFICIAL_MANIFESTS, ...OPTIONAL_AUDIO_MANIFESTS] : OFFICIAL_MANIFESTS;
+}
+async function signedOfficialManifests(env, request) {
+  return Promise.all(officialManifestsFor(request).map((manifest) => signGatewayManifest(env, manifest)));
 }
 
-function mergeOfficialManifests(manifests, signedOfficial) {
+function mergeOfficialManifests(manifests, signedOfficial, request) {
+  const supportsAudio = new URL(request.url).searchParams.getAll("supportedActions").includes("audioLevel");
   const merged = new Map(
     signedOfficial.map((manifest) => [manifest.appId, manifest])
   );
   for (const manifest of manifests) {
+    if (!supportsAudio && manifest.capabilities_v2?.some((capability) => capability.action === "audioLevel")) continue;
     if (!merged.has(manifest.appId)) merged.set(manifest.appId, manifest);
   }
   return [...merged.values()].sort((left, right) =>
@@ -196,7 +196,7 @@ export async function handleGateway(request, env) {
       ? decodeURIComponent(path.slice("/api/v1/html-apps/".length))
       : null;
     const official = requestedAppID
-      ? OFFICIAL_MANIFESTS_BY_APP_ID.get(requestedAppID)
+      ? officialManifestsFor(request).find((manifest) => manifest.appId === requestedAppID)
       : null;
     if (official && request.method === "GET") {
       return gatewayJSON(await signGatewayManifest(env, official));
@@ -206,7 +206,7 @@ export async function handleGateway(request, env) {
     if (!namespace) {
       if (path === "/api/v1/html-apps" && request.method === "GET") {
         return gatewayJSON({
-          manifests: await signedOfficialManifests(env),
+          manifests: await signedOfficialManifests(env, request),
         });
       }
       return null;
@@ -219,20 +219,20 @@ export async function handleGateway(request, env) {
       if (path === "/api/v1/html-apps" && request.method === "GET") {
         if (!response.ok) {
           return gatewayJSON({
-            manifests: await signedOfficialManifests(env),
+            manifests: await signedOfficialManifests(env, request),
           });
         }
         const body = await response.json();
-        const signedOfficial = await signedOfficialManifests(env);
+        const signedOfficial = await signedOfficialManifests(env, request);
         return gatewayJSON({
-          manifests: mergeOfficialManifests(body.manifests ?? [], signedOfficial),
+          manifests: mergeOfficialManifests(body.manifests ?? [], signedOfficial, request),
         });
       }
       return response;
     } catch {
       if (path === "/api/v1/html-apps" && request.method === "GET") {
         return gatewayJSON({
-          manifests: await signedOfficialManifests(env),
+          manifests: await signedOfficialManifests(env, request),
         });
       }
       return null;
