@@ -1,0 +1,42 @@
+{
+  "zh-Hans": {
+    "description": "Drel 是面向 iPhone 开发者的推送通知工具，也是运行可信 HTML 应用的安全容器。\n\n• 复制个人推送地址，通过脚本、浏览器、自动化或自己的服务发送通知。\n• 点击包含 HTTPS 目标地址的通知，直接打开指定页面。\n• 在收件箱查看你选择打开的通知，并收藏常用页面。\n• 浏览可信的签名应用，按需打开或添加到首页。\n• 经你授权后，可信应用可使用触感、分享、全屏、剪贴板、位置、运动传感器和实时音量等受控能力。\n\n体验声音跳跳和吹蒲公英：授权麦克风后，实时音量可控制网页互动；你可以在权限中心管理授权。\n\n网页须在前台由用户主动操作，受控能力需要签名清单声明；未授权的请求会被拒绝。Drel 面向使用自有服务的开发者，不是公开应用市场。\n\nBuilt with WebBridgeKit.",
+    "keywords": "开发者,推送,通知,Webhook,HTML,开发者工具",
+    "marketingUrl": "https://drel.app/",
+    "promotionalText": "用声音开启互动：发声让角色跳跃，轻吹让蒲公英飞散。麦克风使用前须经你同意，授权可随时管理。",
+    "supportUrl": "https://drel.app/support/",
+    "whatsNew": "Drel 1.5.4 更新\n\n• 新增\"时效性通知\"能力：标记为\"紧急\"的推送可穿透专注模式和静音开关\n• 修复 Voice 演示所需的实时音量能力"
+  },
+  "en-US": {
+    "description": "Drel is a push notification tool and a secure container for trusted HTML apps on iPhone.\n\n• Copy your personal push URL and send notifications from scripts, browsers, automations, or your own services.\n• Open HTTPS pages directly from notifications.\n• Review opened messages in your inbox and save frequently used pages as favorites.\n• Browse signed, trusted apps and open them or add them to your home screen.\n• With your consent, trusted apps can request controlled actions including haptics, sharing, fullscreen, clipboard, location, motion sensors, and real-time sound level.\n\nTry Voice Jump and Dandelion: after granting microphone access, the live sound level controls web interactions. Manage permissions anytime in the permission center.\n\nWeb pages run only in the foreground with explicit user action. Controlled actions require a signed declaration; unauthorized requests are rejected. Drel is designed for developers using their own services — it is not a public app marketplace.\n\nBuilt with WebBridgeKit.",
+    "keywords": "developer,push,notification,webhook,HTML,WebBridgeKit",
+    "marketingUrl": "https://drel.app/",
+    "promotionalText": "Bring web experiences to life with sound: speak to jump and blow to scatter dandelion seeds. Microphone access is yours to manage.",
+    "supportUrl": "https://drel.app/support/",
+    "whatsNew": "Drel 1.5.4\n\n• Added Time Sensitive Notifications: pushes marked as urgent can now break through Focus mode and the silent switch.\n• Restored the real-time audio-level capability used by the Voice demos."
+  },
+  "ja": {
+    "description": "Drel は、iPhone 開発者向けのプッシュ通知ツールであり、信頼できる HTML アプリの安全なコンテナです。\n\n• 個人専用のプッシュ URL をコピーして、スクリプト・ブラウザ・自動化・自社サービスから通知を送信。\n• 通知に含まれる HTTPS ページを直接開けます。\n• 開いたメッセージは受信箱で確認し、よく使うページはお気に入りに登録。\n• 署名済みの信頼できるアプリを閲覧し、開いたりホーム画面に追加したりできます。\n• ユーザーの許可後、信頼できるアプリは触覚フィードバック、共有、全画面表示、クリップボード、位置情報、モーションセンサー、リアルタイム音量などの制御付きアクションを要求できます。\n\n「Voice Jump」と「Dandelion」を体験：マイクを許可すると、リアルタイムの音量でウェブのインタラクションを制御できます。許可は権限センターでいつでも管理できます。\n\nウェブページは、フォアグラウンドでユーザーが明示的に操作したときにのみ動作します。制御付きアクションには署名済みマニフェストが必要で、未許可のリクエストは拒否されます。Drel は自社サービスを利用する開発者向けに設計されており、公開アプリマーケットではありません。\n\nWebBridgeKit を使用して構築されています。",
+    "keywords": "開発者,プッシュ通知,通知,Webhook,HTML,WebBridgeKit,自動化",
+    "marketingUrl": "https://drel.app/",
+    "promotionalText": "音でウェブを動かそう：声でジャンプ、息を吹いてタンポポの種を飛ばそう。マイクの使用はあなたの同意が必要で、許可はいつでも管理できます。",
+    "supportUrl": "https://drel.app/support/",
+    "whatsNew": "Drel 1.5.4\n\n• 時刻対応通知機能を追加：「緊急」マーク付きプッシュは集中モードとサイレントスイッチを貫通します。\n• Voiceデモが使うリアルタイム音量機能を復旧しました。"
+  },
+  "ko": {
+    "description": "Drel은 iPhone 개발자를 위한 푸시 알림 도구이자, 신뢰할 수 있는 HTML 앱을 위한 안전한 컨테이너입니다.\n\n• 개인 푸시 URL을 복사하여 스크립트, 브라우저, 자동화 또는 자체 서비스에서 알림을 보냅니다.\n• 알림에 포함된 HTTPS 페이지를 바로 엽니다.\n• 열어본 메시지는 수신함에서 확인하고, 자주 쓰는 페이지는 즐겨찾기에 저장합니다.\n• 서명된 신뢰할 수 있는 앱을 탐색하고 열거나 홈 화면에 추가합니다.\n• 사용자 허가 후, 신뢰할 수 있는 앱은 햅틱, 공유, 전체 화면, 클립보드, 위치 정보, 모션 센서, 실시간 음량 등 제어된 작업을 요청할 수 있습니다.\n\nVoice Jump와 Dandelion을 체험해 보세요: 마이크를 허용하면 실시간 음량으로 웹 인터랙션을 제어할 수 있습니다. 권한은 권한 센터에서 언제든지 관리할 수 있습니다.\n\n웹 페이지는 포그라운드에서 사용자가 명시적으로 조작할 때만 작동합니다. 제어된 작업에는 서명된 선언이 필요하며, 허가되지 않은 요청은 거부됩니다. Drel은 자체 서비스를 사용하는 개발자를 위해 설계되었으며, 공개 앱 마켓플레이스가 아닙니다.\n\nWebBridgeKit로 제작되었습니다.",
+    "keywords": "개발자,푸시,알림,Webhook,HTML,WebBridgeKit,자동화",
+    "marketingUrl": "https://drel.app/",
+    "promotionalText": "소리로 웹에 생명을 불어넣으세요: 말하면 점프하고, 불면 민들레 홀씨가 흩어집니다. 마이크 사용은 동의가 필요하며, 권한은 언제든지 관리할 수 있습니다.",
+    "supportUrl": "https://drel.app/support/",
+    "whatsNew": "Drel 1.5.4\n\n• 시간 민감 알림 기능 추가: '긴급' 표시된 푸시는 방해 금지 모드와 무음 스위치를 관통합니다.\n• Voice 데모에 필요한 실시간 오디오 레벨 기능을 복원했습니다."
+  },
+  "de-DE": {
+    "description": "Drel ist ein Push-Benachrichtigungs-Tool für iPhone-Entwickler und ein sicherer Container für vertrauenswürdige HTML-Apps.\n\n• Kopiere deine persönliche Push-URL und sende Benachrichtigungen aus Skripts, Browsern, Automatisierungen oder deinen eigenen Diensten.\n• Öffne HTTPS-Seiten direkt aus Benachrichtigungen.\n• Geöffnete Nachrichten findest du im Posteingang, häufig genutzte Seiten speicherst du als Favoriten.\n• Durchsuche signierte, vertrauenswürdige Apps und öffne sie oder füge sie zum Home-Bildschirm hinzu.\n• Mit deiner Zustimmung können vertrauenswürdige Apps kontrollierte Aktionen anfordern – darunter Haptik, Teilen, Vollbild, Zwischenablage, Standort, Bewegungssensoren und Echtzeit-Schallpegel.\n\nProbiere Voice Jump und Dandelion aus: Nach dem Mikrofonzugriff steuert der Echtzeit-Schallpegel Web-Interaktionen. Berechtigungen verwaltest du jederzeit im Berechtigungscenter.\n\nWebseiten laufen nur im Vordergrund mit expliziter Nutzeraktion. Kontrollierte Aktionen erfordern eine signierte Deklaration; unberechtigte Anfragen werden abgelehnt. Drel ist für Entwickler mit eigenen Diensten gedacht – kein öffentlicher App-Marktplatz.\n\nMit WebBridgeKit gebaut.",
+    "keywords": "Entwickler,Push,Benachrichtigung,Webhook,HTML,WebBridgeKit",
+    "marketingUrl": "https://drel.app/",
+    "promotionalText": "Erwecke Web-Inhalte mit Klang zum Leben: Sprich für Sprünge, puste Löwenzahnsamen davon. Mikrofonzugriff nur mit deiner Zustimmung, jederzeit verwaltbar.",
+    "supportUrl": "https://drel.app/support/",
+    "whatsNew": "Drel 1.5.4\n\n• Zeitkritische Benachrichtigungen hinzugefügt: Als \"dringend\" markierte Push-Benachrichtigungen durchbrechen jetzt den Fokusmodus und den Stummschalter.\n• Die von den Voice-Demos genutzte Echtzeit-Pegel-Funktion wurde wiederhergestellt."
+  }
+}

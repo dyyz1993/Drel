@@ -72,8 +72,9 @@ Focus-mode and silent-switch behavior.
 
 ## Submission package
 
-- Paste the localized What's New text from
-  `docs/release/1.5.4/RELEASE-NOTES.md` into App Store Connect.
+- Paste the localized metadata from
+  `docs/release/1.5.4/app-store-metadata.json` into App Store Connect. Keep
+  public What's New text free of internal build-number history.
 - Keep App Review notes aligned with
   `docs/release/1.5.4/app-review-notes.md`.
 - Declare the Time Sensitive Notifications entitlement exactly as implemented;
