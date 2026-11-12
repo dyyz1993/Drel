@@ -76,15 +76,37 @@ every version configured in `project.yml`.
 
 ## Unreleased
 
-- Build 134: fix ordinary-browser status-bar visibility, unify short feedback
-  styling, and collapse the immersive capsule when opening More. — Scope: `App`
-  — Verified: `simulator` — Evidence:
-  [docs/release/1.5.0/verification-134.md](docs/release/1.5.0/verification-134.md)
-
 - Build 133: added a custom immersive function panel, preserved browser state
   when returning from bookmarks, and fixed a cache-statistics thread crash.
   — Scope: `App` — Verified: `simulator` — Evidence:
   [docs/release/1.5.0/verification-133.md](docs/release/1.5.0/verification-133.md)
+
+## [1.5.3] — 2026-11-03
+
+### Added
+
+- Add read-only capability and permission snapshots for trusted online and verified offline pages. — Scope: `Bridge` — Verified: `simulator` — Evidence: [docs/release/1.5.3/verification-141.md](docs/release/1.5.3/verification-141.md)
+- Keep the immersive More menu and copy-link action available when WebKit is showing a blank or failed document. — Scope: `App` — Verified: `simulator` — Evidence: [docs/release/1.5.3/verification-142.md](docs/release/1.5.3/verification-142.md)
+
+## [1.5.2] — 2026-11-01
+
+### Added
+
+- Prepare a signed-manifest `audioLevel` action with revocable consent and two H5 voice interaction demos. — Scope: `Bridge` — Verified: `simulator` — Evidence: [docs/testing/results/drel-voice-level/verification.md](docs/testing/results/drel-voice-level/verification.md)
+
+## [1.5.1] — 2026-11-01
+
+UI-only browser refinement release based on the owner-accepted build 134
+source. This release changes no native actions and adds no microphone or
+audio capability.
+
+### Fixed
+
+- Build 135 carries build 134's ordinary-browser status-bar visibility fix,
+  unified short-feedback styling, and automatic collapse of the immersive
+  edge control while the function panel is open. — Scope: `App` — Verified:
+  `physical-device` — Evidence:
+  [docs/release/1.5.1/verification-135.md](docs/release/1.5.1/verification-135.md)
 
 ## [1.5.0] — 2026-10-22
 

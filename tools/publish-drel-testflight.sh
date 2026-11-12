@@ -5,7 +5,7 @@
 # Set WBK_MARKETING_VERSION for non-1.5 releases; the default preserves the
 # historical 1.5 flow.
 # 与 AGENTS.md 的规则对齐：
-#   * 归档用 Drel15Store scheme，MARKETING_VERSION=1.5.0，CURRENT_PROJECT_VERSION=<build>
+#   * 归档用 Drel15Store scheme，MARKETING_VERSION=1.5.1，CURRENT_PROJECT_VERSION=<build>
 #   * 本地「WebBridgeKit App Store」描述文件曾缺 Communication Notifications，
 #     因此归档走自动开发签名（同 build 99/100/101/102 验证过的链路），
 #     导出时再换 App Store 分发签名。
@@ -26,11 +26,13 @@ APP_ID="${WBK_APP_ID:-6802806992}"
 KEY_ID="${WBK_ASC_KEY_ID:?需要设置 WBK_ASC_KEY_ID（App Store Connect API Key ID）}"
 KEY_ISSUER="${WBK_ASC_ISSUER_ID:?需要设置 WBK_ASC_ISSUER_ID（App Store Connect Issuer ID）}"
 KEY_PATH="${WBK_ASC_KEY_PATH:?需要设置 WBK_ASC_KEY_PATH（AuthKey_<ID>.p8 私钥路径）}"
-MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.0}"
+MARKETING_VERSION="${WBK_MARKETING_VERSION:-1.5.2}"
 case "$MARKETING_VERSION" in
   1.5.0) RELEASE_SCHEME=Drel15Store ;;
-  1.5.1) RELEASE_SCHEME=Drel151Store ;;
-  1.5.2|1.5.3|1.5.4) RELEASE_SCHEME=Drel15Store ;;
+  1.5.1) RELEASE_SCHEME=Drel15Store ;;
+  1.5.2) RELEASE_SCHEME=Drel152Store ;;
+  1.5.3) RELEASE_SCHEME=Drel153Store ;;
+  1.5.4) RELEASE_SCHEME=Drel15Store ;;
   *) echo "Unsupported release version: $MARKETING_VERSION" >&2; exit 1 ;;
 esac
 export DREL_V2_EXPECTED_VERSION="$MARKETING_VERSION"

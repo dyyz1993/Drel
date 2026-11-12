@@ -108,14 +108,34 @@ final class DrelPushAppCatalogCoordinator {
     /// 私有清单进入本机视角（服务端 2026.10.29-keybind 起支持；私有清单对
     /// 匿名拉取不可见）。自建网关目录没有按 Key 隔离，不注入。先剥掉旧
     /// query 再注入当前标识，Key 重新生成后不会沿用残留的旧值。
+    private static var supportsAudioLevel: Bool {
+        #if DREL_152_MICROPHONE
+        true
+        #else
+        false
+        #endif
+    }
+
     static func deviceKeyScopedGateway(_ gateway: HTMLAppGatewayConfiguration) -> HTMLAppGatewayConfiguration {
+        deviceKeyScopedGateway(gateway, supportsAudioLevel: supportsAudioLevel)
+    }
+
+    static func deviceKeyScopedGateway(
+        _ gateway: HTMLAppGatewayConfiguration,
+        supportsAudioLevel: Bool
+    ) -> HTMLAppGatewayConfiguration {
         guard gateway.baseURL.lowercased() == DrelGatewayConfiguration.official.baseURL.lowercased(),
               let key = OfficialPushIdentityStore.shared.currentIfAvailable(), !key.isEmpty,
               var components = URLComponents(string: gateway.manifestPath) else {
             return gateway
         }
         components.query = nil
-        components.queryItems = [URLQueryItem(name: "key", value: key)]
+        var queryItems = [URLQueryItem(name: "key", value: key)]
+        // Gate new catalog actions so older clients never decode unsupported entries.
+        if supportsAudioLevel {
+            queryItems.append(URLQueryItem(name: "supportedActions", value: "audioLevel"))
+        }
+        components.queryItems = queryItems
         guard let scoped = components.string else { return gateway }
         return HTMLAppGatewayConfiguration(
             id: gateway.id,

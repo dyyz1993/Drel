@@ -1,0 +1,20 @@
+Drel 1.5.2 (Build 138) — App Review notes
+
+No account, login, subscription or credentials are required.
+
+Drel is a push-notification utility and a host for trusted signed HTML apps. Build 138 adds a user-authorized microphone sound-level action. Audio remains on device: the host supplies the page with a normalized sound level and does not expose raw audio or recording files through this action. It is not speech recognition or translation.
+
+To review the feature:
+1. Launch Drel, then on the home screen tap Manage next to My Apps and tap Browse All Apps.
+2. Open Voice Jump or Dandelion from the signed app list. Opening the app alone does not request microphone access.
+3. Tap the microphone start button. Drel asks for permission; cancel to confirm that the game does not start. Tap again and allow access; if prompted, allow the iOS microphone permission as well.
+4. Make sound to control Voice Jump, or blow gently to scatter dandelion seeds. Stop closes microphone monitoring.
+5. From the edge control, open More > Permissions and Capabilities to review or revoke the app's Drel permission. Leaving the page, backgrounding the app or revoking permission stops monitoring.
+
+The demos are hosted at https://drel.app/sound/voice-jump/ and https://drel.app/sound/voice-dandelion/ and are available through the signed app catalog. The native capability is limited to a signed manifest, allowed origin, user tap and consent. Other web pages do not gain this capability merely by opening.
+
+Drel retains its existing controlled actions for haptics, vibration, sharing, fullscreen, clipboard, location, add-to-home-screen and motion sensors. Clipboard, location, motion and microphone grants are user controlled.
+
+Official service: https://api.drel.app
+Privacy policy: https://drel.app/privacy/
+Support: https://drel.app/support/

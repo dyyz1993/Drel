@@ -607,3 +607,27 @@ test("registration materializes Swift round-trip defaults before signing", async
   assert.deepEqual(single.capabilities_v2, []);
   assert.equal(single.cache.restoresLastState, true);
 });
+
+test('sound demos require explicit client capability negotiation', async () => {
+  const env=testEnv();
+  const ids = async url => (await (await handleGateway(new Request(url),env)).json()).manifests.map(m=>m.appId);
+  const base='https://hub.example.test/api/v1/html-apps';
+  const legacy=await ids(base);
+  assert(!legacy.includes('dev.drel.voice-jump'));
+  assert(!legacy.includes('dev.drel.voice-dandelion'));
+  const modern=await ids(base+'?supportedActions=audioLevel');
+  assert(modern.includes('dev.drel.voice-jump'));
+  assert(modern.includes('dev.drel.voice-dandelion'));
+});
+
+test('legacy catalog excludes dynamic audioLevel manifests without changing signed contents', async () => {
+  const env=testEnv();
+  const audio = {...MANIFEST, appId:'example.dynamic.audio', capabilities_v2:[{...MANIFEST.capabilities_v2[0],action:'audioLevel'}]};
+  env.GATEWAY_MANIFEST_REGISTRY={idFromName:()=>1,get:()=>({fetch:async()=>Response.json({manifests:[audio,MANIFEST]})})};
+  const base='https://hub.example.test/api/v1/html-apps';
+  const read=async url=>(await (await handleGateway(new Request(url),env)).json()).manifests;
+  const legacy=await read(base), modern=await read(base+'?supportedActions=audioLevel');
+  assert(!legacy.some(m=>m.appId===audio.appId));
+  assert(legacy.some(m=>m.appId===MANIFEST.appId));
+  assert.deepEqual(modern.find(m=>m.appId===audio.appId),audio);
+});

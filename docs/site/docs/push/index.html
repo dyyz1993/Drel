@@ -92,7 +92,7 @@
           <p>One HTTP request, and the relay handles the rest. Nothing in the chain needs an SDK on your side.</p>
           <figure class="docs-figure">
             <img src="/assets/diagrams/push-sequence.svg" alt="Push delivery sequence: your script sends an HTTP request to the relay; the relay looks up the device token and signs a provider JWT; APNs delivers over HTTP/2; the notification service extension decrypts the envelope and the app records the message in the Inbox.">
-            <figcaption><strong>Two things worth knowing.</strong> A <code>200</code> from the relay means Apple accepted the request, not that a person saw it. And in encrypted mode the relay only ever carries an opaque envelope plus delivery metadata — never your message content.</figcaption>
+            <figcaption><strong>Two things worth knowing.</strong> A <code>200</code> from the relay indicates request acceptance; it does not prove that APNs delivered or a person saw the notification. And in encrypted mode the relay only ever carries an opaque envelope plus delivery metadata — never your message content.</figcaption>
           </figure>
         </section>
 
@@ -106,7 +106,7 @@
               </thead>
               <tbody>
                 <tr><td>1.4.x</td><td><code>containerVersion: 1</code></td><td><code>offlinePackageVersion: 1</code></td><td>—</td><td>Bark-compatible paths, <code>url</code>, <code>mode</code>, <code>appId</code> + <code>route</code></td></tr>
-                <tr><td>1.5.x</td><td><code>containerVersion: 1</code></td><td><code>offlinePackageVersion: 1</code></td><td>Manifest v2, 7 actions</td><td>Adds <code>display</code>, <code>statePath</code>, <code>actionState</code>, <code>requestId</code></td></tr>
+                <tr><td>1.5.x</td><td><code>containerVersion: 1</code></td><td><code>offlinePackageVersion: 1</code></td><td>Manifest v2; seven initial actions, sensors from 1.5.0 build 130; audioLevel in 1.5.2 TestFlight</td><td>Adds <code>display</code>, <code>statePath</code>, <code>actionState</code>, <code>requestId</code></td></tr>
               </tbody>
             </table>
           </div>
@@ -116,7 +116,7 @@
         </section>
 
         <section>
-          <h2>Endpoints</h2>
+          <h2>Endpoints</h2><p><a href="/docs/zh/">中文快速入门、版本表和 Schema 下载</a></p>
           <div class="docs-table">
             <table>
               <thead>

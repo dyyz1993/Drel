@@ -21,7 +21,7 @@
   </header>
   <main class="legal-shell">
     <div class="legal-head">
-      <span class="eyebrow">Effective October 28, 2026</span>
+      <span class="eyebrow">Effective November 2, 2026</span>
       <h1>Privacy Policy</h1>
       <p>This policy explains how Drel handles information in the iOS app, the official push service, and this website.</p>
     </div>
@@ -36,9 +36,10 @@
       </section>
       <section>
         <h2>Optional app permissions</h2>
-        <p>Drel can give a trusted HTML app that you added to Drel access to two kinds of device data, and only after you approve each one separately. Clipboard access lets an app read or write the clipboard after you grant it. Location access lets an app request your position after you grant it, and iOS shows its own location prompt as well.</p>
-        <p>These permissions are listed in Drel's permission center, where you can see which app holds which permission and revoke it at any time. Revoking a permission takes effect immediately. Drel does not read the clipboard or the location in the background, and it does not keep the values that an app receives.</p>
-        <p>Drel does not access the camera, photo library, Bluetooth, microphone, contacts, motion data, or your files. The remaining native actions in Drel, such as haptic feedback, vibration, the system share sheet, and fullscreen, do not read personal data and do not create a stored permission.</p>
+        <p>Trusted, signed HTML apps opened in Drel may request device capabilities that they declare. Clipboard, location and motion sensor access require your separate approval. Location may also require iOS permission. You can review and revoke Drel grants in the permission center.</p>
+        <p>Beginning with Drel 1.5.2, a trusted app can request microphone access to measure real-time sound level for interactive content. Access requires your tap, Drel permission and iOS microphone permission. The sound-level action gives the page a normalized level; it does not provide raw audio or a recording. Drel stops monitoring when the session ends, the app goes to the background, an interruption occurs, or permission is revoked. Earlier versions do not provide this sound-level action.</p>
+        <p>Drel does not save or upload raw microphone audio through this sound-level action. A trusted HTML app may communicate with its own servers and may handle the sound level or other data it receives under its own privacy policy. Review the app and its origin before granting access.</p>
+        <p>Drel does not read clipboard, location, motion or microphone data in the background through these controlled actions. Other actions such as haptic feedback, vibration, the system share sheet and fullscreen do not themselves read personal data.</p>
       </section>
       <section>
         <h2>Push delivery information</h2>
@@ -51,7 +52,7 @@
       </section>
       <section>
         <h2>External web content</h2>
-        <p>HTTPS pages opened inside Drel can communicate with their own servers and may have independent privacy policies. Only apps that you explicitly added to Drel, and that come from a gateway you imported, can call Drel's native actions. Ordinary web pages and offline packages receive no native access. Opening a page does not authorize a sensitive native action. You may open only pages that you own, operate, or are authorized to access, as described in the <a href="/terms/">Terms of Use</a>.</p>
+        <p>HTTPS pages opened inside Drel can communicate with their own servers and may have independent privacy policies. Only trusted, signed HTML apps from an active Drel gateway can request Drel's controlled native actions; opening one does not automatically grant permission. Ordinary web pages and offline packages receive no native access. Opening a page does not authorize a sensitive native action. You may open only pages that you own, operate, or are authorized to access, as described in the <a href="/terms/">Terms of Use</a>.</p>
       </section>
       <section>
         <h2>Website data</h2>

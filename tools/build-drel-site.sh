@@ -17,6 +17,13 @@ bash "$ROOT/tools/build-drel-bridge-test-pages-site.sh" "$STAGE"
 # Landing pages and the /test/ index. Must run last so it also covers the
 # directories the demo builders create.
 bash "$ROOT/tools/build-drel-demo-pages.sh" "$STAGE"
+# Sound demos share one adapter and remain scoped to their own path.
+mkdir -p "$STAGE/sound/voice-jump" "$STAGE/sound/voice-dandelion" "$STAGE/sound/voice-games"
+cp "$ROOT/test_resources/voice-jump/index.html" "$STAGE/sound/voice-jump/index.html"
+cp "$ROOT/test_resources/voice-dandelion/index.html" "$STAGE/sound/voice-dandelion/index.html"
+cp "$ROOT/test_resources/voice-games/audio-level.js" "$STAGE/sound/voice-games/audio-level.js"
 # Diagrams are rendered from the Mermaid sources under docs/diagrams/.
-bash "$ROOT/tools/build-drel-diagrams.sh"
+if [[ "${DREL_SKIP_DIAGRAMS:-0}" != "1" ]]; then
+  bash "$ROOT/tools/build-drel-diagrams.sh"
+fi
 echo "Complete website: $STAGE"

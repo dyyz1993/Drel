@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1",
+  "appId": "dev.drel.test.voice-dandelion",
+  "name": "吹散蒲公英（测试）",
+  "startURL": "https://drel.app/sound/voice-dandelion/",
+  "allowedOrigins": [
+    "https://drel.app"
+  ],
+  "capabilities": [],
+  "capabilities_v2": [
+    {
+      "action": "audioLevel",
+      "origins": [
+        "https://drel.app"
+      ],
+      "purposeId": "voice-dandelion-level",
+      "purpose": "使用麦克风的实时音量让蒲公英种子飞散",
+      "scope": "always"
+    }
+  ],
+  "routes": [
+    "/sound/voice-dandelion/"
+  ],
+  "cache": {
+    "strategy": "networkOnly",
+    "version": "2",
+    "persistent": false,
+    "restoresLastState": true
+  }
+}
