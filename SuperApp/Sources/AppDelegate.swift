@@ -677,6 +677,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     /// `drel://open?url=https://…` form opens an ordinary HTTPS page in Drel's
     /// browser without granting registered-app bridge privileges.
     private func handleDrelExternalURL(_ url: URL) -> Bool {
+        markSceneLaunchDestination(true)
         if DrelExternalAppLink.parse(url) != nil {
             openExternalAppLinkFromHandoff(url)
             return true
@@ -800,6 +801,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         routingInfo["body"] = userInfo["body"] as? String ?? content.body
 
         let isCopyAction = response.actionIdentifier == Self.copyNotificationActionIdentifier
+        if !isCopyAction {
+            markSceneLaunchDestination(true)
+        }
 
         // Record the message into the inbox FIRST, then copy or route. If routing
         // fires before the message is stored, focusMessage finds nothing and the
