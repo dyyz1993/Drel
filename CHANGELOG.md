@@ -48,6 +48,11 @@ Each release line carries three pieces of evidence:
   longer stacks the default startup app or a recent-session normal browser on
   top of an immersive HTML app route. — Scope: `App` — Verified: `simulator` —
   Evidence: [docs/release/1.5.4/verification-146.md](docs/release/1.5.4/verification-146.md)
+- Notification taps and `drel://app` external launches mark themselves as the
+  explicit destination even when the Scene connection payload omits the
+  notification response, so the delayed recent-session restore cannot open a
+  second normal browser. — Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/release/1.5.4/verification-147.md](docs/release/1.5.4/verification-147.md)
 
 ## [1.5.3] — 2026-11-06
 
