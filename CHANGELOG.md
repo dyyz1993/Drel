@@ -53,6 +53,11 @@ Each release line carries three pieces of evidence:
   notification response, so the delayed recent-session restore cannot open a
   second normal browser. — Scope: `App` — Verified: `simulator` — Evidence:
   [docs/release/1.5.4/verification-147.md](docs/release/1.5.4/verification-147.md)
+- Strong-offline HTML apps fall back to their signed online start URL if the
+  verified local entrypoint fails to navigate, so package loading errors no
+  longer leave a "Load failed" dead end. — Scope: `App`, `Bridge` — Verified:
+  `simulator` — Evidence:
+  [docs/release/1.5.4/verification-148.md](docs/release/1.5.4/verification-148.md)
 
 ## [1.5.3] — 2026-11-06
 
