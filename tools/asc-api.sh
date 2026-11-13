@@ -49,7 +49,8 @@ print(base64.urlsafe_b64encode((r[-32:].rjust(32, b"\0") + s[-32:].rjust(32, b"\
 }
 
 asc_get() { # $1 = API path
-    /usr/bin/curl -sg -H "Authorization: Bearer $(asc_jwt)" "$ASC_API$1"
+    /usr/bin/curl -sS --retry 5 --retry-all-errors --connect-timeout 10 \
+        --max-time 30 -H "Authorization: Bearer $(asc_jwt)" "$ASC_API$1"
 }
 
 asc_post() { # $1 = API path, $2 = JSON body (use @file for a file)
