@@ -34,7 +34,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     private var pendingExternalLaunchURL: URL?
     private var sceneHasExplicitLaunchDestination = false
 
-    #if DREL_V2_MANAGED_ACTIONS_ONLY
     var hasExplicitLaunchDestination: Bool {
         pendingExternalLaunchURL != nil || sceneHasExplicitLaunchDestination
     }
@@ -42,7 +41,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func markSceneLaunchDestination(_ isExplicit: Bool) {
         sceneHasExplicitLaunchDestination = isExplicit
     }
-    #endif
 
     func application(
         _ application: UIApplication,
@@ -239,6 +237,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         if restoreEnabled, pendingExternalLaunchURL == nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                 guard let self = self, !self.sceneHasExplicitLaunchDestination,
+                      WebBrowserManager.shared.getCurrentBrowser() == nil,
                       self.window?.rootViewController != nil,
                       let url = WebBrowserManager.restorableLastURL() else { return }
                 WebBrowserManager.shared.openBrowser(
