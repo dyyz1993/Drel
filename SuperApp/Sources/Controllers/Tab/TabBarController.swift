@@ -20,6 +20,8 @@ class TabBarController: UITabBarController {
     private let defaultStartupLaunchResolver = HTMLAppLaunchResolver(
         trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry
     )
+    private var defaultStartupRetryTimer: Timer?
+    private var defaultStartupRetryCount = 0
 
     private let separatorView = UIView()
     private var previousSelectedIndex: Int?
@@ -131,9 +133,31 @@ class TabBarController: UITabBarController {
 
         guard let appID = UserDefaults.standard.string(forKey: SettingsPreferenceKeys.defaultStartupAppID),
               !appID.isEmpty,
-              let manifest = HTMLAppRuntimeCenter.shared.trustRegistry.manifest(for: appID),
-              let startURL = URL(string: manifest.startURL),
               let mainNav = viewControllers?.first as? UINavigationController else {
+            return
+        }
+
+        attemptDefaultStartupApp(appID: appID, from: mainNav)
+    }
+
+    private func attemptDefaultStartupApp(appID: String, from mainNav: UINavigationController) {
+        defaultStartupRetryTimer?.invalidate()
+
+        if (UIApplication.shared.delegate as? AppDelegate)?.hasExplicitLaunchDestination == true
+            || WebBrowserManager.shared.getCurrentBrowser() != nil {
+            return
+        }
+
+        guard let manifest = HTMLAppRuntimeCenter.shared.trustRegistry.manifest(for: appID),
+              let startURL = URL(string: manifest.startURL) else {
+            defaultStartupRetryCount += 1
+            guard defaultStartupRetryCount < 20 else {
+                UserDefaults.standard.removeObject(forKey: SettingsPreferenceKeys.defaultStartupAppID)
+                return
+            }
+            defaultStartupRetryTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                self?.attemptDefaultStartupApp(appID: appID, from: mainNav)
+            }
             return
         }
 
@@ -161,9 +185,17 @@ class TabBarController: UITabBarController {
                 from: mainNav,
                 animated: false
             )
+            defaultStartupRetryTimer?.invalidate()
+            defaultStartupRetryCount = 0
         } catch {
-            // A removed or invalid manifest must never block Drel's regular home.
-            UserDefaults.standard.removeObject(forKey: SettingsPreferenceKeys.defaultStartupAppID)
+            defaultStartupRetryCount += 1
+            guard defaultStartupRetryCount < 20 else {
+                UserDefaults.standard.removeObject(forKey: SettingsPreferenceKeys.defaultStartupAppID)
+                return
+            }
+            defaultStartupRetryTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                self?.attemptDefaultStartupApp(appID: appID, from: mainNav)
+            }
         }
     }
 
