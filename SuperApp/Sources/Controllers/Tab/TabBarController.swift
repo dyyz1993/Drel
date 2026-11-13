@@ -120,15 +120,14 @@ class TabBarController: UITabBarController {
         if Static.hasChecked { return }
         Static.hasChecked = true
 
+        guard WebBrowserManager.shared.getCurrentBrowser() == nil else { return }
         SettingsPreferenceKeys.removeLegacyLastURLPreferencesIfNeeded()
 
-        #if DREL_V2_MANAGED_ACTIONS_ONLY
         // A Home Screen shortcut or notification names an explicit destination.
         // Do not open the saved default app underneath that destination.
         if (UIApplication.shared.delegate as? AppDelegate)?.hasExplicitLaunchDestination == true {
             return
         }
-        #endif
 
         guard let appID = UserDefaults.standard.string(forKey: SettingsPreferenceKeys.defaultStartupAppID),
               !appID.isEmpty,
