@@ -58,6 +58,11 @@ Each release line carries three pieces of evidence:
   longer leave a "Load failed" dead end. — Scope: `App`, `Bridge` — Verified:
   `simulator` — Evidence:
   [docs/release/1.5.4/verification-148.md](docs/release/1.5.4/verification-148.md)
+- Strong-offline installs now keep the downloaded resource manifest and
+  installer metadata in separate files, while cold launch validates the active
+  package and retries until its trusted manifest is visible. — Scope: `App`,
+ `Bridge` — Verified: `simulator` — Evidence:
+  [docs/release/1.5.4/verification-149.md](docs/release/1.5.4/verification-149.md)
 
 ## [1.5.3] — 2026-11-06
 
