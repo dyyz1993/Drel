@@ -44,6 +44,10 @@ Each release line carries three pieces of evidence:
   allowlist described in the review notes; the archive gate checks its binary
   marker. — Scope: `App` — Verified: `simulator` — Evidence:
   [docs/release/1.5.4/app-review-notes.md](docs/release/1.5.4/app-review-notes.md)
+- A push launch is now the single explicit cold-start destination: Drel no
+  longer stacks the default startup app or a recent-session normal browser on
+  top of an immersive HTML app route. — Scope: `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.4/verification-146.md](docs/release/1.5.4/verification-146.md)
 
 ## [1.5.3] — 2026-11-06
 
