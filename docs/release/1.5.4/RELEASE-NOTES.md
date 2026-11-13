@@ -83,3 +83,7 @@ Drel 1.5.4
   response and recent-session restore still ran.
 - Build 148 adds a bounded fallback from a failed strong-offline package
   entrypoint to the trusted online start URL.
+- Build 149 preserves the downloaded resource manifest separately from
+  installer metadata, validates package integrity on cold launch, waits briefly
+  for Gateway manifests during default startup, and no longer restores stale
+  absolute `file://` sessions.
