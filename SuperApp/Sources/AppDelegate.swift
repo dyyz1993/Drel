@@ -677,6 +677,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     /// `drel://open?url=https://…` form opens an ordinary HTTPS page in Drel's
     /// browser without granting registered-app bridge privileges.
     private func handleDrelExternalURL(_ url: URL) -> Bool {
+        markSceneLaunchDestination(true)
         if DrelExternalAppLink.parse(url) != nil {
             openExternalAppLinkFromHandoff(url)
             return true
@@ -800,6 +801,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         routingInfo["body"] = userInfo["body"] as? String ?? content.body
 
         let isCopyAction = response.actionIdentifier == Self.copyNotificationActionIdentifier
+        if !isCopyAction {
+            markSceneLaunchDestination(true)
+        }
 
         // Record the message into the inbox FIRST, then copy or route. If routing
         // fires before the message is stored, focusMessage finds nothing and the
@@ -1124,67 +1128,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 // MARK: - DebugWindow
 // DebugWindow（摇一摇调试面板，DEBUG 专属，Release 回退 UIWindow）已迁至
 // SuperApp/Sources/Utilities/DebugWindow.swift。
-
-// MARK: - SceneDelegate
-
-final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-    var window: UIWindow?
-
-    private var appDelegate: AppDelegate? {
-        UIApplication.shared.delegate as? AppDelegate
-    }
-
-    func scene(
-        _ scene: UIScene,
-        willConnectTo session: UISceneSession,
-        options connectionOptions: UIScene.ConnectionOptions
-    ) {
-        guard let windowScene = scene as? UIWindowScene else { return }
-        let window = DebugWindow(windowScene: windowScene)
-        window.rootViewController = TabBarController()
-        let hasExplicitLaunchDestination = connectionOptions.notificationResponse != nil
-            || !connectionOptions.urlContexts.isEmpty
-        #if DREL_V2_MANAGED_ACTIONS_ONLY
-        appDelegate?.markSceneLaunchDestination(hasExplicitLaunchDestination)
-        #endif
-        window.makeKeyAndVisible()
-        self.window = window
-
-        appDelegate?.adoptSceneWindow(
-            window,
-            hasExplicitLaunchDestination: hasExplicitLaunchDestination
-        )
-        // Scene cold launches deliver URLs here, not in launchOptions.
-        // Notification taps keep their existing UNUserNotificationCenter routing.
-        if connectionOptions.notificationResponse == nil {
-            DispatchQueue.main.async { [weak self] in
-                self?.openURLContexts(connectionOptions.urlContexts)
-            }
-        }
-    }
-
-    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        openURLContexts(URLContexts)
-    }
-
-    private func openURLContexts(_ contexts: Set<UIOpenURLContext>) {
-        for context in contexts {
-            _ = appDelegate?.application(UIApplication.shared, open: context.url)
-        }
-    }
-
-    func sceneDidBecomeActive(_ scene: UIScene) {
-        appDelegate?.applicationDidBecomeActive(UIApplication.shared)
-    }
-
-    func sceneWillEnterForeground(_ scene: UIScene) {
-        appDelegate?.applicationWillEnterForeground(UIApplication.shared)
-    }
-
-    func sceneDidEnterBackground(_ scene: UIScene) {
-        appDelegate?.applicationDidEnterBackground(UIApplication.shared)
-    }
-}
 
 // MARK: - Self-hosted push UI-test loopback fixture
 
