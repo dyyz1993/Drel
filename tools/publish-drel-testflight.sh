@@ -221,16 +221,28 @@ else
 fi
 
 say "轮询 Apple 处理状态"
+ASC_STATE_FILE="$ROOT/build/processing-state-$BUILD.json"
 for i in $(seq 1 30); do
   sleep 20
-  # 注意：先取引号内完整值再清理，直接 grep -oE '[A-Z_]+' 会只拿到首字母
-  STATE=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD&fields[builds]=version,processingState" 2>/dev/null \
-    | { grep -oE '"processingState" *: *"[^"]+"' || true; } | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
+  STATE=""
+  if $ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD&fields[builds]=version,processingState" \
+      >"$ASC_STATE_FILE" 2>/dev/null; then
+    # 注意：先取引号内完整值再清理，直接 grep -oE '[A-Z_]+' 会只拿到首字母
+    STATE=$(grep -oE '"processingState" *: *"[^"]+"' "$ASC_STATE_FILE" | head -1 |
+      sed -E 's/.*: *"([^"]+)".*/\1/')
+  fi
   echo "  [$((i*20))s] processingState=$STATE"
   if [[ "$STATE" == "VALID" ]]; then
-    BUILD_ID=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" 2>/dev/null \
-      | { grep -oE '"id" *: *"[a-f0-9-]{36}"' || true; } | head -1 | grep -oE '[a-f0-9-]{36}')
-    $ASC_API get "/v1/builds/$BUILD_ID/buildBetaDetail" 2>/dev/null | grep -E "internalBuildState"
+    if ! $ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" \
+        >"$ASC_STATE_FILE" 2>/dev/null; then
+      bad "处理已完成，但读取 Build ID 失败；请稍后用 ASC API 复查"
+    fi
+    BUILD_ID=$(grep -oE '"id" *: *"[a-f0-9-]{36}"' "$ASC_STATE_FILE" | head -1 | grep -oE '[a-f0-9-]{36}')
+    if ! $ASC_API get "/v1/builds/$BUILD_ID/buildBetaDetail" \
+        >"$ASC_STATE_FILE" 2>/dev/null; then
+      bad "处理已完成，但读取 Beta 明细失败；请稍后用 ASC API 复查"
+    fi
+    grep -E "internalBuildState" "$ASC_STATE_FILE"
     ok "Drel $MARKETING_VERSION ($BUILD) 处理完成，TestFlight 可安装"
     echo
     echo "接下来：在 TestFlight 上做真机验收（三档面板 / 允许一次重复弹窗 / 权限中心 / 主屏幕引导）"
