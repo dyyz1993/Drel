@@ -222,7 +222,7 @@ fi
 
 say "轮询 Apple 处理状态"
 ASC_STATE_FILE="$ROOT/build/processing-state-$BUILD.json"
-for i in $(seq 1 30); do
+for i in $(seq 1 90); do
   sleep 20
   STATE=""
   if $ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD&fields[builds]=version,processingState" \
@@ -252,4 +252,4 @@ for i in $(seq 1 30); do
     bad "Apple 处理失败：$STATE"
   fi
 done
-bad "轮询超时（10 分钟未完成）；Apple 仍在后台处理，可稍后用 ASC API 复查"
+bad "轮询超时（30 分钟未完成）；Apple 仍在后台处理，可稍后用 ASC API 复查"

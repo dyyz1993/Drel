@@ -23,4 +23,10 @@ Verified: 2026-11-14
   `3c21b059c4db6949b82453a86dba4eb07759e6c3`; Build, Smoke, SwiftLint, Design
   System, and Repository Conventions passed.
 - Drel simulator build passed on Xcode 27.2.
-- Physical acceptance remains required after TestFlight build 149 processing.
+- App Store Connect reports build 149 `processingState=VALID`.
+- App Store Connect reports internal `IN_BETA_TESTING`; external state is
+  `READY_FOR_BETA_SUBMISSION`.
+- The first release run uploaded successfully but timed out at its original
+  10-minute processing poll; the poll window is now 30 minutes for future
+  releases.
+- Physical acceptance remains required before shipping the TestFlight build.
