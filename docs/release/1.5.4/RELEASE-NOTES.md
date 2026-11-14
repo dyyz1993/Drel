@@ -87,3 +87,6 @@ Drel 1.5.4
   installer metadata, validates package integrity on cold launch, waits briefly
   for Gateway manifests during default startup, and no longer restores stale
   absolute `file://` sessions.
+- Build 150 extends the strong-offline online fallback to immersive browser
+  pages, covering delete/reinstall flows where the restored local entrypoint
+  fails but the signed HTTPS shell is available.

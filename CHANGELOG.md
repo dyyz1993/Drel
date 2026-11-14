@@ -63,6 +63,11 @@ Each release line carries three pieces of evidence:
   package and retries until its trusted manifest is visible. — Scope: `App`,
  `Bridge` — Verified: `simulator` — Evidence:
   [docs/release/1.5.4/verification-149.md](docs/release/1.5.4/verification-149.md)
+- Immersive strong-offline pages now receive the same one-attempt online
+  fallback as normal PWA pages, fixing delete/reinstall flows that previously
+  stopped on local navigation errors. — Scope: `App`, `Bridge` — Verified:
+  `simulator` — Evidence:
+  [docs/release/1.5.4/verification-150.md](docs/release/1.5.4/verification-150.md)
 
 ## [1.5.3] — 2026-11-06
 
