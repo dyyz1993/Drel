@@ -77,7 +77,7 @@ bad() { printf '\033[0;31m[FAIL]\033[0m %s\n' "$*"; exit 1; }
 # ── build 号 ─────────────────────────────────────────────────────────────────
 BUILD="$1"
 if [[ -z "$BUILD" ]]; then
-  BUILD=$($ASC_API get "/v1/builds?filter[app]=$APP_ID&limit=1&sort=-uploadedDate" 2>/dev/null \
+  BUILD=$($ASC_API get "/v1/builds?filter%5Bapp%5D=$APP_ID&limit=1&sort=-uploadedDate" 2>/dev/null \
     | grep -oE '"version": *"[0-9]+"' | grep -oE '[0-9]+' | head -1)
   [[ -n "$BUILD" ]] || bad "无法读取当前最新 build 号，请显式传入"
   BUILD=$((BUILD + 1))
@@ -225,7 +225,7 @@ ASC_STATE_FILE="$ROOT/build/processing-state-$BUILD.json"
 for i in $(seq 1 90); do
   sleep 20
   STATE=""
-  if $ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD&fields[builds]=version,processingState" \
+  if $ASC_API get "/v1/builds?filter%5Bapp%5D=$APP_ID&filter%5Bversion%5D=$BUILD&fields%5Bbuilds%5D=version,processingState" \
       >"$ASC_STATE_FILE" 2>/dev/null; then
     # 注意：先取引号内完整值再清理，直接 grep -oE '[A-Z_]+' 会只拿到首字母
     STATE=$(grep -oE '"processingState" *: *"[^"]+"' "$ASC_STATE_FILE" | head -1 |
@@ -233,7 +233,7 @@ for i in $(seq 1 90); do
   fi
   echo "  [$((i*20))s] processingState=$STATE"
   if [[ "$STATE" == "VALID" ]]; then
-    if ! $ASC_API get "/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD" \
+    if ! $ASC_API get "/v1/builds?filter%5Bapp%5D=$APP_ID&filter%5Bversion%5D=$BUILD" \
         >"$ASC_STATE_FILE" 2>/dev/null; then
       bad "处理已完成，但读取 Build ID 失败；请稍后用 ASC API 复查"
     fi
