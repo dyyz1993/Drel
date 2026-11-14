@@ -68,6 +68,11 @@ Each release line carries three pieces of evidence:
   stopped on local navigation errors. — Scope: `App`, `Bridge` — Verified:
   `simulator` — Evidence:
   [docs/release/1.5.4/verification-150.md](docs/release/1.5.4/verification-150.md)
+- Strong-offline manifests can omit the duplicated `drel_offline.version`;
+  Drel now inherits the version from its signed parent cache and continues to
+  accept older manifests that carry the field. — Scope: `App`, `Bridge` —
+  Verified: `simulator` — Evidence:
+  [docs/release/1.5.4/verification-151.md](docs/release/1.5.4/verification-151.md)
 
 ## [1.5.3] — 2026-11-06
 
