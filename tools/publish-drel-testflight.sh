@@ -242,11 +242,15 @@ for i in $(seq 1 90); do
         >"$ASC_STATE_FILE" 2>/dev/null; then
       bad "处理已完成，但读取 Beta 明细失败；请稍后用 ASC API 复查"
     fi
-    grep -E "internalBuildState" "$ASC_STATE_FILE"
-    ok "Drel $MARKETING_VERSION ($BUILD) 处理完成，TestFlight 可安装"
-    echo
-    echo "接下来：在 TestFlight 上做真机验收（三档面板 / 允许一次重复弹窗 / 权限中心 / 主屏幕引导）"
-    exit 0
+    BETA_STATE=$(grep -oE '"internalBuildState" *: *"[^"]+"' "$ASC_STATE_FILE" | head -1 |
+      sed -E 's/.*: *"([^"]+)".*/\1/')
+    echo "  [$((i*20))s] internalBuildState=$BETA_STATE"
+    if [[ "$BETA_STATE" == "IN_BETA_TESTING" ]]; then
+      ok "Drel $MARKETING_VERSION ($BUILD) 处理完成，TestFlight 可安装"
+      echo
+      echo "接下来：在 TestFlight 上做真机验收（三档面板 / 允许一次重复弹窗 / 权限中心 / 主屏幕引导）"
+      exit 0
+    fi
   fi
   if [[ "$STATE" == "FAILED" || "$STATE" == "INVALID" ]]; then
     bad "Apple 处理失败：$STATE"
