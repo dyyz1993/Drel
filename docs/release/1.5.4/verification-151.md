@@ -22,5 +22,10 @@ Verified: 2026-11-14
 - VOT generator was updated to stop emitting the duplicated field; generated
   package `0.4.10.2` has 7 files and manifest SHA-256
   `2ff546031a874bc8b7df0d7434608fce73681b643d3fa97f74cc0b6ba7b30e7d`.
+- App Store Connect confirms build 151 is `processingState=VALID` and
+  `internalBuildState=IN_BETA_TESTING`. The release workflow missed the first
+  poll because the old script treated a not-yet-enabled beta state as a
+  terminal result; the polling script now waits for both processing and beta
+  states.
 - Physical delete/reinstall and package-update acceptance remains required
   after TestFlight build 151 processing.
