@@ -90,3 +90,6 @@ Drel 1.5.4
 - Build 150 extends the strong-offline online fallback to immersive browser
   pages, covering delete/reinstall flows where the restored local entrypoint
   fails but the signed HTTPS shell is available.
+- Build 151 makes the duplicated `drel_offline.version` field optional. New
+  PWA-first manifests inherit the version from the signed parent cache while
+  older manifests remain installable.
