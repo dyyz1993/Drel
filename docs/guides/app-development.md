@@ -217,7 +217,6 @@ print(hashlib.sha256(package_bytes).hexdigest())
 ```json
 {
   "drel_offline": {
-    "version": "1",
     "resource_manifest": "https://app.example.com/package.json",
     "resource_manifest_sha256": "<上一步输出的摘要>"
   }

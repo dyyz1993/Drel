@@ -65,7 +65,7 @@ VERSION="1"
 脚本会依次产出：
 
 1. `<staging>/<路径>/package.json` —— 资源清单（`schemaVersion/appId/version/entrypoint/files[]`），以 `sort_keys` + 紧凑分隔符序列化，**摘要对这份确切字节**计算；
-2. `<staging>/<路径>/manifest.webmanifest` —— 含 `drel_offline{version, resource_manifest, resource_manifest_sha256}`；
+2. `<staging>/<路径>/manifest.webmanifest` —— 含 `drel_offline{resource_manifest, resource_manifest_sha256}`；`version` 是旧宿主兼容字段，新包可省略；
 3. `<staging>/<路径>/gateway-manifest.json` —— 待签名父清单，内容即 §6 的 POST 请求体；
 4. `build-metadata.json` —— 两个摘要与文件数（后续录入要用）；
 5. 诊断 ZIP —— **仅供人工检查，运行时不执行**，不需要部署它给 App 用。
@@ -84,11 +84,11 @@ VERSION="1"
 | `scope` | 判断导航是否仍属于该应用 | 超出 scope 的外链走普通网页打开策略 |
 | `display` | 展示偏好提示 | 仅提示；不能借 `fullscreen` 绕过返回/退出控制 |
 | `theme_color` / `background_color` | 卡片与过渡视觉 | 仅视觉 |
-| `drel_offline.version` | 离线包版本 | 必须与父清单 `cache.version` 一致 |
+| `drel_offline.version` | 旧宿主兼容字段 | 可省略；省略时宿主继承父清单 `cache.version`，显式携带时必须一致 |
 | `drel_offline.resource_manifest` | 资源清单（package.json）的公网地址 | 必须与父清单 `cache.resourceManifestURL` 一致 |
 | `drel_offline.resource_manifest_sha256` | 资源清单摘要 | 必须与父清单 `cache.resourceManifestSHA256` 一致 |
 
-三个一致性约束（客户端安装器强制）：`webManifest.url` 的**精确字节**摘要必须等于父清单 `webManifest.sha256`（禁止重定向）；`drel_offline` 三字段与父清单 `cache` 声明逐一相等；manifest 的 URL 必须是 HTTPS 且落在 `allowedOrigins` / `scope` 内。`shortcuts`、`screenshots` 等字段仅作兼容数据保留，Drel 不消费。
+一致性约束（客户端安装器强制）：`webManifest.url` 的**精确字节**摘要必须等于父清单 `webManifest.sha256`（禁止重定向）；`drel_offline.resource_manifest` 与 SHA-256 必须和父清单 `cache` 一致；显式 `drel_offline.version` 必须与 `cache.version` 一致；manifest 的 URL 必须是 HTTPS 且落在 `allowedOrigins` / `scope` 内。`shortcuts`、`screenshots` 等字段仅作兼容数据保留，Drel 不消费。
 
 最小示例（与打包脚本产物同构，`sort_keys` 紧凑序列化后计算摘要）：
 
@@ -102,7 +102,6 @@ VERSION="1"
   "display": "standalone",
   "icons": [{"src": "…/icon-512.png", "sizes": "512x512", "type": "image/png"}],
   "drel_offline": {
-    "version": "1",
     "resource_manifest": "https://pi-chat.example.com:8443/drel/package.json",
     "resource_manifest_sha256": "<64 位小写 hex>"
   }
@@ -151,7 +150,6 @@ curl -X POST "https://<网关域名>/api/v1/html-apps" \
       "sha256": "<manifest.webmanifest 的 sha256>"
     },
     "drel_offline": {
-      "version": "1",
       "resource_manifest": "https://pi-chat.example.com:8443/drel/package.json",
       "resource_manifest_sha256": "<同 resourceManifestSHA256>"
     }

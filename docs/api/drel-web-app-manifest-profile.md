@@ -42,7 +42,7 @@ JSON 文件而自动获得离线安装资格。
 
 标准 Web App Manifest 没有“列出整个离线资源集合并校验每个文件”的成员。它允许
 实现方增加带稳定前缀、独立处理的专有成员；因此 Drel 计划以 `drel_offline` 只声明
-离线包的**版本、资源清单位置和资源清单摘要**，而不污染标准字段：
+离线包的**资源清单位置和资源清单摘要**，而不污染标准字段：
 
 ```json
 {
@@ -50,12 +50,15 @@ JSON 文件而自动获得离线安装资格。
   "start_url": "/app/",
   "scope": "/app/",
   "drel_offline": {
-    "version": "2026.09.08",
     "resource_manifest": "/drel/package.json",
     "resource_manifest_sha256": "64-lowercase-hex-characters"
   }
 }
 ```
+
+`drel_offline.version` 是兼容字段，可以省略。新宿主从签名父清单的
+`cache.version` 继承包版本；旧包显式携带该字段时，仍必须与
+`cache.version` 一致。
 
 `/drel/package.json` 才列出完整资源集合：本地相对路径、首次安装下载来源、大小、
 MIME 类型和 SHA-256。Drel 下载并验证所有资源后，把入口 HTML、CSS、JavaScript、
