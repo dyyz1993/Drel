@@ -14,7 +14,7 @@ SuperApp/Sources/Controllers/Settings/WebAccessViewController.swift 573
 SuperApp/Sources/Controllers/Tab/InboxViewController+Cells.swift 876
 SuperApp/Sources/Controllers/Tab/InboxViewController.swift 730
 SuperApp/Sources/Controllers/Tab/MainViewController.swift 502
-SuperApp/Sources/Controllers/Tab/TabBarController.swift 645
+SuperApp/Sources/Controllers/Tab/TabBarController.swift 676
 SuperApp/Sources/Managers/TestDataSeeder+Entities.swift 697
 SuperApp/Sources/Managers/TestDataSeeder.swift 586
 SuperApp/Sources/Push/PushNotificationManager.swift 774

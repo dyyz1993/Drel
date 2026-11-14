@@ -51,8 +51,8 @@ say "Rendering ${#SOURCES[@]} diagram(s)"
 PUPPETEER_CONFIG=""
 if ! find "${PUPPETEER_CACHE_DIR:-$HOME/.cache/puppeteer}" -name "chrome-headless-shell" -type f -perm +111 -print -quit 2>/dev/null | grep -q .; then
   for candidate in \
-    "/Applications/Chromium.app/Contents/MacOS/Chromium" \
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    "/Applications/Chromium.app/Contents/MacOS/Chromium" \
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"; do
     if [[ -x "$candidate" ]]; then
       tmp_config="$(mktemp -t mermaid-puppeteer).json"
