@@ -600,7 +600,11 @@ final class PWAAppCenterViewController: UIViewController {
         Task { [weak self] in
             guard let self else { return }
             do {
-                _ = try await self.offlinePackageInstaller.install(appManifest: manifest)
+                _ = try await self.offlinePackageInstaller.install(appManifest: manifest) { packageProgress in
+                    if let update = Self.offlinePackageProgressUpdate(packageProgress) {
+                        HUDService.shared.showProgress(update.progress, status: update.status)
+                    }
+                }
                 // 包更新后重解析绑定的 Web App Manifest，刷新名称/主题/图标元数据，
                 // 否则首页磁贴会一直显示旧图标（离线包 v2→v3 实测发现的缺陷）。
                 let resolved = try await HTMLAppWebManifestAdapter().load(forTrustedParent: manifest)
@@ -613,6 +617,51 @@ final class PWAAppCenterViewController: UIViewController {
                 // partial package can never be presented as strong offline.
                 HUDService.shared.showInfo(withStatus: "离线包暂不可用，已改为联网打开")
             }
+        }
+    }
+
+    private static func offlinePackageProgressUpdate(
+        _ progress: HTMLAppPackageProgress
+    ) -> (progress: Float, status: String)? {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+
+        switch progress {
+        case .downloadingManifest:
+            return (0, "正在下载离线清单…")
+        case .validatingManifest:
+            return (0, "正在校验离线清单…")
+        case let .packageSize(totalBytes, fileCount):
+            return (0, "预计下载 \(formatter.string(fromByteCount: totalBytes))（\(fileCount) 个文件）")
+        case let .downloadingFile(current, total, _, _, _, _, packageBytesWritten, packageTotalBytes):
+            let ratio = packageTotalBytes > 0
+                ? Float(Double(packageBytesWritten) / Double(packageTotalBytes))
+                : Float(current) / Float(max(total, 1))
+            return (min(max(ratio, 0), 1), "正在下载 \(current)/\(total)")
+        case let .downloadProgress(
+            current,
+            total,
+            _,
+            _,
+            _,
+            packageBytesWritten,
+            packageTotalBytes
+        ):
+            let ratio = packageTotalBytes > 0
+                ? Float(Double(packageBytesWritten) / Double(packageTotalBytes))
+                : 0
+            return (
+                min(max(ratio, 0), 1),
+                "正在下载 \(current)/\(total) · \(formatter.string(fromByteCount: packageBytesWritten)) / \(formatter.string(fromByteCount: packageTotalBytes))"
+            )
+        case let .validatingFile(current, total, _):
+            return (0, "正在校验 \(current)/\(total)")
+        case .activating:
+            return (1, "正在激活离线包…")
+        case .completed:
+            return (1, "离线包准备完成")
+        case .usingPreviousVersion:
+            return (0, "更新失败，保留旧版本")
         }
     }
 
