@@ -229,7 +229,7 @@ for i in $(seq 1 90); do
       >"$ASC_STATE_FILE" 2>/dev/null; then
     # 注意：先取引号内完整值再清理，直接 grep -oE '[A-Z_]+' 会只拿到首字母
     STATE=$(grep -oE '"processingState" *: *"[^"]+"' "$ASC_STATE_FILE" | head -1 |
-      sed -E 's/.*: *"([^"]+)".*/\1/')
+      sed -E 's/.*: *"([^"]+)".*/\1/' || true)
   fi
   echo "  [$((i*20))s] processingState=$STATE"
   if [[ "$STATE" == "VALID" ]]; then
@@ -237,13 +237,13 @@ for i in $(seq 1 90); do
         >"$ASC_STATE_FILE" 2>/dev/null; then
       bad "处理已完成，但读取 Build ID 失败；请稍后用 ASC API 复查"
     fi
-    BUILD_ID=$(grep -oE '"id" *: *"[a-f0-9-]{36}"' "$ASC_STATE_FILE" | head -1 | grep -oE '[a-f0-9-]{36}')
+    BUILD_ID=$(grep -oE '"id" *: *"[a-f0-9-]{36}"' "$ASC_STATE_FILE" | head -1 | grep -oE '[a-f0-9-]{36}' || true)
     if ! $ASC_API get "/v1/builds/$BUILD_ID/buildBetaDetail" \
         >"$ASC_STATE_FILE" 2>/dev/null; then
       bad "处理已完成，但读取 Beta 明细失败；请稍后用 ASC API 复查"
     fi
     BETA_STATE=$(grep -oE '"internalBuildState" *: *"[^"]+"' "$ASC_STATE_FILE" | head -1 |
-      sed -E 's/.*: *"([^"]+)".*/\1/')
+      sed -E 's/.*: *"([^"]+)".*/\1/' || true)
     echo "  [$((i*20))s] internalBuildState=$BETA_STATE"
     if [[ "$BETA_STATE" == "IN_BETA_TESTING" ]]; then
       ok "Drel $MARKETING_VERSION ($BUILD) 处理完成，TestFlight 可安装"
