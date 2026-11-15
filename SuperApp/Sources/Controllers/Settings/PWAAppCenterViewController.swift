@@ -15,7 +15,7 @@ final class PWAAppCenterViewController: UIViewController {
     // with its own registry snapshots UserDefaults before first-run gateway
     // onboarding and cannot see apps registered moments later.
     private lazy var launchResolver = HTMLAppLaunchResolver(trustRegistry: trustRegistry)
-    private let offlinePackageLocator = HTMLAppOfflinePackageLocator()
+    let offlinePackageLocator = HTMLAppOfflinePackageLocator()
     private let offlinePackageInstaller = HTMLAppOfflinePackageInstaller()
     private let presentationMetadataStore = HTMLAppPresentationMetadataStore()
     private let receivedAppStore = HTMLAppPushActivationStore()
@@ -666,32 +666,6 @@ final class PWAAppCenterViewController: UIViewController {
         } catch {
             showMessage(title: "无法打开 PWA", message: error.localizedDescription)
         }
-    }
-
-    private func hasCurrentOfflinePackage(for manifest: HTMLAppManifest) -> Bool {
-        guard let package = try? offlinePackageLocator.installedPackage(appID: manifest.appID) else {
-            return false
-        }
-        let cache = manifest.effectiveOfflineCache
-        return package.version == cache.version
-            && package.resourceManifestSHA256 == cache.resourceManifestSHA256
-            && (try? offlinePackageLocator.entrypointURL(for: package)) != nil
-    }
-
-    private func offlinePackageSummary(for manifest: HTMLAppManifest) -> String {
-        let cache = manifest.effectiveOfflineCache
-        guard cache.isStrongOfflineEligible else {
-            return cache.restoresLastState ? "缓存优先（\(cache.version)）" : "在线"
-        }
-
-        guard let package = try? offlinePackageLocator.installedPackage(appID: manifest.appID) else {
-            return "强离线包待准备（可下载后离线打开，\(cache.version)）"
-        }
-        guard hasCurrentOfflinePackage(for: manifest) else {
-            return "强离线包待更新（当前 \(package.version) → \(cache.version)）"
-        }
-        let size = (try? offlinePackageLocator.packageSize(for: package)) ?? 0
-        return "强离线包已安装（\(cache.version)，\(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))）"
     }
 
     private func copyPushURL() {

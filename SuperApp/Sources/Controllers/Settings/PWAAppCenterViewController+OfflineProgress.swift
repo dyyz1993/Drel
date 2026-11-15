@@ -2,7 +2,7 @@ import UIKit
 import WebBridgeKit
 
 extension PWAAppCenterViewController {
-    static func offlinePackageProgressUpdate(
+    nonisolated static func offlinePackageProgressUpdate(
         _ progress: HTMLAppPackageProgress
     ) -> (progress: Float, status: String)? {
         let formatter = ByteCountFormatter()
@@ -43,5 +43,31 @@ extension PWAAppCenterViewController {
         case .usingPreviousVersion:
             return (0, "更新失败，保留旧版本")
         }
+    }
+
+    func hasCurrentOfflinePackage(for manifest: HTMLAppManifest) -> Bool {
+        guard let package = try? offlinePackageLocator.installedPackage(appID: manifest.appID) else {
+            return false
+        }
+        let cache = manifest.effectiveOfflineCache
+        return package.version == cache.version
+            && package.resourceManifestSHA256 == cache.resourceManifestSHA256
+            && (try? offlinePackageLocator.entrypointURL(for: package)) != nil
+    }
+
+    func offlinePackageSummary(for manifest: HTMLAppManifest) -> String {
+        let cache = manifest.effectiveOfflineCache
+        guard cache.isStrongOfflineEligible else {
+            return cache.restoresLastState ? "缓存优先（\(cache.version)）" : "在线"
+        }
+
+        guard let package = try? offlinePackageLocator.installedPackage(appID: manifest.appID) else {
+            return "强离线包待准备（可下载后离线打开，\(cache.version)）"
+        }
+        guard hasCurrentOfflinePackage(for: manifest) else {
+            return "强离线包待更新（当前 \(package.version) → \(cache.version)）"
+        }
+        let size = (try? offlinePackageLocator.packageSize(for: package)) ?? 0
+        return "强离线包已安装（\(cache.version)，\(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))）"
     }
 }
