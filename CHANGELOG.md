@@ -73,6 +73,12 @@ Each release line carries three pieces of evidence:
   accept older manifests that carry the field. — Scope: `App`, `Bridge` —
   Verified: `simulator` — Evidence:
   [docs/release/1.5.4/verification-151.md](docs/release/1.5.4/verification-151.md)
+- Store builds now preserve the trusted HTTPS page separately when opening a
+  strong-offline package. Failed local navigation can recover online even with
+  the native bridge disabled, preventing the blank immersive page reported
+  after package reinstall. — Scope: `App`, `Bridge` — Verified: `simulator` —
+  Evidence:
+  [docs/release/1.5.4/verification-152.md](docs/release/1.5.4/verification-152.md)
 
 ## [1.5.3] — 2026-11-06
 
