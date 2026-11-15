@@ -16,6 +16,7 @@ Drel 1.5.4 更新
 • 修复推送打开应用时重复跳转，且第二层页面丢失全屏样式的问题
 • 进一步修复部分启动路径下推送仍触发二次普通页面的问题
 • 离线包本机入口加载失败时自动回退到联网入口
+• 下载离线包时展示总体积和进度
 ```
 
 ## en-US
@@ -28,6 +29,7 @@ Drel 1.5.4
 • Fixed duplicate navigation after opening an app push and the second page losing immersive presentation
 • Further fixed a lifecycle path where a push could still trigger a second normal page
 • Added automatic online fallback when a strong-offline package entrypoint fails to load
+• Offline package downloads now show total size and progress
 ```
 
 ## ja
@@ -40,6 +42,7 @@ Drel 1.5.4
 • アプリプッシュ起動時の二重遷移と、2番目のページで没入型表示が失われる問題を修正しました
 • 一部の起動経路でプッシュ後に通常ページが再び開く問題をさらに修正しました
 • 強力オフラインパッケージの読み込みに失敗した場合、オンラインページへ自動的に切り替えます
+• オフラインパッケージのダウンロード時に合計サイズと進捗を表示します
 ```
 
 ## ko
@@ -52,6 +55,7 @@ Drel 1.5.4
 • 앱 푸시 실행 시 이중 전환과 두 번째 페이지의 전체 화면 표시 손실 문제를 수정했습니다
 • 일부 실행 경로에서 푸시 후 일반 페이지가 다시 열리는 문제를 추가로 수정했습니다
 • 강력 오프라인 패키지 로드에 실패하면 온라인 페이지로 자동 전환합니다
+• 오프라인 패키지 다운로드 시 전체 크기와 진행률이 표시됩니다
 ```
 
 ## de-DE
@@ -64,6 +68,7 @@ Drel 1.5.4
 • Doppelte Navigation beim Öffnen eines App-Push behoben und den Verlust der immersiven Darstellung auf der zweiten Seite korrigiert
 • Ein Lifecycle-Pfad wurde zusätzlich korrigiert, bei dem nach einem Push eine zweite normale Seite geöffnet werden konnte
 • Wenn das Laden eines Offline-Pakets fehlschlägt, wird automatisch zur Online-Seite gewechselt
+• Offline-Paket-Downloads zeigen jetzt Gesamtgröße und Fortschritt
 ```
 
 ## Submission notes
@@ -96,3 +101,5 @@ Drel 1.5.4
 - Build 152 fixes the Store immersive-browser path: the trusted HTTPS page is
   retained separately from the local document, so a failed offline package
   navigation can recover online even when the native bridge is disabled.
+- Build 153 adds verified package-size display and cumulative byte progress
+  while strong-offline resources download.
