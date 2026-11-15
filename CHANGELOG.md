@@ -79,6 +79,10 @@ Each release line carries three pieces of evidence:
   after package reinstall. — Scope: `App`, `Bridge` — Verified: `simulator` —
   Evidence:
   [docs/release/1.5.4/verification-152.md](docs/release/1.5.4/verification-152.md)
+- Offline package downloads now show the verified total package size and
+  cumulative downloaded bytes while each resource transfers. — Scope: `App`,
+  `Bridge` — Verified: `simulator` — Evidence:
+  [docs/release/1.5.4/verification-153.md](docs/release/1.5.4/verification-153.md)
 
 ## [1.5.3] — 2026-11-06
 
