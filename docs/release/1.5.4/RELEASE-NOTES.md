@@ -93,3 +93,6 @@ Drel 1.5.4
 - Build 151 makes the duplicated `drel_offline.version` field optional. New
   PWA-first manifests inherit the version from the signed parent cache while
   older manifests remain installable.
+- Build 152 fixes the Store immersive-browser path: the trusted HTTPS page is
+  retained separately from the local document, so a failed offline package
+  navigation can recover online even when the native bridge is disabled.
