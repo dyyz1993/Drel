@@ -633,10 +633,8 @@ final class PWAAppCenterViewController: UIViewController {
             return (0, "正在校验离线清单…")
         case let .packageSize(totalBytes, fileCount):
             return (0, "预计下载 \(formatter.string(fromByteCount: totalBytes))（\(fileCount) 个文件）")
-        case let .downloadingFile(current, total, _, _, _, _, packageBytesWritten, packageTotalBytes):
-            let ratio = packageTotalBytes > 0
-                ? Float(Double(packageBytesWritten) / Double(packageTotalBytes))
-                : Float(current) / Float(max(total, 1))
+        case let .downloadingFile(current, total, _):
+            let ratio = Float(current - 1) / Float(max(total, 1))
             return (min(max(ratio, 0), 1), "正在下载 \(current)/\(total)")
         case let .downloadProgress(
             current,
