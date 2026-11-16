@@ -25,6 +25,12 @@ Each release line carries three pieces of evidence:
   `interruption-level=time-sensitive` break through Focus mode and the silent
   switch, matching Bark's behavior. — Scope: `App` — Verified: `none` —
   Evidence: [docs/release/1.5.4/RELEASE-NOTES.md](docs/release/1.5.4/RELEASE-NOTES.md)
+- Offline app diagnostics screen in Settings records local-only per-launch
+  stages (launch, package, navigation, page, fallback, API) with
+  whitelist-only fields and a 20-attempt cap, so offline package failures
+  can be diagnosed without leaving the device. — Scope: `App` — Verified:
+  `simulator` —
+  Evidence: [docs/release/1.5.4/verification-154.md](docs/release/1.5.4/verification-154.md)
 
 ### Changed
 
@@ -58,6 +64,12 @@ Each release line carries three pieces of evidence:
   longer leave a "Load failed" dead end. — Scope: `App`, `Bridge` — Verified:
   `simulator` — Evidence:
   [docs/release/1.5.4/verification-148.md](docs/release/1.5.4/verification-148.md)
+- The offline page-readiness probe watches for late renders inside a bounded
+  window and treats CSS-hidden media as invisible, so working offline
+  packages are no longer switched to the online fallback by the one-shot
+  DOMContentLoaded-only evaluation. — Scope: `App`, `Bridge` — Verified:
+  `simulator` —
+  Evidence: [docs/release/1.5.4/verification-154.md](docs/release/1.5.4/verification-154.md)
 - Strong-offline installs now keep the downloaded resource manifest and
   installer metadata in separate files, while cold launch validates the active
   package and retries until its trusted manifest is visible. — Scope: `App`,
