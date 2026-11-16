@@ -461,7 +461,9 @@ jobs:
   repo-conventions:
     name: 📋 Repository Conventions
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
-    timeout-minutes: 10
+    # Mermaid rendering runs one Chrome launch per diagram (~2 min each with
+    # a cold npm exec); give the eight diagrams headroom.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
