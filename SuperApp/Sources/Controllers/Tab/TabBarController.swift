@@ -167,6 +167,17 @@ class TabBarController: UITabBarController {
                 route: startURL.path,
                 source: .direct
             )
+            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
+                manifest: manifest,
+                source: "restore"
+            )
+            DrelOfflineDiagnostics.shared.record(
+                attemptID: diagnostics.attemptID,
+                phase: .launch,
+                status: .succeeded,
+                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
+                outcome: "resolved"
+            )
             var payload = target.context.bridgePayload
             payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
             payload["webbridgekitPageURL"] = target.pageURL.absoluteString
@@ -176,6 +187,8 @@ class TabBarController: UITabBarController {
                 hideStatusBar: true,
                 hideTabBar: true,
                 payload: payload,
+                offlineFallbackURL: target.pageURL,
+                offlineDiagnostics: diagnostics,
                 useManifestLoader: false,
                 preferCachedContent: target.offlineMode == .partial
             )
@@ -615,6 +628,10 @@ class TabBarController: UITabBarController {
             #if !DREL_RELEASE_MINIMAL_SETTINGS
             nav.pushViewController(CacheDashboardViewController(viewModel: CacheDashboardViewModel()), animated: true)
             #endif
+        case .offlineDiagnostics:
+            let vc = UIHostingController(rootView: OfflineAppHealthView())
+            vc.title = "离线应用诊断"
+            nav.pushViewController(vc, animated: true)
         case .debugCenter:
             #if !DREL_CONTAINER_ONLY
             let vc = UIHostingController(
