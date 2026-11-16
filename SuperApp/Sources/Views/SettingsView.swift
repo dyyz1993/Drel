@@ -51,6 +51,7 @@ struct SettingsView: View {
         case defaultStartupApp
         case appearance
         case debugPanel
+        case offlineDiagnostics
         case exportDiagnostics
         case cacheDashboard
         case debugCenter
@@ -231,6 +232,7 @@ struct SettingsView: View {
                 handleAction(action)
             }
         )
+        .accessibilityIdentifier(item.action.map { "settings.row.\($0.rawValue)" } ?? "settings.row.information")
     }
 
     private func refreshNotificationPermissionSummary() {
@@ -270,6 +272,7 @@ struct SettingsView: View {
         case .appearance: onNavigate(.appearance)
         case .debugPanel: onNavigate(.debugPanel)
         case .cacheDashboard: onNavigate(.cacheDashboard)
+        case .offlineDiagnostics: onNavigate(.offlineDiagnostics)
         case .exportDiagnostics: onNavigate(.exportDiagnostics)
         case .debugCenter: onNavigate(.debugCenter)
         case .deepLinks: onNavigate(.deepLinks)

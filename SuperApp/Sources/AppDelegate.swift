@@ -109,6 +109,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         CrashLogManager.shared.initialize()
         NetworkMonitor.shared.startMonitoring()
         HTMLAppHostUI.settingsViewControllerProvider = SuperAppHTMLAppSettingsProvider.shared
+        DrelOfflineDiagnostics.presentationProvider = { hostViewController, appID in
+            hostViewController.navigationController?.setNavigationBarHidden(false, animated: false)
+            let diagnosticsController = UIHostingController(
+                rootView: OfflineAppHealthView()
+            )
+            diagnosticsController.title = "离线应用诊断 · \(appID)"
+            diagnosticsController.hidesBottomBarWhenPushed = true
+            hostViewController.navigationController?.pushViewController(
+                diagnosticsController,
+                animated: true
+            )
+        }
         Self.configureHomeScreenPresenter()
         Self.configurePermissionCenterOpener()
         Self.syncRuntimeGatewayIdentity()
@@ -129,6 +141,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
         #if DEBUG
         DrelSelfHostedUITestFixture.startIfRequested()
+        OfflineVOTUITestFixture.installIfRequested()
         if ProcessInfo.processInfo.arguments.contains("--reset-app-catalog-activations") {
             let activationStore = HTMLAppPushActivationStore()
             [

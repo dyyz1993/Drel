@@ -30,6 +30,7 @@ class SettingsViewModel {
         case debugCenter
         case deepLinks
         case cacheDashboard
+        case offlineDiagnostics
         case exportDiagnostics
         case about
     }
@@ -238,6 +239,15 @@ class SettingsViewModel {
                     value: L10n.tr("settings.appearance.system"),
                     iconBackgroundColor: pubg,
                     iconTintColor: put
+                ),
+                SettingsItem(
+                    icon: nil,
+                    lucideIcon: .warning,
+                    title: "离线应用诊断",
+                    action: .offlineDiagnostics,
+                    value: "本机保留最近记录",
+                    iconBackgroundColor: eb,
+                    iconTintColor: et
                 )
             ])
         )

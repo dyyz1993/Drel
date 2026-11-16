@@ -1139,6 +1139,17 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
                         parameters: self.message.payload.userInfo ?? [:],
                         source: .notification
                     )
+                    let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
+                        manifest: target.manifest,
+                        source: "notification"
+                    )
+                    DrelOfflineDiagnostics.shared.record(
+                        attemptID: diagnostics.attemptID,
+                        phase: .launch,
+                        status: .succeeded,
+                        loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
+                        outcome: "resolved"
+                    )
                     var payload = target.context.bridgePayload
                     payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
                     payload["webbridgekitPageURL"] = target.pageURL.absoluteString
@@ -1146,6 +1157,8 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
                         for: target.loaderURL,
                         mode: DrelMessageOpenPolicy.registeredAppMode(for: self.message.payload),
                         payload: payload,
+                        offlineFallbackURL: target.pageURL,
+                        offlineDiagnostics: diagnostics,
                         useManifestLoader: false,
                         preferCachedContent: target.offlineMode == .partial
                     )

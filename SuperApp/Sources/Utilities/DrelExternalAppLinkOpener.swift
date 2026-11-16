@@ -50,6 +50,17 @@ enum DrelExternalAppLinkOpener {
                 parameters: link.parameters,
                 source: .direct
             )
+            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
+                manifest: target.manifest,
+                source: "externalLink"
+            )
+            DrelOfflineDiagnostics.shared.record(
+                attemptID: diagnostics.attemptID,
+                phase: .launch,
+                status: .succeeded,
+                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
+                outcome: "resolved"
+            )
             #if DREL_V2_MANAGED_ACTIONS_ONLY
             // The signed manifest, validated route, action declaration and
             // foreground gesture checks are the same as an in-app launch.
@@ -62,6 +73,8 @@ enum DrelExternalAppLinkOpener {
                 hideStatusBar: true,
                 hideTabBar: true,
                 payload: payload,
+                offlineFallbackURL: target.pageURL,
+                offlineDiagnostics: diagnostics,
                 useManifestLoader: false,
                 preferCachedContent: target.offlineMode == .partial
             )
@@ -72,12 +85,19 @@ enum DrelExternalAppLinkOpener {
                 for: target.containerOnlyURL,
                 mode: .immersive,
                 payload: nil,
+                offlineFallbackURL: target.pageURL,
+                offlineDiagnostics: diagnostics,
                 useManifestLoader: false,
                 preferCachedContent: false
             )
             WebBrowserManager.shared.openBrowser(url: target.containerOnlyURL, params: params, from: viewController)
             #endif
         } catch {
+            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                appID: link.appID,
+                source: "externalLink",
+                error: error
+            )
             presentAlert(title: "无法打开应用", message: error.localizedDescription, from: viewController)
         }
     }
