@@ -17,6 +17,8 @@ Drel 1.5.4 更新
 • 进一步修复部分启动路径下推送仍触发二次普通页面的问题
 • 离线包本机入口加载失败时自动回退到联网入口
 • 下载离线包时展示总体积和进度
+• 新增"离线应用诊断"面板：本机记录最近打开的阶段，便于排查离线包问题
+• 修复延迟渲染的离线页面被误判失败而误切在线兜底的问题
 ```
 
 ## en-US
@@ -30,6 +32,8 @@ Drel 1.5.4
 • Further fixed a lifecycle path where a push could still trigger a second normal page
 • Added automatic online fallback when a strong-offline package entrypoint fails to load
 • Offline package downloads now show total size and progress
+• Added an offline app diagnostics panel with local per-launch stage records
+• Fixed late-rendering offline pages being misjudged and unnecessarily switched online
 ```
 
 ## ja
@@ -43,6 +47,8 @@ Drel 1.5.4
 • 一部の起動経路でプッシュ後に通常ページが再び開く問題をさらに修正しました
 • 強力オフラインパッケージの読み込みに失敗した場合、オンラインページへ自動的に切り替えます
 • オフラインパッケージのダウンロード時に合計サイズと進捗を表示します
+• オフラインアプリ診断パネルを追加：端末内に起動段階を記録し調査しやすくしました
+• 遅延描画されるオフラインページの誤判定と不要なオンライン切替を修正しました
 ```
 
 ## ko
@@ -56,6 +62,8 @@ Drel 1.5.4
 • 일부 실행 경로에서 푸시 후 일반 페이지가 다시 열리는 문제를 추가로 수정했습니다
 • 강력 오프라인 패키지 로드에 실패하면 온라인 페이지로 자동 전환합니다
 • 오프라인 패키지 다운로드 시 전체 크기와 진행률이 표시됩니다
+• 오프라인 앱 진단 패널 추가: 기기 내 실행 단계를 기록해 문제 파악이 쉬워졌습니다
+• 늦게 렌더링되는 오프라인 페이지의 오판과 불필요한 온라인 전환을 수정했습니다
 ```
 
 ## de-DE
@@ -69,6 +77,8 @@ Drel 1.5.4
 • Ein Lifecycle-Pfad wurde zusätzlich korrigiert, bei dem nach einem Push eine zweite normale Seite geöffnet werden konnte
 • Wenn das Laden eines Offline-Pakets fehlschlägt, wird automatisch zur Online-Seite gewechselt
 • Offline-Paket-Downloads zeigen jetzt Gesamtgröße und Fortschritt
+• Offline-App-Diagnose-Panel hinzugefügt: lokale Aufzeichnung der Startphasen
+• Fehlbeurteilung spät gerenderter Offline-Seiten und unnötige Online-Umschaltung behoben
 ```
 
 ## Submission notes
