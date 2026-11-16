@@ -520,6 +520,14 @@ final class PWAAppCatalogViewController: UIViewController {
               let startURL = URL(string: manifest.startURL) else { return }
         do {
             let target = try launchResolver.resolve(appID: manifest.appID, route: startURL.path)
+            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(manifest: manifest, source: "catalog")
+            DrelOfflineDiagnostics.shared.record(
+                attemptID: diagnostics.attemptID,
+                phase: .launch,
+                status: .succeeded,
+                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
+                outcome: "resolved"
+            )
             var payload = target.context.bridgePayload
             payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
             payload["webbridgekitPageURL"] = target.pageURL.absoluteString
@@ -529,11 +537,18 @@ final class PWAAppCatalogViewController: UIViewController {
                 hideStatusBar: true,
                 hideTabBar: true,
                 payload: payload,
+                offlineFallbackURL: target.pageURL,
+                offlineDiagnostics: diagnostics,
                 useManifestLoader: false,
                 preferCachedContent: target.offlineMode == .partial
             )
             WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
         } catch {
+            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                appID: item.id,
+                source: "catalog",
+                error: error
+            )
             showMessage(title: "无法打开应用", message: error.localizedDescription)
         }
     }

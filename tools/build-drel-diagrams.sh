@@ -50,9 +50,13 @@ say "Rendering ${#SOURCES[@]} diagram(s)"
 # built. The result carries the same content at a slightly different size.
 PUPPETEER_CONFIG=""
 if ! find "${PUPPETEER_CACHE_DIR:-$HOME/.cache/puppeteer}" -name "chrome-headless-shell" -type f -perm +111 -print -quit 2>/dev/null | grep -q .; then
+  # Chromium is tried before Google Chrome: the installed Chrome auto-updates
+  # itself, and a major update can leave the mermaid-cli puppeteer build
+  # hanging on launch (observed with Chrome 157 in November 2026), while the
+  # fixed-version Chromium build keeps rendering.
   for candidate in \
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
     "/Applications/Chromium.app/Contents/MacOS/Chromium" \
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"; do
     if [[ -x "$candidate" ]]; then
       tmp_config="$(mktemp -t mermaid-puppeteer).json"

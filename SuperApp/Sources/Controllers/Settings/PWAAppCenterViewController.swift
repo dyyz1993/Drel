@@ -20,6 +20,9 @@ final class PWAAppCenterViewController: UIViewController {
     private let presentationMetadataStore = HTMLAppPresentationMetadataStore()
     private let receivedAppStore = HTMLAppPushActivationStore()
     private var preservedPermissionFixture: HTMLAppManifest?
+    #if DEBUG
+    private var preservedVOTFixtures: [HTMLAppManifest] = []
+    #endif
     private let gatewayRegistry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
     private lazy var onboardingService = HTMLAppGatewayOnboardingService(
         gatewayRegistry: gatewayRegistry,
@@ -351,6 +354,13 @@ final class PWAAppCenterViewController: UIViewController {
                 ?? trustRegistry.registeredManifests().first { $0.appID == "com.webbridgekit.fixture.chat" }
                 ?? trustRegistry.registeredManifests().first { $0.appID == "com.webbridgekit.fixture.agent-console" }
         }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--register-vot-offline-fixtures") {
+            preservedVOTFixtures = trustRegistry.registeredManifests().filter {
+                $0.appID == "app.vot.example.invalid" || $0.appID == "app.vot.legacy-infra.example.invalid"
+            }
+        }
+        #endif
         bootstrapGateway(gateway)
     }
 
@@ -422,6 +432,9 @@ final class PWAAppCenterViewController: UIViewController {
                                 )
                             }
                         }
+                        #if DEBUG
+                        self.preservedVOTFixtures.forEach { try? self.trustRegistry.register($0) }
+                        #endif
                         self.refreshVisibleApps()
                         self.officialGatewayUnavailable = false
                         self.lastGatewayFailureAt = nil
@@ -650,6 +663,14 @@ final class PWAAppCenterViewController: UIViewController {
         guard let startURL = URL(string: manifest.startURL) else { return }
         do {
             let target = try launchResolver.resolve(appID: manifest.appID, route: startURL.path)
+            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(manifest: manifest, source: "direct")
+            DrelOfflineDiagnostics.shared.record(
+                attemptID: diagnostics.attemptID,
+                phase: .launch,
+                status: .succeeded,
+                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
+                outcome: "resolved"
+            )
             var payload = target.context.bridgePayload
             payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
             payload["webbridgekitPageURL"] = target.pageURL.absoluteString
@@ -659,11 +680,18 @@ final class PWAAppCenterViewController: UIViewController {
                 hideStatusBar: true,
                 hideTabBar: true,
                 payload: payload,
+                offlineFallbackURL: target.pageURL,
+                offlineDiagnostics: diagnostics,
                 useManifestLoader: false,
                 preferCachedContent: target.offlineMode == .partial
             )
             WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
         } catch {
+            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                appID: manifest.appID,
+                source: "direct",
+                error: error
+            )
             showMessage(title: "无法打开 PWA", message: error.localizedDescription)
         }
     }

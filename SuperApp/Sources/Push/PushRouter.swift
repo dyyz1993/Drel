@@ -126,6 +126,17 @@ class PushRouter {
     ) {
         do {
             let target = try launchResolver.resolve(envelope: envelope)
+        let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
+            manifest: target.manifest,
+            source: "notification"
+        )
+        DrelOfflineDiagnostics.shared.record(
+            attemptID: diagnostics.attemptID,
+            phase: .launch,
+            status: .succeeded,
+            loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
+            outcome: "resolved"
+        )
 
             if !WebBridgeHostCapabilityPolicy.nativeBridgeEnabled {
                 // Store builds deliberately provide no native JS bridge. The
@@ -137,6 +148,8 @@ class PushRouter {
                     for: target.containerOnlyURL,
                     mode: payload.mode == .modal ? .modal : .immersive,
                     payload: nil,
+                    offlineFallbackURL: target.pageURL,
+                    offlineDiagnostics: diagnostics,
                     useManifestLoader: false,
                     preferCachedContent: false
                 )
@@ -157,6 +170,8 @@ class PushRouter {
                 // default to immersive mode; modal is the sole explicit override.
                 mode: payload.mode == .modal ? .modal : .immersive,
                 payload: bridgePayload,
+                offlineFallbackURL: target.pageURL,
+                offlineDiagnostics: diagnostics,
                 useManifestLoader: false,
                 preferCachedContent: target.offlineMode == .partial
             )
@@ -166,6 +181,11 @@ class PushRouter {
                 from: rootVC
             )
         } catch {
+            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                appID: envelope.appID,
+                source: "notification",
+                error: error
+            )
             StructuredLogger.shared.warning(
                 "[PushRouter] Rejected HTML app route: \(error.localizedDescription)",
                 category: .navigation

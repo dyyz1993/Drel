@@ -152,6 +152,8 @@ enum DrelMessageOpenPolicy {
         for url: URL,
         mode: PushPayload.OpenMode,
         payload: [String: String]? = nil,
+        offlineFallbackURL: URL? = nil,
+        offlineDiagnostics: WebBrowserParams.OfflineDiagnosticsContext? = nil,
         useManifestLoader: Bool = false,
         preferCachedContent: Bool = false
     ) -> WebBrowserParams {
@@ -173,6 +175,8 @@ enum DrelMessageOpenPolicy {
                 customTitle: parsed.customTitle,
                 debugMode: parsed.debugMode,
                 payload: payload,
+                offlineFallbackURL: offlineFallbackURL,
+                offlineDiagnostics: offlineDiagnostics,
                 useManifestLoader: useManifestLoader,
                 preferCachedContent: preferCachedContent
             )
@@ -183,6 +187,8 @@ enum DrelMessageOpenPolicy {
                 hideStatusBar: true,
                 hideTabBar: true,
                 payload: payload,
+                offlineFallbackURL: offlineFallbackURL,
+                offlineDiagnostics: offlineDiagnostics,
                 useManifestLoader: useManifestLoader,
                 preferCachedContent: preferCachedContent
             )
@@ -191,6 +197,8 @@ enum DrelMessageOpenPolicy {
                 displayMode: .modal,
                 modalSize: .percent(width: "85%", height: "70%"),
                 payload: payload,
+                offlineFallbackURL: offlineFallbackURL,
+                offlineDiagnostics: offlineDiagnostics,
                 useManifestLoader: useManifestLoader,
                 preferCachedContent: preferCachedContent
             )
