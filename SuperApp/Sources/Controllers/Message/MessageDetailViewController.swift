@@ -23,7 +23,8 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
     /// reopening the message.
     var message: StoredMessage
     private let launchResolver = HTMLAppLaunchResolver(
-        trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry
+        trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry,
+        signatureVerifier: DrelHTMLAppLaunchSupport.signatureVerifier
     )
 
     private let scrollView: UIScrollView = {
@@ -1132,39 +1133,36 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
                     )
                     return
                 }
-                do {
-                    let target = try self.launchResolver.resolve(
-                        appID: appID,
-                        route: route,
-                        parameters: self.message.payload.userInfo ?? [:],
-                        source: .notification
-                    )
-                    let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
-                        manifest: target.manifest,
-                        source: "notification"
-                    )
-                    DrelOfflineDiagnostics.shared.record(
-                        attemptID: diagnostics.attemptID,
-                        phase: .launch,
-                        status: .succeeded,
-                        loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
-                        outcome: "resolved"
-                    )
-                    var payload = target.context.bridgePayload
-                    payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-                    payload["webbridgekitPageURL"] = target.pageURL.absoluteString
-                    let params = DrelMessageOpenPolicy.browserParams(
-                        for: target.loaderURL,
-                        mode: DrelMessageOpenPolicy.registeredAppMode(for: self.message.payload),
-                        payload: payload,
-                        offlineFallbackURL: target.pageURL,
-                        offlineDiagnostics: diagnostics,
-                        useManifestLoader: false,
-                        preferCachedContent: target.offlineMode == .partial
-                    )
-                    WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
-                } catch {
-                    self.showAlert(title: L10n.tr("message.detail.open_app_failed"), message: error.localizedDescription)
+                Task { @MainActor in
+                    guard let slotOwner = DrelHTMLAppLaunchSupport.acquireLaunchSlot(appID: appID, route: route, parameters: self.message.payload.userInfo ?? [:], sourceID: "message." + self.message.id) else { return }
+                    defer { DrelHTMLAppLaunchSupport.releaseLaunchSlot(owner: slotOwner) }
+                    do {
+                        let target = try await DrelHTMLAppLaunchSupport.resolveWithColdStartGate {
+                            try self.launchResolver.resolve(
+                                appID: appID,
+                                route: route,
+                                parameters: self.message.payload.userInfo ?? [:],
+                                source: .notification,
+                                networkPolicy: DrelHTMLAppLaunchSupport.networkPolicy
+                            )
+                        }
+                        let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "notification")
+                        var payload = target.context.bridgePayload
+                        payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
+                        payload["webbridgekitPageURL"] = target.pageURL.absoluteString
+                        let params = DrelMessageOpenPolicy.browserParams(
+                            for: target.loaderURL,
+                            mode: DrelMessageOpenPolicy.registeredAppMode(for: self.message.payload),
+                            payload: payload,
+                            offlineFallbackURL: target.pageURL,
+                            offlineDiagnostics: diagnostics,
+                            useManifestLoader: false,
+                            preferCachedContent: target.offlineMode == .partial
+                        )
+                        WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
+                    } catch {
+                        self.showAlert(title: L10n.tr("message.detail.open_app_failed"), message: error.localizedDescription)
+                    }
                 }
             }
             return

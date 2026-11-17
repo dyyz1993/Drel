@@ -65,6 +65,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Offline stale-package fallback hooks for every WebJavaScriptBridge
+        // created through the framework's convenience initializer. The
+        // verifier carries the official gateway public key; the offline
+        // provider only reports a CONFIRMED offline condition, never the
+        // unknown cold-start state.
+        HTMLAppOfflineFallbackRuntime.signatureVerifier = DrelHTMLAppLaunchSupport.signatureVerifier
+        HTMLAppOfflineFallbackRuntime.isOfflineProvider = { DrelHTMLAppLaunchSupport.isConfirmedOffline }
+
+#if DEBUG
+        DrelOfflineE2EFixture.bootstrapIfNeeded()
+#endif
+
         PushCipher.configure(
             appGroup: "group.com.webbridgekit.superapp",
             keychainService: "com.webbridgekit.superapp.push-crypto"
