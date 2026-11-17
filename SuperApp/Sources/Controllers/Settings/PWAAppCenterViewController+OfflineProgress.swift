@@ -2,6 +2,59 @@ import UIKit
 import WebBridgeKit
 
 extension PWAAppCenterViewController {
+    func offlinePackageActionTitle(installedVersion: String?, manifest: HTMLAppManifest) -> String {
+        Self.offlinePackageActionTitle(
+            installedVersion: installedVersion,
+            targetVersion: manifest.effectiveOfflineCache.version
+        )
+    }
+
+    nonisolated static func offlinePackageActionTitle(
+        installedVersion: String?,
+        targetVersion: String
+    ) -> String {
+        guard let installedVersion else { return "下载离线包" }
+        guard offlinePackageTargetIsNewer(installedVersion: installedVersion, targetVersion: targetVersion) else {
+            return "重新下载离线包"
+        }
+        return "更新离线包"
+    }
+
+    nonisolated static func offlinePackageTargetIsNewer(
+        installedVersion: String?,
+        targetVersion: String
+    ) -> Bool {
+        guard let installedVersion else { return false }
+        let installed = installedVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        let target = targetVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !installed.isEmpty, !target.isEmpty else { return false }
+        guard let installedComponents = numericVersionComponents(installed),
+              let targetComponents = numericVersionComponents(target) else {
+            // 降级或无法比较（非纯数字版本）一律不判定为新版本。
+            return false
+        }
+        let count = max(installedComponents.count, targetComponents.count)
+        for index in 0..<count {
+            let installedComponent = index < installedComponents.count ? installedComponents[index] : 0
+            let targetComponent = index < targetComponents.count ? targetComponents[index] : 0
+            if installedComponent != targetComponent {
+                return targetComponent > installedComponent
+            }
+        }
+        return false
+    }
+
+    nonisolated private static func numericVersionComponents(_ version: String) -> [Int]? {
+        let parts = version.split(separator: ".").map(String.init)
+        guard !parts.isEmpty else { return nil }
+        var components: [Int] = []
+        for part in parts {
+            guard let component = Int(part), component >= 0 else { return nil }
+            components.append(component)
+        }
+        return components
+    }
+
     nonisolated static func offlinePackageProgressUpdate(
         _ progress: HTMLAppPackageProgress
     ) -> (progress: Float, status: String)? {
@@ -65,7 +118,11 @@ extension PWAAppCenterViewController {
             return "强离线包待准备（可下载后离线打开，\(cache.version)）"
         }
         guard hasCurrentOfflinePackage(for: manifest) else {
-            return "强离线包待更新（当前 \(package.version) → \(cache.version)）"
+            let targetVersion = cache.version.trimmingCharacters(in: .whitespacesAndNewlines)
+            if Self.offlinePackageTargetIsNewer(installedVersion: package.version, targetVersion: targetVersion) {
+                return "强离线包待更新（当前 \(package.version) → \(targetVersion)）"
+            }
+            return "强离线包需重新下载（版本 \(package.version)）"
         }
         let size = (try? offlinePackageLocator.packageSize(for: package)) ?? 0
         return "强离线包已安装（\(cache.version)，\(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))）"

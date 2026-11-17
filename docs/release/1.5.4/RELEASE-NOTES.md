@@ -19,6 +19,7 @@ Drel 1.5.4 更新
 • 下载离线包时展示总体积和进度
 • 新增"离线应用诊断"面板：本机记录最近打开的阶段，便于排查离线包问题
 • 修复延迟渲染的离线页面被误判失败而误切在线兜底的问题
+• 离线包按钮仅在有新版本时显示"更新"，同版本、回退或无法比较的版本一律显示"重新下载"
 ```
 
 ## en-US
@@ -34,6 +35,7 @@ Drel 1.5.4
 • Offline package downloads now show total size and progress
 • Added an offline app diagnostics panel with local per-launch stage records
 • Fixed late-rendering offline pages being misjudged and unnecessarily switched online
+• The offline package button offers "Update" only for strictly newer remote versions; same-version, downgraded, or uncomparable versions show "Redownload"
 ```
 
 ## ja
@@ -49,6 +51,7 @@ Drel 1.5.4
 • オフラインパッケージのダウンロード時に合計サイズと進捗を表示します
 • オフラインアプリ診断パネルを追加：端末内に起動段階を記録し調査しやすくしました
 • 遅延描画されるオフラインページの誤判定と不要なオンライン切替を修正しました
+• オフラインパッケージのボタンは、リモートバージョンが確実に新しい場合のみ「更新」と表示し、同版本・ダウングレード・比較不能な場合は「再ダウンロード」と表示します
 ```
 
 ## ko
@@ -64,6 +67,7 @@ Drel 1.5.4
 • 오프라인 패키지 다운로드 시 전체 크기와 진행률이 표시됩니다
 • 오프라인 앱 진단 패널 추가: 기기 내 실행 단계를 기록해 문제 파악이 쉬워졌습니다
 • 늦게 렌더링되는 오프라인 페이지의 오판과 불필요한 온라인 전환을 수정했습니다
+• 오프라인 패키지 버튼은 원격 버전이 확실히 새로운 경우에만 '업데이트'로 표시되고, 동일 버전·다운그레이드·비교 불가 버전은 '다시 다운로드'로 표시됩니다
 ```
 
 ## de-DE
@@ -79,6 +83,7 @@ Drel 1.5.4
 • Offline-Paket-Downloads zeigen jetzt Gesamtgröße und Fortschritt
 • Offline-App-Diagnose-Panel hinzugefügt: lokale Aufzeichnung der Startphasen
 • Fehlbeurteilung spät gerenderter Offline-Seiten und unnötige Online-Umschaltung behoben
+• Der Offline-Paket-Button bietet "Update" nur bei strikt neueren Remote-Versionen; gleiche, ältere oder nicht vergleichbare Versionen zeigen "Erneut laden"
 ```
 
 ## Submission notes
@@ -113,3 +118,6 @@ Drel 1.5.4
   navigation can recover online even when the native bridge is disabled.
 - Build 153 adds verified package-size display and cumulative byte progress
   while strong-offline resources download.
+- Build 155 compares offline package versions numerically and offers the
+  update action only for strictly newer remote packages; same-version,
+  downgraded, or uncomparable versions offer a redownload instead.
