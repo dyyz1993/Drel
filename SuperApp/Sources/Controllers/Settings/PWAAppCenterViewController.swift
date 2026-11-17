@@ -547,14 +547,14 @@ final class PWAAppCenterViewController: UIViewController {
             self?.showPhoneHomeScreenGuide(for: manifest)
         })
         if manifest.effectiveOfflineCache.isStrongOfflineEligible {
-            let hasCurrentPackage = hasCurrentOfflinePackage(for: manifest)
+            let installedPackage = try? offlinePackageLocator.installedPackage(appID: manifest.appID)
             alert.addAction(UIAlertAction(
-                title: hasCurrentPackage ? "更新离线包" : "下载离线包",
+                title: offlinePackageActionTitle(installedVersion: installedPackage?.version, manifest: manifest),
                 style: .default
             ) { [weak self] _ in
                 self?.prepareOfflinePackage(manifest)
             })
-            if hasCurrentPackage {
+            if installedPackage != nil {
                 alert.addAction(UIAlertAction(title: "删除离线包", style: .destructive) { [weak self] _ in
                     self?.confirmOfflinePackageRemoval(for: manifest)
                 })
