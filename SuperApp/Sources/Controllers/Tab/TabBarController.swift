@@ -185,26 +185,7 @@ class TabBarController: UITabBarController {
                 networkPolicy: DrelHTMLAppLaunchSupport.networkPolicy
             )
             let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "restore")
-            var payload = target.context.bridgePayload
-            payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-            payload["webbridgekitPageURL"] = target.pageURL.absoluteString
-            let params = WebBrowserParams(
-                displayMode: .immersive,
-                hideNavigationBar: true,
-                hideStatusBar: true,
-                hideTabBar: true,
-                payload: payload,
-                offlineFallbackURL: target.pageURL,
-                offlineDiagnostics: diagnostics,
-                useManifestLoader: false,
-                preferCachedContent: target.offlineMode == .partial
-            )
-            WebBrowserManager.shared.openBrowser(
-                url: target.loaderURL,
-                params: params,
-                from: mainNav,
-                animated: false
-            )
+            DrelHTMLAppLaunchSupport.presentImmersive(target, diagnostics: diagnostics, from: mainNav, animated: false)
             defaultStartupRetryTimer?.invalidate()
             defaultStartupRetryCount = 0
         } catch {
