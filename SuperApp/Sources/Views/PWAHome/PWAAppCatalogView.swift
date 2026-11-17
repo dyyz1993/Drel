@@ -360,7 +360,7 @@ final class PWAAppCatalogViewController: UIViewController {
     )
     private let activationStore = HTMLAppPushActivationStore()
     private let presentationMetadataStore = HTMLAppPresentationMetadataStore()
-    private lazy var launchResolver = HTMLAppLaunchResolver(trustRegistry: runtime.trustRegistry)
+    private lazy var launchResolver = DrelHTMLAppLaunchSupport.makeResolver(trustRegistry: runtime.trustRegistry)
     private lazy var onboardingService = HTMLAppGatewayOnboardingService(
         gatewayRegistry: gatewayRegistry,
         trustRegistry: runtime.trustRegistry,
@@ -518,38 +518,27 @@ final class PWAAppCatalogViewController: UIViewController {
     private func open(_ item: PWAAppCatalogItem) {
         guard let manifest = manifestsByID[item.id],
               let startURL = URL(string: manifest.startURL) else { return }
-        do {
-            let target = try launchResolver.resolve(appID: manifest.appID, route: startURL.path)
-            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(manifest: manifest, source: "catalog")
-            DrelOfflineDiagnostics.shared.record(
-                attemptID: diagnostics.attemptID,
-                phase: .launch,
-                status: .succeeded,
-                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
-                outcome: "resolved"
-            )
-            var payload = target.context.bridgePayload
-            payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-            payload["webbridgekitPageURL"] = target.pageURL.absoluteString
-            let params = WebBrowserParams(
-                displayMode: .immersive,
-                hideNavigationBar: true,
-                hideStatusBar: true,
-                hideTabBar: true,
-                payload: payload,
-                offlineFallbackURL: target.pageURL,
-                offlineDiagnostics: diagnostics,
-                useManifestLoader: false,
-                preferCachedContent: target.offlineMode == .partial
-            )
-            WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
-        } catch {
-            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
-                appID: item.id,
-                source: "catalog",
-                error: error
-            )
-            showMessage(title: "无法打开应用", message: error.localizedDescription)
+        Task { @MainActor in
+            guard let slotOwner = DrelHTMLAppLaunchSupport.acquireLaunchSlot(appID: manifest.appID, route: startURL.path, parameters: [:], sourceID: "catalog." + item.id) else { return }
+            defer { DrelHTMLAppLaunchSupport.releaseLaunchSlot(owner: slotOwner) }
+            do {
+                let target = try await DrelHTMLAppLaunchSupport.resolveWithColdStartGate {
+                    try launchResolver.resolve(
+                        appID: manifest.appID,
+                        route: startURL.path,
+                        networkPolicy: DrelHTMLAppLaunchSupport.networkPolicy
+                    )
+                }
+                let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "catalog")
+                DrelHTMLAppLaunchSupport.presentImmersive(target, diagnostics: diagnostics, from: self)
+            } catch {
+                OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                    appID: item.id,
+                    source: "catalog",
+                    error: error
+                )
+                showMessage(title: "无法打开应用", message: error.localizedDescription)
+            }
         }
     }
 
