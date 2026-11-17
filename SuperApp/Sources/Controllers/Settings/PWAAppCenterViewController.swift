@@ -14,7 +14,7 @@ final class PWAAppCenterViewController: UIViewController {
     // Keep the resolver on the live shared registry. A resolver constructed
     // with its own registry snapshots UserDefaults before first-run gateway
     // onboarding and cannot see apps registered moments later.
-    private lazy var launchResolver = HTMLAppLaunchResolver(trustRegistry: trustRegistry)
+    private lazy var launchResolver = DrelHTMLAppLaunchSupport.makeResolver(trustRegistry: trustRegistry)
     let offlinePackageLocator = HTMLAppOfflinePackageLocator()
     private let offlinePackageInstaller = HTMLAppOfflinePackageInstaller()
     private let presentationMetadataStore = HTMLAppPresentationMetadataStore()
@@ -400,6 +400,17 @@ final class PWAAppCenterViewController: UIViewController {
     }
 
     private func bootstrapGateway(_ gateway: HTMLAppGatewayConfiguration) {
+
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--e2e-skip-gateway-bootstrap") {
+            // E2E fixture mode: no network bootstrap; the registry, the
+            // activation and the installed package come from the DEBUG
+            // fixture bootstrap in AppDelegate.
+            refreshVisibleApps()
+            updateHomeApps()
+            return
+        }
+#endif
         isBootstrappingOfficialGateway = true
         homeViewModel.appState = .loading
         onboardingService.validate(gateway) { [weak self] result in
@@ -661,38 +672,27 @@ final class PWAAppCenterViewController: UIViewController {
 
     private func launchResolved(_ manifest: HTMLAppManifest) {
         guard let startURL = URL(string: manifest.startURL) else { return }
-        do {
-            let target = try launchResolver.resolve(appID: manifest.appID, route: startURL.path)
-            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(manifest: manifest, source: "direct")
-            DrelOfflineDiagnostics.shared.record(
-                attemptID: diagnostics.attemptID,
-                phase: .launch,
-                status: .succeeded,
-                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
-                outcome: "resolved"
-            )
-            var payload = target.context.bridgePayload
-            payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-            payload["webbridgekitPageURL"] = target.pageURL.absoluteString
-            let params = WebBrowserParams(
-                displayMode: .immersive,
-                hideNavigationBar: true,
-                hideStatusBar: true,
-                hideTabBar: true,
-                payload: payload,
-                offlineFallbackURL: target.pageURL,
-                offlineDiagnostics: diagnostics,
-                useManifestLoader: false,
-                preferCachedContent: target.offlineMode == .partial
-            )
-            WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
-        } catch {
-            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
-                appID: manifest.appID,
-                source: "direct",
-                error: error
-            )
-            showMessage(title: "无法打开 PWA", message: error.localizedDescription)
+        Task { @MainActor in
+            guard let slotOwner = DrelHTMLAppLaunchSupport.acquireLaunchSlot(appID: manifest.appID, route: startURL.path, parameters: [:], sourceID: "direct." + manifest.appID) else { return }
+            defer { DrelHTMLAppLaunchSupport.releaseLaunchSlot(owner: slotOwner) }
+            do {
+                let target = try await DrelHTMLAppLaunchSupport.resolveWithColdStartGate {
+                    try launchResolver.resolve(
+                        appID: manifest.appID,
+                        route: startURL.path,
+                        networkPolicy: DrelHTMLAppLaunchSupport.networkPolicy
+                    )
+                }
+                let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "direct")
+                DrelHTMLAppLaunchSupport.presentImmersive(target, diagnostics: diagnostics, from: self)
+            } catch {
+                OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                    appID: manifest.appID,
+                    source: "direct",
+                    error: error
+                )
+                showMessage(title: "无法打开 PWA", message: error.localizedDescription)
+            }
         }
     }
 
