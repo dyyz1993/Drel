@@ -17,7 +17,8 @@ class PushRouter {
 
     private init() {
         launchResolver = HTMLAppLaunchResolver(
-            trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry
+            trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry,
+            signatureVerifier: DrelHTMLAppLaunchSupport.signatureVerifier
         )
     }
 
@@ -124,72 +125,71 @@ class PushRouter {
         payload: PushPayload,
         from rootVC: UIViewController
     ) {
-        do {
-            let target = try launchResolver.resolve(envelope: envelope)
-        let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
-            manifest: target.manifest,
-            source: "notification"
-        )
-        DrelOfflineDiagnostics.shared.record(
-            attemptID: diagnostics.attemptID,
-            phase: .launch,
-            status: .succeeded,
-            loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
-            outcome: "resolved"
-        )
+        Task { @MainActor in
+            guard let slotOwner = DrelHTMLAppLaunchSupport.acquireLaunchSlot(appID: envelope.appID, route: envelope.route, parameters: envelope.parameters, sourceID: "push." + (envelope.nonce ?? "")) else { return }
+            defer { DrelHTMLAppLaunchSupport.releaseLaunchSlot(owner: slotOwner) }
+            do {
+                let target = try await DrelHTMLAppLaunchSupport.resolveWithColdStartGate {
+                    try launchResolver.resolve(
+                        envelope: envelope,
+                        networkPolicy: DrelHTMLAppLaunchSupport.networkPolicy
+                    )
+                }
+                let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "notification")
 
-            if !WebBridgeHostCapabilityPolicy.nativeBridgeEnabled {
-                // Store builds deliberately provide no native JS bridge. The
-                // validated route and parameters travel in namespaced URL
-                // query items instead, so the PWA can render its destination
-                // using ordinary web APIs while strong-offline packages still
-                // open their signed local entrypoint.
+                if !WebBridgeHostCapabilityPolicy.nativeBridgeEnabled {
+                    // Store builds deliberately provide no native JS bridge. The
+                    // validated route and parameters travel in namespaced URL
+                    // query items instead, so the PWA can render its destination
+                    // using ordinary web APIs while strong-offline packages still
+                    // open their signed local entrypoint.
+                    let browserParams = DrelMessageOpenPolicy.browserParams(
+                        for: target.containerOnlyURL,
+                        mode: payload.mode == .modal ? .modal : .immersive,
+                        payload: nil,
+                        offlineFallbackURL: target.pageURL,
+                        offlineDiagnostics: diagnostics,
+                        useManifestLoader: false,
+                        preferCachedContent: false
+                    )
+                    WebBrowserManager.shared.openBrowser(
+                        url: target.containerOnlyURL,
+                        params: browserParams,
+                        from: rootVC
+                    )
+                    return
+                }
+
+                var bridgePayload = target.context.bridgePayload
+                bridgePayload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
+                bridgePayload["webbridgekitPageURL"] = target.pageURL.absoluteString
                 let browserParams = DrelMessageOpenPolicy.browserParams(
-                    for: target.containerOnlyURL,
+                    for: target.loaderURL,
+                    // Registered PWAs are app experiences, not browser tabs. They
+                    // default to immersive mode; modal is the sole explicit override.
                     mode: payload.mode == .modal ? .modal : .immersive,
-                    payload: nil,
+                    payload: bridgePayload,
                     offlineFallbackURL: target.pageURL,
                     offlineDiagnostics: diagnostics,
                     useManifestLoader: false,
-                    preferCachedContent: false
+                    preferCachedContent: target.offlineMode == .partial
                 )
                 WebBrowserManager.shared.openBrowser(
-                    url: target.containerOnlyURL,
+                    url: target.loaderURL,
                     params: browserParams,
                     from: rootVC
                 )
-                return
+            } catch {
+                OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                    appID: envelope.appID,
+                    source: "notification",
+                    error: error
+                )
+                StructuredLogger.shared.warning(
+                    "[PushRouter] Rejected HTML app route: \(error.localizedDescription)",
+                    category: .navigation
+                )
             }
-
-            var bridgePayload = target.context.bridgePayload
-            bridgePayload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-            bridgePayload["webbridgekitPageURL"] = target.pageURL.absoluteString
-            let browserParams = DrelMessageOpenPolicy.browserParams(
-                for: target.loaderURL,
-                // Registered PWAs are app experiences, not browser tabs. They
-                // default to immersive mode; modal is the sole explicit override.
-                mode: payload.mode == .modal ? .modal : .immersive,
-                payload: bridgePayload,
-                offlineFallbackURL: target.pageURL,
-                offlineDiagnostics: diagnostics,
-                useManifestLoader: false,
-                preferCachedContent: target.offlineMode == .partial
-            )
-            WebBrowserManager.shared.openBrowser(
-                url: target.loaderURL,
-                params: browserParams,
-                from: rootVC
-            )
-        } catch {
-            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
-                appID: envelope.appID,
-                source: "notification",
-                error: error
-            )
-            StructuredLogger.shared.warning(
-                "[PushRouter] Rejected HTML app route: \(error.localizedDescription)",
-                category: .navigation
-            )
         }
     }
 

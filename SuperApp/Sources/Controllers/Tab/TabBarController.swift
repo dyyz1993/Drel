@@ -18,7 +18,8 @@ class TabBarController: UITabBarController {
 
     private let disposeBag = DisposeBag()
     private let defaultStartupLaunchResolver = HTMLAppLaunchResolver(
-        trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry
+        trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry,
+        signatureVerifier: DrelHTMLAppLaunchSupport.signatureVerifier
     )
     private var defaultStartupRetryTimer: Timer?
     private var defaultStartupRetryCount = 0
@@ -143,6 +144,19 @@ class TabBarController: UITabBarController {
     private func attemptDefaultStartupApp(appID: String, from mainNav: UINavigationController) {
         defaultStartupRetryTimer?.invalidate()
 
+        // Cold-start gate: the first NWPathMonitor sample has not arrived yet,
+        // so connectivity is unknown. Wait (bounded by the existing retry
+        // budget) instead of resolving under the conservative online policy,
+        // which would miss the verified stale-package fallback on an offline
+        // cold start. Once known, the three-state policy decides normally.
+        if !DrelHTMLAppLaunchSupport.isConnectivityKnown, defaultStartupRetryCount < 20 {
+            defaultStartupRetryCount += 1
+            defaultStartupRetryTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
+                self?.attemptDefaultStartupApp(appID: appID, from: mainNav)
+            }
+            return
+        }
+
         if (UIApplication.shared.delegate as? AppDelegate)?.hasExplicitLaunchDestination == true
             || WebBrowserManager.shared.getCurrentBrowser() != nil {
             return
@@ -161,23 +175,16 @@ class TabBarController: UITabBarController {
             return
         }
 
+        guard let slotOwner = DrelHTMLAppLaunchSupport.acquireLaunchSlot(appID: manifest.appID, route: startURL.path, parameters: [:], sourceID: "restore." + manifest.appID) else { return }
+        defer { DrelHTMLAppLaunchSupport.releaseLaunchSlot(owner: slotOwner) }
         do {
             let target = try defaultStartupLaunchResolver.resolve(
                 appID: manifest.appID,
                 route: startURL.path,
-                source: .direct
+                source: .direct,
+                networkPolicy: DrelHTMLAppLaunchSupport.networkPolicy
             )
-            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
-                manifest: manifest,
-                source: "restore"
-            )
-            DrelOfflineDiagnostics.shared.record(
-                attemptID: diagnostics.attemptID,
-                phase: .launch,
-                status: .succeeded,
-                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
-                outcome: "resolved"
-            )
+            let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "restore")
             var payload = target.context.bridgePayload
             payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
             payload["webbridgekitPageURL"] = target.pageURL.absoluteString

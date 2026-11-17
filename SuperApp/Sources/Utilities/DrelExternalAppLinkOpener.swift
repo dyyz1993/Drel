@@ -43,62 +43,59 @@ enum DrelExternalAppLinkOpener {
         #else
         let route = (link.route?.isEmpty == false ? link.route : nil) ?? manifest.routes.first ?? "/"
         #endif
-        do {
-            let target = try HTMLAppLaunchResolver(trustRegistry: registry).resolve(
-                appID: link.appID,
-                route: route,
-                parameters: link.parameters,
-                source: .direct
-            )
-            let diagnostics = OfflineAppDiagnosticsCoordinator.begin(
-                manifest: target.manifest,
-                source: "externalLink"
-            )
-            DrelOfflineDiagnostics.shared.record(
-                attemptID: diagnostics.attemptID,
-                phase: .launch,
-                status: .succeeded,
-                loadSource: target.offlineMode == .strong ? .offlinePackage : .online,
-                outcome: "resolved"
-            )
-            #if DREL_V2_MANAGED_ACTIONS_ONLY
-            // The signed manifest, validated route, action declaration and
-            // foreground gesture checks are the same as an in-app launch.
-            var payload = target.context.bridgePayload
-            payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-            payload["webbridgekitPageURL"] = target.pageURL.absoluteString
-            let params = WebBrowserParams(
-                displayMode: .immersive,
-                hideNavigationBar: true,
-                hideStatusBar: true,
-                hideTabBar: true,
-                payload: payload,
-                offlineFallbackURL: target.pageURL,
-                offlineDiagnostics: diagnostics,
-                useManifestLoader: false,
-                preferCachedContent: target.offlineMode == .partial
-            )
-            WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: viewController)
-            #else
-            // Earlier trains keep the external link's bridge-free contract.
-            let params = DrelMessageOpenPolicy.browserParams(
-                for: target.containerOnlyURL,
-                mode: .immersive,
-                payload: nil,
-                offlineFallbackURL: target.pageURL,
-                offlineDiagnostics: diagnostics,
-                useManifestLoader: false,
-                preferCachedContent: false
-            )
-            WebBrowserManager.shared.openBrowser(url: target.containerOnlyURL, params: params, from: viewController)
-            #endif
-        } catch {
-            OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
-                appID: link.appID,
-                source: "externalLink",
-                error: error
-            )
-            presentAlert(title: "无法打开应用", message: error.localizedDescription, from: viewController)
+        Task { @MainActor in
+            guard let slotOwner = DrelHTMLAppLaunchSupport.acquireLaunchSlot(appID: link.appID, route: route, parameters: link.parameters, sourceID: "externalLink") else { return }
+            defer { DrelHTMLAppLaunchSupport.releaseLaunchSlot(owner: slotOwner) }
+            do {
+                let target = try await DrelHTMLAppLaunchSupport.resolveWithColdStartGate {
+                    try DrelHTMLAppLaunchSupport.makeResolver(trustRegistry: registry).resolve(
+                        appID: link.appID,
+                        route: route,
+                        parameters: link.parameters,
+                        source: .direct,
+                        networkPolicy: DrelHTMLAppLaunchSupport.networkPolicy
+                    )
+                }
+                let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "externalLink")
+                #if DREL_V2_MANAGED_ACTIONS_ONLY
+                // The signed manifest, validated route, action declaration and
+                // foreground gesture checks are the same as an in-app launch.
+                var payload = target.context.bridgePayload
+                payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
+                payload["webbridgekitPageURL"] = target.pageURL.absoluteString
+                let params = WebBrowserParams(
+                    displayMode: .immersive,
+                    hideNavigationBar: true,
+                    hideStatusBar: true,
+                    hideTabBar: true,
+                    payload: payload,
+                    offlineFallbackURL: target.pageURL,
+                    offlineDiagnostics: diagnostics,
+                    useManifestLoader: false,
+                    preferCachedContent: target.offlineMode == .partial
+                )
+                WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: viewController)
+                #else
+                // Earlier trains keep the external link's bridge-free contract.
+                let params = DrelMessageOpenPolicy.browserParams(
+                    for: target.containerOnlyURL,
+                    mode: .immersive,
+                    payload: nil,
+                    offlineFallbackURL: target.pageURL,
+                    offlineDiagnostics: diagnostics,
+                    useManifestLoader: false,
+                    preferCachedContent: false
+                )
+                WebBrowserManager.shared.openBrowser(url: target.containerOnlyURL, params: params, from: viewController)
+                #endif
+            } catch {
+                OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
+                    appID: link.appID,
+                    source: "externalLink",
+                    error: error
+                )
+                presentAlert(title: "无法打开应用", message: error.localizedDescription, from: viewController)
+            }
         }
     }
 
