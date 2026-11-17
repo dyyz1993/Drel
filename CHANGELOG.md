@@ -40,6 +40,13 @@ Each release line carries three pieces of evidence:
 
 ### Fixed
 
+- The App Center offline package action compared versions as plain strings, so
+  a downgrade also showed "更新离线包". The action and pending summary now
+  compare versions numerically component-by-component: "更新离线包" appears
+  only when the remote package is strictly newer, while same-version,
+  downgrade, missing, or uncomparable versions show "重新下载离线包". —
+  Scope: `App` — Verified: `simulator` — Evidence:
+  [docs/release/1.5.4/verification-155.md](docs/release/1.5.4/verification-155.md)
 - Store builds no longer strip `NSBluetoothAlwaysUsageDescription`. The linked
   WebBridgeKit SDK still instantiates `CBCentralManager`, so App Store Connect
   rejected builds 141–143 with `ITMS-90683`; the prompt now ships, and the
