@@ -451,6 +451,27 @@ jobs:
       - name: Install ripgrep
         run: brew install ripgrep
 
+      - name: Fetch WebBridgeKit Framework
+        shell: bash
+        env:
+          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
+          WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
+        run: |
+          set -euo pipefail
+          # ci-lint.sh deliverable-boundaries resolves the shared push wire
+          # contract through the sibling framework checkout; fetch it the same
+          # way setup-project does instead of depending on residue from
+          # whichever job ran before this one on the runner.
+          python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git" \
+            "$WBK_FRAMEWORK_PATH"
+          EXPECTED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
+          ACTUAL_FRAMEWORK_REVISION="$(git -C "$WBK_FRAMEWORK_PATH" rev-parse HEAD)"
+          [[ "$ACTUAL_FRAMEWORK_REVISION" == "$EXPECTED_FRAMEWORK_REVISION" ]] || {
+            echo "::error::Framework revision does not match the pinned release revision"
+            exit 1
+          }
       - name: Run Design System Lint
         run: bash tools/ci-lint.sh
 
