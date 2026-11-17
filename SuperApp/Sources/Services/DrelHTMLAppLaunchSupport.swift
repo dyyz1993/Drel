@@ -1,4 +1,5 @@
 import WebBridgeKit
+import UIKit
 import Foundation
 
 /// Single wiring point for HTML app launch resolution in Drel.
@@ -194,5 +195,33 @@ enum DrelHTMLAppLaunchSupport {
         launchSlotLock.lock()
         defer { launchSlotLock.unlock() }
         launchSlotHeld.removeAll()
+    }
+
+    /// Presents a resolved target as an immersive PWA with the standard
+    /// offline-mode bridge payload. The direct, catalog and restore entry
+    /// points share this exact presentation, so it lives here instead of
+    /// being duplicated at each call site.
+    @MainActor
+    static func presentImmersive(
+        _ target: HTMLAppLaunchTarget,
+        diagnostics: WebBrowserParams.OfflineDiagnosticsContext,
+        from presenter: UIViewController,
+        animated: Bool = true
+    ) {
+        var payload = target.context.bridgePayload
+        payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
+        payload["webbridgekitPageURL"] = target.pageURL.absoluteString
+        let params = WebBrowserParams(
+            displayMode: .immersive,
+            hideNavigationBar: true,
+            hideStatusBar: true,
+            hideTabBar: true,
+            payload: payload,
+            offlineFallbackURL: target.pageURL,
+            offlineDiagnostics: diagnostics,
+            useManifestLoader: false,
+            preferCachedContent: target.offlineMode == .partial
+        )
+        WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: presenter, animated: animated)
     }
 }

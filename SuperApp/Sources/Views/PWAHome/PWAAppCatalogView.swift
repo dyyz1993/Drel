@@ -530,21 +530,7 @@ final class PWAAppCatalogViewController: UIViewController {
                     )
                 }
                 let diagnostics = OfflineAppDiagnosticsCoordinator.recordLaunchSuccess(target, source: "catalog")
-                var payload = target.context.bridgePayload
-                payload["webbridgekitOfflineMode"] = target.offlineMode.rawValue
-                payload["webbridgekitPageURL"] = target.pageURL.absoluteString
-                let params = WebBrowserParams(
-                    displayMode: .immersive,
-                    hideNavigationBar: true,
-                    hideStatusBar: true,
-                    hideTabBar: true,
-                    payload: payload,
-                    offlineFallbackURL: target.pageURL,
-                    offlineDiagnostics: diagnostics,
-                    useManifestLoader: false,
-                    preferCachedContent: target.offlineMode == .partial
-                )
-                WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
+                DrelHTMLAppLaunchSupport.presentImmersive(target, diagnostics: diagnostics, from: self)
             } catch {
                 OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
                     appID: item.id,
