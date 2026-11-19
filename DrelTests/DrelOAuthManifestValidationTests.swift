@@ -17,9 +17,8 @@ final class DrelOAuthManifestValidationTests: XCTestCase {
     ) -> DrelOAuthManifestAuthorization {
         .init(
             schemaVersion: "1",
-            provider: "drel-oauth-pkce-v1",
+            provider: "drel-device-grant-v1",
             clientId: clientID,
-            authorizationBaseURL: "https://api.drel.app",
             resource: .init(baseURL: baseURL, pathPrefix: prefix),
             scopes: scopes,
             refreshPolicy: .init(idleTimeoutSeconds: 100, absoluteLifetimeSeconds: 200, rotateOnRefresh: true)
@@ -34,7 +33,6 @@ final class DrelOAuthManifestValidationTests: XCTestCase {
             trustedAppID: "app.vot.example.invalid"
         )
         XCTAssertEqual(result.resourceOrigin, "https://vot.example.invalid:8443")
-        XCTAssertEqual(result.authorizationOrigin, "https://api.drel.app")
         XCTAssertEqual(result.scopes.count, 2)
     }
 

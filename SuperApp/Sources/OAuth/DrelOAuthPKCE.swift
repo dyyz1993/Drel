@@ -45,9 +45,10 @@ enum DrelOAuthJSONWebToken {
         claims: [String: Any],
         keyStore: DrelOAuthDeviceKeyStoring,
         deviceID: String,
-        accessToken: String? = nil
+        accessToken: String? = nil,
+        typ: String = "dpop+jwt"
     ) async throws -> String {
-        var header: [String: Any] = ["typ": "dpop+jwt", "alg": "ES256"]
+        var header: [String: Any] = ["typ": typ, "alg": "ES256"]
         header["jwk"] = try keyStore.publicKeyJWK()
         var proofClaims = claims
         let now = Int(Date().timeIntervalSince1970)

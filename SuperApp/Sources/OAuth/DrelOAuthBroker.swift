@@ -8,7 +8,6 @@ public struct DrelOAuthAuthorizationRequest: Equatable, Sendable {
     public let appID: String
     public let documentOrigin: String
     public let clientID: String
-    public let authorizationBaseURL: String
     public let resourceOrigin: String
     public let scope: Set<DrelOAuthScope>
 
@@ -298,15 +297,9 @@ public final class DrelOAuthBroker {
             }
         }
         guard allowed else { throw DrelOAuthError.userCancelled }
-        let pkce = try DrelOAuthPKCE.generate()
-        let state = try DrelOAuthPKCE.randomToken()
-        let nonce = try DrelOAuthPKCE.randomToken()
-        let decision = try await service.authorizeDecision(request: request, pkce: pkce, state: state, nonce: nonce)
         let grantResponse = try await service.completeGrant(
             resourceBaseURL: manifest.resourceOrigin,
             pairingRequestID: pairingRequestID,
-            authorizationCode: decision.code,
-            pkce: pkce,
             request: request
         )
         let grantedScope = try DrelOAuthScope.set(grantResponse.scope.components(separatedBy: " ").filter { !$0.isEmpty })
@@ -363,7 +356,6 @@ public final class DrelOAuthBroker {
             appID: manifest.appID,
             documentOrigin: startOrigin,
             clientID: manifest.authorization.clientId,
-            authorizationBaseURL: manifest.authorization.authorizationBaseURL,
             resourceOrigin: manifest.resourceOrigin,
             scope: scope
         )
