@@ -20,7 +20,13 @@
     // registration without the admin key (paired-key check, 20/key cap,
     // private manifests visible only to ?key=<deviceKey> listings).
     // 2026-11-02: gate audio demo manifests by client action support.
-    "DREL_EDGE_VERSION": "2026.11.08-route-schema"
+    "DREL_EDGE_VERSION": "2026.11.08-route-schema",
+    // OAuth v1 remains disabled until DREL_OAUTH_AT_EDGE is explicitly
+    // changed to "1" in the deployment environment. Signing and admin
+    // credentials stay secret; readiness is exposed through /health.
+    "DREL_OAUTH_AT_EDGE": "0",
+    "DREL_OAUTH_ATTESTATION_MODE": "apple-app-attest",
+    "DREL_OAUTH_SIGNING_KEY_REGISTRY_VERSION": "1"
   },
   "durable_objects": {
     "bindings": [
@@ -39,6 +45,14 @@
       {
         "name": "APPROVAL_REGISTRY",
         "class_name": "ApprovalRegistry"
+      },
+      {
+        "name": "DREL_OAUTH_GRANT_REGISTRY",
+        "class_name": "OAuthGrantRegistry"
+      },
+      {
+        "name": "DREL_OAUTH_RATE_LIMITER",
+        "class_name": "OAuthRateLimiter"
       }
     ]
   },
@@ -58,6 +72,10 @@
     {
       "tag": "v4-approval-state",
       "new_sqlite_classes": ["ApprovalRegistry"]
+    },
+    {
+      "tag": "v5-drel-oauth-v1",
+      "new_sqlite_classes": ["OAuthGrantRegistry", "OAuthRateLimiter"]
     }
   ],
   "observability": {

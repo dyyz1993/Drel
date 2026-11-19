@@ -23,8 +23,20 @@ import {
   pushAtEdgeEnabled,
   edgeSignerReady,
 } from "./official-push.js";
+import {
+  OAuthGrantRegistry,
+  OAuthRateLimiter,
+  handleOAuth,
+} from "./oauth.js";
 
-export { ManagedPushRegistry, GatewayManifestRegistry, OfficialPushRegistry, ApprovalRegistry };
+export {
+  ManagedPushRegistry,
+  GatewayManifestRegistry,
+  OfficialPushRegistry,
+  ApprovalRegistry,
+  OAuthGrantRegistry,
+  OAuthRateLimiter,
+};
 
 function officialManifestsFor(request) {
   const supportsAudio = new URL(request.url).searchParams.getAll('supportedActions').includes('audioLevel');
@@ -92,6 +104,9 @@ function proxyError() {
 
 export default {
   async fetch(request, env) {
+    const oauthResponse = await handleOAuth(request, env);
+    if (oauthResponse) return oauthResponse;
+
     const managedResponse = await handleManagedPush(request, env);
     if (managedResponse) return managedResponse;
 
