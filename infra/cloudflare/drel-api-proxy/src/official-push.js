@@ -26,6 +26,7 @@
 
 import { createPublicKey } from "node:crypto";
 import { apnsJWT, signerIsReady } from "./managed-push.js";
+import { oauthAtEdgeEnabled, oauthIsReady } from "./oauth.js";
 
 const encoder = new TextEncoder();
 
@@ -653,6 +654,7 @@ export async function handleOfficialPush(request, env) {
       status: "ok",
       version: env.DREL_EDGE_VERSION || "edge",
       apnsReady: edgeSignerReady(env),
+      oauthReady: oauthAtEdgeEnabled(env) && oauthIsReady(env),
       servedBy: "edge",
     });
   }
@@ -822,6 +824,9 @@ function isReservedPath(path) {
     path === "" ||
     path === "/" ||
     path.startsWith("/api/") ||
+    path === "/.well-known/oauth-authorization-server" ||
+    path === "/.well-known/jwks.json" ||
+    path.startsWith("/oauth/") ||
     path.startsWith("/admin") ||
     path.startsWith("/managed-push") ||
     path.startsWith("/self-hosted") ||

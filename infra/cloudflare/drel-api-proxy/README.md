@@ -69,3 +69,43 @@ POST /api/v1/approvals/{requestId}/respond
 Both require `Authorization: Bearer <deviceKey>`. The first valid response wins,
 increments `revision`, and later responses return `409`. Expired requests become
 `expired`; records survive Worker restarts in Durable Object storage.
+
+## OAuth / PKCE authorization v1
+
+`drel-oauth-pkce-v1` is disabled by default and owns reserved
+`/oauth/*`, `/.well-known/oauth-authorization-server`, and `/.well-known/jwks.json`
+paths. With `DREL_OAUTH_AT_EDGE` set to any value other than `1`, those paths
+always return `404`; they never fall through to a legacy upstream. With the flag
+on, discovery reports `temporarily_unavailable` until the signing key, grant and
+rate-limit Durable Objects, and Apple App Attest verifier are all configured.
+
+Required runtime values:
+
+- `DREL_OAUTH_AT_EDGE=1` — explicitly enables the OAuth routes.
+- `DREL_OAUTH_ATTESTATION_MODE=apple-app-attest` — production device proof mode.
+- `DREL_OAUTH_DEVICE_ATTESTATION_VERIFIER_URL` — HTTPS service that receives the
+  submitted App Attest payload plus public JWK and returns
+  `{ valid: true, publicKeyThumbprint }`; the thumbprint must bind the verified
+  attestation to the exact registration key.
+- `DREL_OAUTH_SIGNING_KEY` — base64url 32-byte Ed25519 seed.
+- `DREL_OAUTH_SIGNING_KEY_ID` — stable key identifier published in JWKS and JWTs.
+- `DREL_OAUTH_SIGNING_KEY_REGISTRY_VERSION` — increment for every key-registry
+  change.
+- `DREL_OAUTH_RETIRED_SIGNING_KEYS` — optional JSON array of retired
+  `{ kid, x }` public keys. JWKS keeps them published during token lifetime.
+- `DREL_OAUTH_ADMIN_API_KEY` — timing-safe compared credential for
+  `GET /oauth/v2/admin/status`.
+
+The only registered first-party client is `app.vot.19930810.xyz` with
+`drel://oauth/callback` and `https://vot.19930810.xyz:8443`. Authorization codes
+last 10 minutes and are consumed atomically by `OAuthGrantRegistry`; access JWTs
+are EdDSA-signed, expire after five minutes, and bind the device key with
+`cnf.jkt`. Device registration uses explicit debug fixtures only when
+`DREL_OAUTH_ATTESTATION_MODE=debug-fixture` and
+`DREL_OAUTH_ALLOW_DEBUG_ATTESTATION=1`; both settings must never be enabled in
+production.
+
+`DREL_OAUTH_GRANT_REGISTRY` and `DREL_OAUTH_RATE_LIMITER` map to the two v5
+Durable Object classes. Per-bucket limits can be tuned with
+`DREL_OAUTH_<BUCKET>_LIMIT`; an unavailable limiter fails closed with
+`temporarily_unavailable` rather than silently bypassing rate protection.
