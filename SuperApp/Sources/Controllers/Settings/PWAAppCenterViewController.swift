@@ -24,7 +24,7 @@ final class PWAAppCenterViewController: UIViewController {
     private var preservedVOTFixtures: [HTMLAppManifest] = []
     #endif
     private let gatewayRegistry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
-    private lazy var onboardingService = HTMLAppGatewayOnboardingService(
+    private lazy var onboardingService = DrelOAuthGatewayAuthorizationIntegration(
         gatewayRegistry: gatewayRegistry,
         trustRegistry: trustRegistry,
         permissionLedger: permissionLedger,

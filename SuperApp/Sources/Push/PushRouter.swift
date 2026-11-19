@@ -174,11 +174,17 @@ class PushRouter {
                     useManifestLoader: false,
                     preferCachedContent: target.offlineMode == .partial
                 )
+                let oauthContext = DrelOAuthLaunchIntegration.prepareLaunch(
+                    target,
+                    gatewayIdentity: HTMLAppRuntimeCenter.shared.gatewayIdentity
+                )
                 WebBrowserManager.shared.openBrowser(
                     url: target.loaderURL,
                     params: browserParams,
                     from: rootVC
-                )
+                ) { _ in
+                    DrelOAuthBridgeInstaller.attachIfPossible(context: oauthContext)
+                }
             } catch {
                 OfflineAppDiagnosticsCoordinator.recordLaunchResolutionFailure(
                     appID: envelope.appID,

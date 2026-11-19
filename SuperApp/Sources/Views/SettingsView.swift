@@ -43,6 +43,7 @@ struct SettingsView: View {
         case tokenManage
         case apiKeyManage
         case webGrants
+        case appAuthorization
         case cacheManagement
         case favorites
         case history
@@ -262,6 +263,10 @@ struct SettingsView: View {
         case .webGrants:
             #if !DREL_CONTAINER_ONLY
             onNavigate(.webGrants)
+            #endif
+        case .appAuthorization:
+            #if !DREL_CONTAINER_ONLY
+            onNavigate(.appAuthorization)
             #endif
         case .cacheManager: onNavigate(.cacheManagement)
         case .favorites: onNavigate(.favorites)

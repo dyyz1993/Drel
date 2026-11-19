@@ -575,6 +575,12 @@ class TabBarController: UITabBarController {
             let vc = UIHostingController(rootView: WebOriginGrantsView())
             nav.pushViewController(vc, animated: true)
             #endif
+        case .appAuthorization:
+            #if !DREL_CONTAINER_ONLY
+            let vc = UIHostingController(rootView: DrelOAuthManagementView())
+            vc.title = "应用授权"
+            nav.pushViewController(vc, animated: true)
+            #endif
         case .cacheManagement:
             nav.pushViewController(ManagementViewController(), animated: true)
         case .favorites:

@@ -20,7 +20,7 @@ final class DrelPushAppCatalogCoordinator {
     private var isRefreshing = false
     private var pending: [(appID: String, route: String, completion: (Bool) -> Void)] = []
 
-    private lazy var onboardingService = HTMLAppGatewayOnboardingService(
+    private lazy var onboardingService = DrelOAuthGatewayAuthorizationIntegration(
         gatewayRegistry: gatewayRegistry,
         trustRegistry: runtime.trustRegistry,
         permissionLedger: runtime.permissionLedger
