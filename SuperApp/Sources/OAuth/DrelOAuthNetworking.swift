@@ -13,13 +13,6 @@ public struct DrelOAuthGrantResponse: Codable, Equatable, Sendable {
     public let returnRoute: String?
 }
 
-public struct DrelOAuthDecisionResponse: Codable, Equatable, Sendable {
-    public let code: String
-    public let state: String
-    public let redirectUri: String
-    public let expiresIn: Int
-}
-
 public protocol DrelOAuthHTTPClient {
     func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse)
 }
@@ -47,56 +40,34 @@ public final class DrelOAuthService {
         self.httpClient = httpClient
     }
 
-    public func authorizeDecision(
-        request: DrelOAuthAuthorizationRequest,
-        pkce: DrelOAuthPKCEPair,
-        state: String,
-        nonce: String
-    ) async throws -> DrelOAuthDecisionResponse {
-        let body: [String: Any] = [
-            "schemaVersion": "1",
-            "responseType": "code",
-            "clientId": request.clientID,
-            "redirectUri": "drel://oauth/callback",
-            "scope": request.scope.map(\.name).sorted().joined(separator: " "),
-            "state": state,
-            "codeChallenge": pkce.challenge,
-            "codeChallengeMethod": pkce.method,
-            "nonce": nonce,
-            "appId": request.appID,
-            "resourceOrigin": request.resourceOrigin,
-            "decision": "allow"
-        ]
-        let url = URL(string: request.authorizationBaseURL + "/oauth/v2/authorize/decision")!
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let proof = try await proof(for: urlRequest, accessToken: nil)
-        urlRequest.setValue(proof, forHTTPHeaderField: "DPoP")
-        return try await execute(urlRequest)
-    }
-
     public func completeGrant(
         resourceBaseURL: String,
         pairingRequestID: String,
-        authorizationCode: String,
-        pkce: DrelOAuthPKCEPair,
         request: DrelOAuthAuthorizationRequest
     ) async throws -> DrelOAuthGrantResponse {
-        let authorization: [String: Any] = [
-            "code": authorizationCode,
-            "codeVerifier": pkce.verifier,
-            "clientId": request.clientID,
-            "redirectUri": "drel://oauth/callback"
-        ]
+        let grantURL = URL(string: resourceBaseURL + "/api/v1/auth/drel/grants")!
+        let deviceGrant = try await DrelOAuthJSONWebToken.make(
+            claims: [
+                "aud": request.clientID,
+                "clientId": request.clientID,
+                "appId": request.appID,
+                "pairingRequestId": pairingRequestID,
+                "resourceOrigin": request.resourceOrigin,
+                "scope": request.scope.map(\.name).sorted(),
+                "htm": "POST",
+                "htu": grantURL.absoluteString,
+            ],
+            keyStore: keyStore,
+            deviceID: "drel-device",
+            typ: "drel-device-grant+jwt"
+        )
         let body: [String: Any] = [
             "pairingRequestId": pairingRequestID,
-            "authorization": authorization,
-            "requestedScopes": request.scope.map(\.name).sorted()
+            "clientId": request.clientID,
+            "requestedScopes": request.scope.map(\.name).sorted(),
+            "deviceGrant": deviceGrant
         ]
-        let url = URL(string: resourceBaseURL + "/api/v1/auth/drel/grants")!
-        var urlRequest = URLRequest(url: url)
+        var urlRequest = URLRequest(url: grantURL)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONSerialization.data(withJSONObject: body)

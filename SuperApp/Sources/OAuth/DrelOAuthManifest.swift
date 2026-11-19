@@ -24,7 +24,6 @@ public struct DrelOAuthManifestAuthorization: Codable, Equatable, Sendable {
     public let schemaVersion: String
     public let provider: String
     public let clientId: String
-    public let authorizationBaseURL: String
     public let resource: DrelOAuthResourceDeclaration
     public let scopes: [String]
     public let refreshPolicy: DrelOAuthRefreshPolicy
@@ -39,11 +38,10 @@ public struct DrelOAuthValidatedManifest: Equatable, Sendable {
     public let appID: String
     public let startURL: String
     public let authorization: DrelOAuthManifestAuthorization
-    public let authorizationOrigin: String
     public let resourceOrigin: String
     public let scopes: Set<DrelOAuthScope>
 
-    public static let provider = "drel-oauth-pkce-v1"
+    public static let provider = "drel-device-grant-v1"
     static let neverGrantedByDefault = ["settings.write", "providers.write", "admin", "deploy"]
 }
 
@@ -90,13 +88,6 @@ public enum DrelOAuthManifestValidator {
         guard isValidHostID(authorization.clientId), authorization.clientId == trustedAppID else {
             throw DrelOAuthError.manifestInvalid(.invalidClientID)
         }
-        guard let authorizationURL = URL(string: authorization.authorizationBaseURL),
-              authorizationURL.scheme?.lowercased() == "https",
-              authorizationURL.host != nil,
-              authorizationURL.query == nil,
-              authorizationURL.fragment == nil else {
-            throw DrelOAuthError.manifestInvalid(.invalidAuthorizationBaseURL)
-        }
         guard let resourceURL = URL(string: authorization.resource.baseURL),
               resourceURL.scheme?.lowercased() == "https",
               resourceURL.host != nil,
@@ -138,7 +129,6 @@ public enum DrelOAuthManifestValidator {
             appID: trustedAppID,
             startURL: startURL,
             authorization: authorization,
-            authorizationOrigin: origin(of: authorizationURL),
             resourceOrigin: resourceOrigin,
             scopes: scopes
         )
@@ -154,10 +144,6 @@ public enum DrelOAuthManifestValidator {
         return path.unicodeScalars.allSatisfy { $0 != "\0" }
     }
 
-    static func origin(of url: URL) -> String {
-        let port = url.port.map { ":\($0)" } ?? ""
-        return "\(url.scheme!.lowercased())://\(url.host!.lowercased())\(port)"
-    }
 
     static func isValidHostID(_ value: String) -> Bool {
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")

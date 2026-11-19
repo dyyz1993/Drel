@@ -12,9 +12,8 @@ final class DrelOAuthBrokerTests: XCTestCase {
     private func manifest() -> DrelOAuthManifestAuthorization {
         .init(
             schemaVersion: "1",
-            provider: "drel-oauth-pkce-v1",
+            provider: "drel-device-grant-v1",
             clientId: appID,
-            authorizationBaseURL: "https://api.drel.app",
             resource: .init(baseURL: origin, pathPrefix: "/api/"),
             scopes: ["workspace.read", "bots.read"],
             refreshPolicy: .init(idleTimeoutSeconds: 100, absoluteLifetimeSeconds: 200, rotateOnRefresh: true)
