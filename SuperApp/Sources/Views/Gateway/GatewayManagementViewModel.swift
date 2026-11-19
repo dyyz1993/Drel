@@ -19,12 +19,12 @@ final class GatewayManagementViewModel: ObservableObject {
     @Published var gatewayPendingRemoval: HTMLAppGatewayConfiguration?
 
     private let registry: HTMLAppGatewayRegistry
-    private let onboardingService: HTMLAppGatewayOnboardingService
+    private let onboardingService: DrelOAuthGatewayAuthorizationIntegration
     private let allowsDevelopmentMode: Bool
 
     init(
         registry: HTMLAppGatewayRegistry,
-        onboardingService: HTMLAppGatewayOnboardingService,
+        onboardingService: DrelOAuthGatewayAuthorizationIntegration,
         allowsDevelopmentMode: Bool
     ) {
         self.registry = registry

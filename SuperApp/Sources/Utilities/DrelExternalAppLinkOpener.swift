@@ -74,7 +74,17 @@ enum DrelExternalAppLinkOpener {
                     useManifestLoader: false,
                     preferCachedContent: target.offlineMode == .partial
                 )
-                WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: viewController)
+                let oauthContext = DrelOAuthLaunchIntegration.prepareLaunch(
+                    target,
+                    gatewayIdentity: HTMLAppRuntimeCenter.shared.gatewayIdentity
+                )
+                WebBrowserManager.shared.openBrowser(
+                    url: target.loaderURL,
+                    params: params,
+                    from: viewController
+                ) { _ in
+                    DrelOAuthBridgeInstaller.attachIfPossible(context: oauthContext)
+                }
                 #else
                 // Earlier trains keep the external link's bridge-free contract.
                 let params = DrelMessageOpenPolicy.browserParams(
