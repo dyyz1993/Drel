@@ -19,6 +19,7 @@ class SettingsViewModel {
         case tokenManager
         case apiKeyManage
         case webGrants
+        case appAuthorization
         case cacheManager
         case favorites
         case history
@@ -220,8 +221,7 @@ class SettingsViewModel {
         #endif
         sections.append(SettingsSection(header: L10n.tr("settings.section.notification"), items: notificationItems))
 
-        sections.append(
-            SettingsSection(header: L10n.tr("settings.section.preferences"), items: [
+        var preferenceItems: [SettingsItem] = [
                 SettingsItem(
                     icon: nil,
                     lucideIcon: .appFill,
@@ -230,7 +230,26 @@ class SettingsViewModel {
                     value: defaultStartupAppName,
                     iconBackgroundColor: pb,
                     iconTintColor: pt
-                ),
+                )
+        ]
+
+        #if !DREL_CONTAINER_ONLY
+        if DrelOAuthAvailability.hasAuthorizableApp {
+            preferenceItems.append(
+                SettingsItem(
+                    icon: nil,
+                    lucideIcon: .key,
+                    title: "应用授权",
+                    action: .appAuthorization,
+                    value: "OAuth / PKCE",
+                    iconBackgroundColor: pb,
+                    iconTintColor: pt
+                )
+            )
+        }
+        #endif
+
+        preferenceItems.append(contentsOf: [
                 SettingsItem(
                     icon: "paintpalette.fill",
                     lucideIcon: nil,
@@ -250,7 +269,7 @@ class SettingsViewModel {
                     iconTintColor: et
                 )
             ])
-        )
+        sections.append(SettingsSection(header: L10n.tr("settings.section.preferences"), items: preferenceItems))
 
         #if !DREL_RELEASE_MINIMAL_SETTINGS && !DREL_CONTAINER_ONLY
         sections.append(SettingsSection(header: L10n.tr("settings.section.developer"), items: [

@@ -361,7 +361,7 @@ final class PWAAppCatalogViewController: UIViewController {
     private let activationStore = HTMLAppPushActivationStore()
     private let presentationMetadataStore = HTMLAppPresentationMetadataStore()
     private lazy var launchResolver = DrelHTMLAppLaunchSupport.makeResolver(trustRegistry: runtime.trustRegistry)
-    private lazy var onboardingService = HTMLAppGatewayOnboardingService(
+    private lazy var onboardingService = DrelOAuthGatewayAuthorizationIntegration(
         gatewayRegistry: gatewayRegistry,
         trustRegistry: runtime.trustRegistry,
         permissionLedger: runtime.permissionLedger,

@@ -222,6 +222,17 @@ enum DrelHTMLAppLaunchSupport {
             useManifestLoader: false,
             preferCachedContent: target.offlineMode == .partial
         )
-        WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: presenter, animated: animated)
+        let oauthContext = DrelOAuthLaunchIntegration.prepareLaunch(
+            target,
+            gatewayIdentity: HTMLAppRuntimeCenter.shared.gatewayIdentity
+        )
+        WebBrowserManager.shared.openBrowser(
+            url: target.loaderURL,
+            params: params,
+            from: presenter,
+            animated: animated
+        ) { _ in
+            DrelOAuthBridgeInstaller.attachIfPossible(context: oauthContext)
+        }
     }
 }

@@ -10,7 +10,7 @@ final class GatewayConfigurationViewController: UIViewController {
         allowsDevelopmentHTTP: allowsDevelopmentMode,
         officialGateway: DrelGatewayConfiguration.official
     )
-    private lazy var onboardingService = HTMLAppGatewayOnboardingService(
+    private lazy var onboardingService = DrelOAuthGatewayAuthorizationIntegration(
         gatewayRegistry: registry,
         allowsDevelopmentMode: allowsDevelopmentMode
     )
