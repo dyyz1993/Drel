@@ -266,13 +266,35 @@ public enum DrelOAuthLaunchIntegration {
         _ target: HTMLAppLaunchTarget,
         gatewayIdentity: String
     ) -> DrelOAuthManagedContext? {
-        guard let context = try? context(for: target, gatewayIdentity: gatewayIdentity) else {
+        var oauthContext = try? context(for: target, gatewayIdentity: gatewayIdentity)
+        if oauthContext == nil {
+            syncGatewayManifests()
+            oauthContext = try? context(for: target, gatewayIdentity: gatewayIdentity)
+        }
+        guard let oauthContext else {
             DrelOAuthBridgeInstaller.prepareLaunch(context: DrelOAuthManagedContext(
                 gatewayIdentity: "", authorizationGatewayKey: "", appID: "", origin: "", parameters: [:]
             ))
             return nil
         }
-        DrelOAuthBridgeInstaller.prepareLaunch(context: context)
-        return context
+        DrelOAuthBridgeInstaller.prepareLaunch(context: oauthContext)
+        return oauthContext
+    }
+
+    private static func syncGatewayManifests() {
+        let registry = HTMLAppGatewayRegistry(officialGateway: DrelGatewayConfiguration.official)
+        let gateway = registry.activeGateway() ?? DrelGatewayConfiguration.official
+        let integration = DrelOAuthGatewayAuthorizationIntegration(
+            gatewayRegistry: registry,
+            trustRegistry: HTMLAppRuntimeCenter.shared.trustRegistry
+        )
+        let semaphore = DispatchSemaphore(value: 0)
+        integration.validate(gateway) { result in
+            if case .success(let report) = result {
+                try? integration.activate(report)
+            }
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + 15)
     }
 }
