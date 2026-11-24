@@ -159,7 +159,7 @@ if [[ -n "$SIGNING_KEYCHAIN" ]]; then
 fi
 if ! xcodebuild archive -workspace Drel.xcworkspace -scheme "$RELEASE_SCHEME" \
   -archivePath "$ARCHIVE" -derivedDataPath "$DD" -destination 'generic/platform=iOS' \
-  -allowProvisioningUpdates "${ASC_AUTH_ARGS[@]}" "${ARCHIVE_SIGN_ARGS[@]}" \
+  -allowProvisioningUpdates ${ASC_AUTH_ARGS[@]+"${ASC_AUTH_ARGS[@]}"} ${ARCHIVE_SIGN_ARGS[@]+"${ARCHIVE_SIGN_ARGS[@]}"} \
   MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD" >"$ROOT/build/archive-$BUILD.log" 2>&1; then
   echo "---- archive-$BUILD.log (tail) ----" >&2
   tail -n 160 "$ROOT/build/archive-$BUILD.log" >&2 || true
