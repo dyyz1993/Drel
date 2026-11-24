@@ -108,7 +108,23 @@ edits = [
     ("SuperApp/Sources/Views/Settings/PushEncryptionView.swift", r"com\.webbridgekit\.superapp\.push-crypto", keychain),
     ("SuperApp/Sources/Views/Tools/UIAuditTool.swift", r"com\.webbridgekit\.superapp", bundle),
     ("NotificationServiceExtension/IconAvatarProcessor.swift", r"com\.webbridgekit\.superapp", bundle),
+    # The extension reads the app's shared container and keychain suite; both
+    # must follow the app group or it looks in a container it cannot open.
+    ("NotificationServiceExtension/NotificationService.swift", r"group\.com\.webbridgekit\.superapp", group),
+    ("NotificationServiceExtension/NotificationService.swift", r"com\.webbridgekit\.superapp", bundle),
+    ("NotificationServiceExtension/PushCrypto.swift", r"group\.com\.webbridgekit\.superapp", group),
+    ("SuperApp/SuperApp.entitlements", r"group\.com\.webbridgekit\.superapp", group),
+    ("NotificationServiceExtension/NotificationServiceExtension.entitlements", r"group\.com\.webbridgekit\.superapp", group),
+    # Keychain service labels are not access groups, but they should follow the
+    # operator's bundle id so two installs never share stored identities.
+    ("SuperApp/Sources/OAuth/DrelOAuthGatewayIntegration.swift", r"com\.webbridgekit\.superapp(?=\.)", bundle),
+    ("SuperApp/Sources/OAuth/DrelOAuthDeviceKey.swift", r"com\.webbridgekit\.superapp(?=\.)", bundle),
+    ("SuperApp/Sources/OAuth/DrelOAuthKeychain.swift", r"com\.webbridgekit\.superapp(?=\.)", bundle),
+    ("SuperApp/Sources/Services/OfficialPushIdentityStore.swift", r"com\.webbridgekit\.superapp(?=\.)", bundle),
     ("SuperApp/Sources/Info.plist", r"<string>drel</string>", f"<string>{scheme}</string>"),
+    # The operator already passed --team-id; apply it so automatic signing
+    # does not start out bound to the official team.
+    ("project.yml", r'DEVELOPMENT_TEAM: "?[A-Z0-9]{10}"?', f'DEVELOPMENT_TEAM: "{team}"'),
 ]
 
 changed = 0
@@ -231,6 +247,12 @@ cat > "$OUT/BUILD-NOTES.md" <<EOF
 3. Create an App Group \`$APP_GROUP\` and enable it for both the app and
    the Notification Service Extension.
 4. Add your APNs key id and team id to the signing settings.
+
+## Coexistence with the official Drel app
+
+The \`webbridgekit://\` deep-link scheme is shared with the official app. When
+both builds are installed on one phone, iOS picks either app for those links.
+The \`$SCHEME://\` scheme is unique to this build and is never ambiguous.
 
 ## Build steps
 

@@ -31,6 +31,27 @@ deploys source but cannot read or replace APNs secrets.
 
 ## Deployment
 
+### Deploying your own instance
+
+The committed `wrangler.jsonc` is the production configuration: it owns the
+`api.drel.app` custom domain and the `drel-api-proxy` worker name. To deploy an
+independent copy, change both before the first deploy:
+
+```bash
+npx wrangler login
+# In wrangler.jsonc: set "name" to your own worker name, remove the "routes"
+# block, and set "workers_dev": true (or point "routes" at a zone you own).
+npm run test
+npm run check
+npx wrangler secret put APNS_AUTH_KEY_P8      # plus APNS_KEY_ID / APNS_TEAM_ID / APNS_TOPIC
+npm run deploy
+```
+
+Durable Object migrations in the file create their own storage per worker, so
+an independent instance never shares state with the official deployment.
+
+### Official deployment
+
 ```bash
 cd infra/cloudflare/drel-api-proxy
 npm run test
