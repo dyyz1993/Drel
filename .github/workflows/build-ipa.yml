@@ -108,28 +108,6 @@ jobs:
           security show-keychain-info login.keychain-db
           echo "login keychain unlocked and codesign partition authorized"
 
-      - name: Debug signing context (runner session)
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          set -uo pipefail
-          echo "── keychain search list ──"
-          security list-keychains -d user
-          echo "── default keychain ──"
-          security default-keychain
-          echo "── login keychain lock state ──"
-          security show-keychain-info login.keychain-db 2>&1 || true
-          echo "── valid identities ──"
-          security find-identity -v -p codesigning | sed -n '1,8p'
-          echo "── probe distribution sign ──"
-          cp /bin/echo /tmp/_sigtest_dist
-          codesign --force --sign A3C0DCDF6570C81A052C8A4BD0A7795382E0055E /tmp/_sigtest_dist \
-            && echo "DIST SIGN OK" || echo "DIST SIGN FAILED: $?"
-          echo "── probe development sign ──"
-          cp /bin/echo /tmp/_sigtest_dev
-          codesign --force --sign 4CA215A1364F9CEFED0024B178E415D3566A12AC /tmp/_sigtest_dev \
-            && echo "DEV SIGN OK" || echo "DEV SIGN FAILED: $?"
-
       - name: Archive, export and upload to TestFlight
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
