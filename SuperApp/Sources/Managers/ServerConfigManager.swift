@@ -99,7 +99,7 @@ public class ServerConfigManager {
             return false
         }
         return url.host?.lowercased().split(separator: ".").map(String.init)
-            == ["wbk", "legacy-infra", "legacy-host", "xyz"]
+            == ["gateway", "example", "invalid"]
     }
 
     // MARK: - 配置管理

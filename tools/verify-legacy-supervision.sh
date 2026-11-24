@@ -1,18 +1,18 @@
 #!/bin/bash
-# Verify whether the public legacy-infra WebBridgeServer has process supervision.
+# Verify whether the public legacy WebBridgeServer has process supervision.
 
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPORT_DIR="$PROJECT_ROOT/build/reports"
-REPORT="$REPORT_DIR/legacy-infra-supervision-verification.md"
-SSH_HOST="${WBK_legacy-infra_SSH_HOST:-legacy-infra}"
-REMOTE_BINARY="${WBK_legacy-infra_WEBBRIDGE_BINARY:-/root/WebBridgeKit/Server/.build/release/WebBridgeServer}"
-REMOTE_PORT="${WBK_legacy-infra_WEBBRIDGE_PORT:-8080}"
-SERVICE_NAME="${WBK_legacy-infra_SERVICE_NAME:-webbridgeserver.service}"
-SUPERVISOR_PROGRAM="${WBK_legacy-infra_SUPERVISOR_PROGRAM:-webbridgeserver}"
-NODE_ADMIN_PORT="${WBK_legacy-infra_NODE_ADMIN_PORT:-8765}"
-NODE_ADMIN_SUPERVISOR_PROGRAM="${WBK_legacy-infra_NODE_ADMIN_SUPERVISOR_PROGRAM:-webbridge-node-admin}"
+REPORT="$REPORT_DIR/legacy-supervision-verification.md"
+SSH_HOST="${WBK_LEGACY_BACKEND_SSH_HOST:-<ssh-host>}"
+REMOTE_BINARY="${WBK_LEGACY_BACKEND_BINARY:-<remote-root>/Server/.build/release/WebBridgeServer}"
+REMOTE_PORT="${WBK_LEGACY_BACKEND_PORT:-<port>}"
+SERVICE_NAME="${WBK_LEGACY_BACKEND_SERVICE_NAME:-<service>}.service"
+SUPERVISOR_PROGRAM="${WBK_LEGACY_BACKEND_SUPERVISOR_PROGRAM:-<service>}"
+NODE_ADMIN_PORT="${WBK_LEGACY_BACKEND_NODE_ADMIN_PORT:-<port>}"
+NODE_ADMIN_SUPERVISOR_PROGRAM="${WBK_LEGACY_BACKEND_NODE_ADMIN_SUPERVISOR_PROGRAM:-<service>}"
 
 mkdir -p "$REPORT_DIR"
 
@@ -224,7 +224,7 @@ elif printf '%s' "$supervisor_program" | grep -Eq "^${SUPERVISOR_PROGRAM}[[:spac
 fi
 
 {
-    echo "# legacy-infra WebBridgeServer Supervision Verification"
+    echo "# legacy WebBridgeServer Supervision Verification"
     echo ""
     echo "- Date: $(date '+%Y-%m-%d %H:%M:%S %Z')"
     echo "- SSH host: \`$SSH_HOST\`"

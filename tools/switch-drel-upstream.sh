@@ -6,7 +6,7 @@
 # makes the rollback just as fast.
 #
 #   bash tools/switch-drel-upstream.sh status
-#   bash tools/switch-drel-upstream.sh use legacy-infra
+#   bash tools/switch-drel-upstream.sh use legacy backend
 #   bash tools/switch-drel-upstream.sh use nas --origin https://hub.example.com
 #   bash tools/switch-drel-upstream.sh verify https://hub.example.com
 #
@@ -40,7 +40,7 @@ status)
   ok "api.drel.app -> $origin"
   echo
   echo "  Known backends:"
-  echo "    legacy-infra   the Swift server on the existing box (the current default)"
+  echo "    legacy backend   the Swift server on the existing box (the current default)"
   echo "    nas       your own server, fronted by a reverse proxy"
   echo
   echo "  The public hostname does not change when you switch; only this value does."
@@ -55,16 +55,16 @@ use)
       *) shift ;;
     esac
   done
-  [[ -n "$target" ]] || bad "Pass the target: legacy-infra or nas."
+  [[ -n "$target" ]] || bad "Pass the target: legacy backend or nas."
 
   current="$(current_origin)"
   case "$target" in
-    legacy-infra) new_origin="${origin_override:-https://wbk.legacy-infra.example.invalid:8443}" ;;
+    legacy backend) new_origin="${origin_override:-https://gateway.example.invalid:8443}" ;;
     nas)
       [[ -n "$origin_override" ]] \
         || bad "Pass --origin https://<your-hostname> for the nas target."
       new_origin="$origin_override" ;;
-    *) bad "Unknown target: $target (use legacy-infra or nas)." ;;
+    *) bad "Unknown target: $target (use legacy backend or nas)." ;;
   esac
 
   if [[ "$new_origin" == "$current" ]]; then

@@ -6,8 +6,8 @@ import XCTest
 final class OfflineVOTDiagnosticsTests: XCTestCase {
     private let app = XCUIApplication()
     private let identities = [
-        "app.vot.example.invalid",
-        "app.vot.legacy-infra.example.invalid"
+        "app.example.invalid",
+        "app.legacy.example.invalid"
     ]
 
     override func setUpWithError() throws {
@@ -103,7 +103,7 @@ final class OfflineVOTDiagnosticsTests: XCTestCase {
         app.launch()
 
         let tile = app.descendants(matching: .any)
-            .matching(identifier: "pwaHome.app.app.vot.example.invalid")
+            .matching(identifier: "pwaHome.app.app.example.invalid")
             .firstMatch
         var scrolls = 0
         while (!tile.exists || !tile.isHittable) && scrolls < 12 {
@@ -153,7 +153,7 @@ final class OfflineVOTDiagnosticsTests: XCTestCase {
 
     func testInvalidWorkspaceTokenRecordsUnauthorizedAPIStage() throws {
         let tile = app.descendants(matching: .any)
-            .matching(identifier: "pwaHome.app.app.vot.example.invalid")
+            .matching(identifier: "pwaHome.app.app.example.invalid")
             .firstMatch
         var scrolls = 0
         while (!tile.exists || !tile.isHittable) && scrolls < 12 {

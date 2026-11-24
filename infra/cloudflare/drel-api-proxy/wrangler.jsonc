@@ -14,7 +14,7 @@
     // Swift-backend decommission (2026-10-26): the edge serves the whole API.
     // Unmatched paths answer a clean 404; restoring this variable re-enables
     // the legacy proxy in one deploy if a rollback is ever needed.
-    // "UPSTREAM_ORIGIN": "https://wbk.legacy-infra.example.invalid:8443",
+    // "UPSTREAM_ORIGIN": "https://gateway.example.invalid:8443",
     "DREL_MANAGED_PUSH_MAX_DELIVERIES_PER_MINUTE": "60",
     // 2026.10.29-keybind: /api/v1/html-apps accepts deviceKey-bound private
     // registration without the admin key (paired-key check, 20/key cap,

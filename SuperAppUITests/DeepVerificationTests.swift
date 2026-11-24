@@ -380,7 +380,7 @@ final class DeepVerificationTests: XCTestCase {
     /// registering it as a privileged HTML app.
     func testExternalHTTPSLinkOpensInsideDrelAsNormalPage() throws {
         Self.openExternally(
-            "drel://open?url=https%3A%2F%2Fpi-chat.legacy-infra.example.invalid%3A8443%2Ftest_resources%2Fbridge-interaction.html"
+            "drel://open?url=https%3A%2F%2Fassets.example.invalid%3A8443%2Ftest_resources%2Fbridge-interaction.html"
         )
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let openButton = springboard.buttons["打开"].firstMatch
@@ -412,8 +412,8 @@ final class DeepVerificationTests: XCTestCase {
     /// Full iOS Home Screen route: Safari adds the HTTPS entry as a web clip,
     /// and opening that icon redirects into Drel with the selected page URL.
     func testHomeScreenEntryAddsAndOpensPiChatInsideDrel() throws {
-        let target = "https://pi-chat.legacy-infra.example.invalid:8443/test_resources/bridge-interaction.html"
-        let icon = "https://pi-chat.legacy-infra.example.invalid:8443/icons/icon-180.png"
+        let target = "https://assets.example.invalid:8443/test_resources/bridge-interaction.html"
+        let icon = "https://assets.example.invalid:8443/icons/icon-180.png"
         var entry = URLComponents(string: "https://drel.app/launch/")!
         entry.queryItems = [
             URLQueryItem(name: "url", value: target),
@@ -474,7 +474,7 @@ final class DeepVerificationTests: XCTestCase {
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5), "The unregistered page should use normal in-app browser chrome")
         XCTAssertTrue(
             app.navigationBars.staticTexts.matching(
-                NSPredicate(format: "label CONTAINS[c] %@", "pi-chat.legacy-infra.example.invalid")
+                NSPredicate(format: "label CONTAINS[c] %@", "assets.example.invalid")
             ).firstMatch.waitForExistence(timeout: 20),
             "Drel must load the requested Pi Chat destination, not merely display an empty browser shell"
         )

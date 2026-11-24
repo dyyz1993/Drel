@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────────
 # End-to-end push feature test suite — tests every NSE processor and
-# push parameter against the live legacy-infra server + real device.
+# push parameter against the live legacy server + real device.
 #
 # Usage:
 #   bash tools/test-push-features.sh <device-key>
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 KEY="${1:?Usage: $0 <device-key>}"
-SERVER="https://wbk.legacy-infra.example.invalid:8443"
+SERVER="https://gateway.example.invalid:8443"
 PASSES=0; FAILS=0; SKIP=0
 
 header() { echo -e "\n━━━ $1 ━━━"; }
@@ -62,7 +62,7 @@ done
 
 # ── 3. Icon attachment ─────────────────────────────────────────────
 header "3. Icon (NSE IconProcessor)"
-ICON_URL="https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/images/logo.png"
+ICON_URL="https://assets.example.invalid:8443/test_resources/images/logo.png"
 if send_push "自动测试-图标" "横幅应显示自定义图标" "icon=${ICON_URL}"; then
     pass "icon push sent (check banner for custom icon)"
 else
@@ -167,7 +167,7 @@ fi
 
 # ── 12. Image (large picture) ──────────────────────────────────────
 header "12. Image attachment (NSE ImageProcessor)"
-IMAGE_URL="https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/images/logo.png"
+IMAGE_URL="https://assets.example.invalid:8443/test_resources/images/logo.png"
 if send_push "自动测试-图片" "横幅应显示图片附件" "image=${IMAGE_URL}"; then
     pass "image push sent"
 else

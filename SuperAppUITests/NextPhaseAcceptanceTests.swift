@@ -64,9 +64,9 @@ final class NextPhaseAcceptanceTests: XCTestCase {
 
         app.buttons["gateway.validate"].tap()
         XCTAssertTrue(element("gateway.report").waitForExistence(timeout: 15))
-        XCTAssertTrue(app.staticTexts["wbk.legacy-infra.example.invalid"].exists)
-        XCTAssertTrue(app.staticTexts["https://wbk.legacy-infra.example.invalid:8443/health"].exists)
-        XCTAssertTrue(app.staticTexts["https://wbk.legacy-infra.example.invalid:8443/api/v1/html-apps"].exists)
+        XCTAssertTrue(app.staticTexts["gateway.example.invalid"].exists)
+        XCTAssertTrue(app.staticTexts["https://gateway.example.invalid:8443/health"].exists)
+        XCTAssertTrue(app.staticTexts["https://gateway.example.invalid:8443/api/v1/html-apps"].exists)
         XCTAssertTrue(app.staticTexts["wbk-self-hosted-20260816"].exists)
         // SwiftUI currently surfaces this control by its visible label rather
         // than the parent gateway.activate identifier.
@@ -151,7 +151,7 @@ final class NextPhaseAcceptanceTests: XCTestCase {
       "schemaVersion": "1",
       "id": "webbridgekit-gateway",
       "displayName": "WebBridgeKit Gateway",
-      "baseURL": "https://wbk.legacy-infra.example.invalid:8443",
+      "baseURL": "https://gateway.example.invalid:8443",
       "healthEndpoint": "/health",
       "manifestEndpoint": "/api/v1/html-apps",
       "publicKeyId": "wbk-self-hosted-20260816",

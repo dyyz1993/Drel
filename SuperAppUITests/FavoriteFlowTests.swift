@@ -109,7 +109,7 @@ final class FavoriteFlowTests: XCTestCase {
         favoritesRow.tap()
 
         let domainLabel = app.staticTexts.matching(
-            NSPredicate(format: "label CONTAINS %@", "pi-chat.legacy-infra")
+            NSPredicate(format: "label CONTAINS %@", "assets.example.invalid")
         ).firstMatch
         XCTAssertTrue(domainLabel.waitForExistence(timeout: 10), "收藏夹里没有 pi-chat 条目")
         captureScreenshot(named: "05-favorites")

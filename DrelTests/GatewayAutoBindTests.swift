@@ -14,12 +14,12 @@ import WebBridgeKit
 
 final class GatewayAutoBindTests: XCTestCase {
 
-    /// relay.legacy-infra 线上描述符的逐字节形状（2026-10-24 curl 实录，密钥为公开值）。
+    /// 通用 relay 描述符的逐字节形状（2026-10-24 curl 实录，密钥为公开值）。
     private let liveDescriptor = """
     {
-      "baseURL": "https://relay.legacy-infra.example.invalid:8443",
+      "baseURL": "https://relay.example.invalid:8443",
       "healthPath": "/health",
-      "id": "relay-legacy-infra",
+      "id": "relay-legacy",
       "manifestPath": "/api/v1/html-apps",
       "name": "Drel Self-hosted Gateway",
       "publicKey": "8UxhqhPZfmw61fWYj8PELp4MgTk5GBDnBexT85KLTZM",
@@ -32,8 +32,8 @@ final class GatewayAutoBindTests: XCTestCase {
             HTMLAppGatewayConfiguration.self,
             from: Data(liveDescriptor.utf8)
         )
-        XCTAssertEqual(configuration.id, "relay-legacy-infra")
-        XCTAssertEqual(configuration.baseURL, "https://relay.legacy-infra.example.invalid:8443")
+        XCTAssertEqual(configuration.id, "relay-legacy")
+        XCTAssertEqual(configuration.baseURL, "https://relay.example.invalid:8443")
         XCTAssertEqual(configuration.manifestPath, "/api/v1/html-apps")
         XCTAssertEqual(configuration.publicKeyID, "gw-relay-20261023")
         XCTAssertEqual(configuration.publicKey, "8UxhqhPZfmw61fWYj8PELp4MgTk5GBDnBexT85KLTZM")

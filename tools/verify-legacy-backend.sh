@@ -1,12 +1,12 @@
 #!/bin/bash
-# Verify the public legacy-infra backend routes used by WebBridgeKit.
+# Verify the public legacy backend routes used by WebBridgeKit.
 
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPORT_DIR="$PROJECT_ROOT/build/reports"
-REPORT="$REPORT_DIR/legacy-infra-backend-verification.md"
-BASE_URL="${WBK_legacy-infra_URL:-https://wbk.legacy-infra.example.invalid:8443}"
+REPORT="$REPORT_DIR/legacy-backend-verification.md"
+BASE_URL="${WBK_LEGACY_BACKEND_URL:-https://gateway.example.invalid:8443}"
 CURL_COMMON=(-k -sS --connect-timeout 10 --max-time 20)
 PYTHON3="${PYTHON3:-/usr/bin/python3}"
 
@@ -208,7 +208,7 @@ expect_status() {
     local status
 
     slug="$(echo "$name" | tr '[:upper:] /' '[:lower:]--' | tr -cd '[:alnum:]-')"
-    evidence="$REPORT_DIR/legacy-infra-$slug.json"
+    evidence="$REPORT_DIR/legacy-$slug.json"
     : >"$evidence"
 
     echo "== $name =="
@@ -239,7 +239,7 @@ expect_unavailable_status() {
     local status
 
     slug="$(echo "$name" | tr '[:upper:] /' '[:lower:]--' | tr -cd '[:alnum:]-')"
-    evidence="$REPORT_DIR/legacy-infra-$slug.json"
+    evidence="$REPORT_DIR/legacy-$slug.json"
     : >"$evidence"
 
     echo "== $name =="
@@ -277,31 +277,31 @@ push_body="{\"device_key\":\"$device_key\",\"title\":\"$escaped_title\",\"body\"
 test_body="{\"device_key\":\"test\",\"title\":\"$escaped_title\",\"body\":\"$escaped_body\",\"sound\":\"bell\",\"group\":\"Codex Group\",\"url\":\"webbridgekit://open?url=https%3A%2F%2Fexample.com\"}"
 command_body="{\"type\":\"plainText\",\"data\":\"public command ${timestamp}\"}"
 
-echo "Verifying legacy-infra backend: $BASE_URL"
+echo "Verifying legacy backend: $BASE_URL"
 
 expect_status "Health" "GET" "/health" "200"
-expect_json_nonempty "Health exposes server version" "$REPORT_DIR/legacy-infra-health.json" "version"
+expect_json_nonempty "Health exposes server version" "$REPORT_DIR/legacy-backend-health.json" "version"
 expect_status "Stats" "GET" "/api/v1/stats" "200"
 expect_status "Manifest list" "GET" "/api/v1/manifests" "200"
 expect_status "Register fake device" "POST" "/register" "200" "$register_body"
-expect_json_value "Register response code" "$REPORT_DIR/legacy-infra-register-fake-device.json" "code" "200"
+expect_json_value "Register response code" "$REPORT_DIR/legacy-backend-register-fake-device.json" "code" "200"
 expect_status "JSON push route" "POST" "/push" "200" "$push_body"
-expect_json_value "JSON fake-token push response code" "$REPORT_DIR/legacy-infra-json-push-route.json" "code" "503"
-expect_json_value "JSON fake-token push accepted count" "$REPORT_DIR/legacy-infra-json-push-route.json" "accepted" "0"
+expect_json_value "JSON fake-token push response code" "$REPORT_DIR/legacy-backend-json-push-route.json" "code" "503"
+expect_json_value "JSON fake-token push accepted count" "$REPORT_DIR/legacy-backend-json-push-route.json" "accepted" "0"
 expect_status "Test push endpoint" "POST" "/test" "200" "$test_body"
-expect_json_value "Test push response success" "$REPORT_DIR/legacy-infra-test-push-endpoint.json" "success" "true"
+expect_json_value "Test push response success" "$REPORT_DIR/legacy-backend-test-push-endpoint.json" "success" "true"
 expect_status "Command generation" "POST" "/api/v1/commands" "200" "$command_body"
-expect_command_token_semantics "$REPORT_DIR/legacy-infra-command-generation.json" "public command ${timestamp}"
+expect_command_token_semantics "$REPORT_DIR/legacy-backend-command-generation.json" "public command ${timestamp}"
 expect_status "Bark compatible GET" "GET" "/test_resources/Codex/route%20check" "200"
-expect_json_value "Bark GET response code" "$REPORT_DIR/legacy-infra-bark-compatible-get.json" "code" "200"
+expect_json_value "Bark GET response code" "$REPORT_DIR/legacy-backend-bark-compatible-get.json" "code" "200"
 expect_status "Bark compatible POST" "POST" "/test_resources/Codex/post%20route" "200"
-expect_json_value "Bark POST response code" "$REPORT_DIR/legacy-infra-bark-compatible-post.json" "code" "200"
+expect_json_value "Bark POST response code" "$REPORT_DIR/legacy-backend-bark-compatible-post.json" "code" "200"
 expect_status "Bark encoded query route" "GET" "/test_resources/$encoded_cn_title/$encoded_cn_body?sound=bell&group=$encoded_group&url=$encoded_bark_url" "200"
-expect_json_value "Bark encoded query response code" "$REPORT_DIR/legacy-infra-bark-encoded-query-route.json" "code" "200"
+expect_json_value "Bark encoded query response code" "$REPORT_DIR/legacy-backend-bark-encoded-query-route.json" "code" "200"
 
 # A serialized payload over 4 KB must be rejected before any APNs request.
 oversize_body="{\"device_key\":\"$device_key\",\"title\":\"Codex oversize preflight\",\"body\":\"$(printf 'A%.0s' $(seq 1 5000))\"}"
-oversize_evidence="$REPORT_DIR/legacy-infra-oversize-preflight.json"
+oversize_evidence="$REPORT_DIR/legacy-backend-oversize-preflight.json"
 oversize_status="$(request "POST" "/push" "$oversize_body" "$oversize_evidence")"
 oversize_code="$("$PYTHON3" - "$oversize_evidence" <<'PY'
 import json
@@ -329,7 +329,7 @@ fi
 expect_status "Node admin path proxy current gap" "GET" "/admin" "404"
 
 {
-    echo "# legacy-infra Backend Verification"
+    echo "# legacy backend Backend Verification"
     echo ""
     echo "- Date: $(date '+%Y-%m-%d %H:%M:%S %Z')"
     echo "- Base URL: \`$BASE_URL\`"

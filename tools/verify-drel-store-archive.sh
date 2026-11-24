@@ -51,7 +51,7 @@ bash "$ROOT/tools/privacy-surface-check.sh" "$APP_PATH" \
 
 [[ -z "$(value NSAppTransportSecurity:NSAllowsArbitraryLoads)" ]] || fail "arbitrary HTTP loading leaked"
 
-for marker in 'wbk.legacy-infra.example.invalid' 'ae8fcb.legacy-infra.example.invalid'; do
+for marker in 'gateway.example.invalid' 'assets.example.invalid'; do
     ! strings -a "$BINARY" | grep -qF -- "$marker" || fail "legacy source-host marker leaked: $marker"
 done
 

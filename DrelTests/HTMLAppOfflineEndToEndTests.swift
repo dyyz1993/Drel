@@ -14,7 +14,7 @@ final class HTMLAppOfflineEndToEndTests: XCTestCase {
     /// SHA-256 of the bundled package.json manifest bytes (current 0.4.10.4
     /// build). The test fails if the fixture ever drifts from this build.
     private static let fixtureResourceManifestSHA256 =
-        "fad7f53c788b1f9f014e35c3112275d775feb0f838963da57161d637fd86b619"
+        "e7ced427de267505b52c13ec2fa4e220896d394d2d1fa3e450fb784c5550d0ba"
     /// SHA-256 of the bundled drel.html entrypoint (same pinned build).
     private static let fixtureDrelHTMLSHA256 =
         "fd70f288e7aac95655fc391f80624197767fd27a25d4646755c39925da4cb3cc"
@@ -68,8 +68,8 @@ final class HTMLAppOfflineEndToEndTests: XCTestCase {
         }
     }
 
-    private let origin = URL(string: "https://vot.example.invalid:8443")!
-    private let appID = "app.vot.example.invalid"
+    private let origin = URL(string: "https://api.example.invalid:8443")!
+    private let appID = "app.example.invalid"
     private let signingKey = Curve25519.Signing.PrivateKey()
     private let keyID = "gw-e2e-key"
     private let locator = HTMLAppOfflinePackageLocator()

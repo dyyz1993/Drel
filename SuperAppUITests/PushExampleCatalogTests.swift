@@ -35,7 +35,7 @@ final class PushExampleCatalogTests: XCTestCase {
         }
         app.launchArguments = [
             "--UITesting",
-            "--push-server=https://wbk.legacy-infra.example.invalid:8443"
+            "--push-server=https://gateway.example.invalid:8443"
         ]
         app.launchEnvironment = [
             "AppleLanguages": "(zh-Hans)",

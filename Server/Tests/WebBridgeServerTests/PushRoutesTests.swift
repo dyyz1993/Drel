@@ -336,7 +336,7 @@ struct PushRoutesTests {
                 ],
                 responseMode: "thirdParty",
                 submit: ApprovalSubmit(
-                    url: "https://legacy-approve.example.invalid/api/review",
+                    url: "https://legacy-gateway.example.invalid/api/review",
                     ticket: "ticket-abc"
                 )
             )
@@ -348,7 +348,7 @@ struct PushRoutesTests {
             from: Data(approvalJSON.utf8)
         )
         #expect(approval.responseMode == "thirdParty")
-        #expect(approval.submit?.url == "https://legacy-approve.example.invalid/api/review")
+        #expect(approval.submit?.url == "https://legacy-gateway.example.invalid/api/review")
         #expect(approval.submit?.ticket == "ticket-abc")
     }
 

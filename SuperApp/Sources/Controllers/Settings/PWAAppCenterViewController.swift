@@ -357,7 +357,7 @@ final class PWAAppCenterViewController: UIViewController {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--register-vot-offline-fixtures") {
             preservedVOTFixtures = trustRegistry.registeredManifests().filter {
-                $0.appID == "app.vot.example.invalid" || $0.appID == "app.vot.legacy-infra.example.invalid"
+                $0.appID == "app.example.invalid" || $0.appID == "app.legacy.example.invalid"
             }
         }
         #endif

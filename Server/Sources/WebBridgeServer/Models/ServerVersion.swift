@@ -1,11 +1,11 @@
 import Foundation
 
-/// Server build identity exposed via `/health`. The legacy-infra deployment is a
+/// Server build identity exposed via `/health`. The legacy deployment is a
 /// manually synced source tree (no git remote), so this constant is the only
 /// reliable way to tell WHICH server code a phone is talking to.
 ///
 /// RULE: bump `current` on every behavioral server change that ships to
-/// legacy-infra. When diagnosing any client/server mismatch, check this value
+/// legacy backend. When diagnosing any client/server mismatch, check this value
 /// FIRST — a stale server explains many "the fix doesn't work" reports.
 enum ServerVersion {
     /// - 2026.10.27-1: server history preserves native approval actions so
@@ -20,7 +20,7 @@ enum ServerVersion {
     /// - 2026.10.16-1: APNs requests preflight the 4 KB payload limit, log
     ///   Apple's rejection reason, and map positive `ttl` values to
     ///   `apns-expiration` for bounded offline storage.
-    /// - 2026.09.15-1: full redeploy after the legacy-infra container was rebuilt
+    /// - 2026.09.15-1: full redeploy after the legacy container was rebuilt
     ///   and the Swift server (with the gateway Ed25519 key and device
     ///   registrations) was lost. Ships a NEW gateway signing keypair —
     ///   existing app builds fail-closed on gateway manifests until they pin

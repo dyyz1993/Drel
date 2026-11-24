@@ -20,14 +20,14 @@ import WebBridgeKit
 ///   points the page's API base at an unreachable loopback port, so page API
 ///   failures happen without modifying device networking.
 enum DrelOfflineE2EFixture {
-    static let appID = "app.vot.example.invalid"
-    static let origin = URL(string: "https://vot.example.invalid:8443")!
+    static let appID = "app.example.invalid"
+    static let origin = URL(string: "https://api.example.invalid:8443")!
     static let installedVersion = "0.4.10.4"
     static let staleCurrentVersion = "0.4.10.5"
     /// SHA-256 of the pinned package.json manifest bytes (current 0.4.10.4
     /// build). Bootstrap fails closed if the fixture ever drifts.
     static let fixtureManifestSHA256 =
-        "fad7f53c788b1f9f014e35c3112275d775feb0f838963da57161d637fd86b619"
+        "e7ced427de267505b52c13ec2fa4e220896d394d2d1fa3e450fb784c5550d0ba"
     private static let keyID = "gw-e2e-fixture"
 
     /// Fixed deterministic test-only signing key (derived from a constant

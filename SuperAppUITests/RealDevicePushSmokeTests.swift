@@ -13,7 +13,7 @@ import XCTest
 final class RealDevicePushSmokeTests: XCTestCase {
 
     /// Test the same public origin that the Drel Store build copies and uses;
-    /// the legacy-infra host remains an implementation origin behind this proxy.
+    /// the legacy backend host remains an implementation origin behind this proxy.
     private static let pushServer = "https://api.drel.app"
 
     private var app: XCUIApplication!

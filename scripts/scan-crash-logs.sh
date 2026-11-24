@@ -20,7 +20,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 BUNDLE_ID="com.webbridgekit.superapp"
-REMOTE_SERVER="${WBK_SERVER_URL:-https://wbk.legacy-infra.example.invalid:8443}"
+REMOTE_SERVER="${WBK_SERVER_URL:-https://gateway.example.invalid:8443}"
 CRASHES=()
 WARNINGS=()
 SCAN_COUNT=0

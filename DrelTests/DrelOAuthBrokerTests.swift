@@ -4,8 +4,8 @@ import XCTest
 import WebBridgeKit
 
 final class DrelOAuthBrokerTests: XCTestCase {
-    private let appID = "app.vot.example.invalid"
-    private let origin = "https://vot.example.invalid:8443"
+    private let appID = "app.example.invalid"
+    private let origin = "https://api.example.invalid:8443"
     private let gatewayKey = "test-gateway-key"
     private let storageKey = "com.webbridgekit.superapp.oauth.manifest-authorizations"
 

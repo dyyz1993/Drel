@@ -3,7 +3,7 @@ import XCTest
 /// Real-app cold-start chain for the verified stale-package fallback:
 /// install the packaged VOT 0.4.10.4 fixture through the DEBUG bootstrap,
 /// terminate, cold start, tap the actual home tile
-/// (pwaHome.app.app.vot.example.invalid), and assert the local page renders
+/// (pwaHome.app.app.example.invalid), and assert the local page renders
 /// (offline notice, no online failure alert) and the Settings diagnostics
 /// page reports the offline package source. The app's network policy is
 /// driven by the DEBUG confirmed-offline override; host networking is never
@@ -25,7 +25,7 @@ final class OfflineStaleColdStartUITests: XCTestCase {
         // around the tappable Button, so the identifier must be matched
         // across element types (same pattern as OfflineVOTDiagnosticsTests).
         let tile = app.descendants(matching: .any)
-            .matching(identifier: "pwaHome.app.app.vot.example.invalid")
+            .matching(identifier: "pwaHome.app.app.example.invalid")
             .firstMatch
         var scrolls = 0
         while (!tile.exists || !tile.isHittable) && scrolls < 12 {

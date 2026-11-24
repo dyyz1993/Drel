@@ -982,7 +982,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
     }
 
-    /// 一次性清理：legacy 测试种子收藏指向已下线的 ae8fcb.legacy-infra 静态站
+    /// 一次性清理：legacy 测试种子收藏指向已下线的 legacy static fixture site
     /// （9-15 容器重建后恒 502），用户设备残留的这批条目永远打不开。
     /// 按 host 精确匹配删除，其余收藏一概不动（用户手动收藏的不受影响）。
     private static func cleanupDeadSeedFavorites() {
@@ -995,7 +995,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             var removed = 0
             for fav in allFavorites {
                 guard let url = URL(string: fav.url),
-                      url.host?.lowercased() == "ae8fcb.legacy-infra.example.invalid" else { continue }
+                      url.host?.lowercased() == "assets.example.invalid" else { continue }
                 try? await favoriteManager.deleteFavorite(url: url)
                 removed += 1
             }

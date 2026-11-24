@@ -22,14 +22,14 @@ final class ApprovalResponseClientTests: XCTestCase {
                 session: session
             ),
             submit: MessageApprovalSubmit(
-                url: "https://legacy-approve.example.invalid/api/review",
+                url: "https://legacy-gateway.example.invalid/api/review",
                 ticket: "ticket-abc"
             )
         )
 
         XCTAssertEqual(result.requestID, "request-1")
         let request = try XCTUnwrap(ApprovalURLProtocolStub.requests.first)
-        XCTAssertEqual(request.url?.absoluteString, "https://legacy-approve.example.invalid/api/review")
+        XCTAssertEqual(request.url?.absoluteString, "https://legacy-gateway.example.invalid/api/review")
         XCTAssertEqual(request.httpMethod, "POST")
         XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
         let body = try XCTUnwrap(bodyData(from: request))
@@ -72,9 +72,9 @@ final class ApprovalResponseClientTests: XCTestCase {
 
     func testSubmitRejectsUnsafeConfigurationBeforeNetwork() {
         for submit in [
-            MessageApprovalSubmit(url: "http://legacy-approve.example.invalid/api/review", ticket: "ticket"),
+            MessageApprovalSubmit(url: "http://legacy-gateway.example.invalid/api/review", ticket: "ticket"),
             MessageApprovalSubmit(url: "https://", ticket: "ticket"),
-            MessageApprovalSubmit(url: "https://legacy-approve.example.invalid/api/review", ticket: "   "),
+            MessageApprovalSubmit(url: "https://legacy-gateway.example.invalid/api/review", ticket: "   "),
         ] {
             let expectation = expectation(description: "rejected")
             ApprovalResponseClient(
@@ -114,7 +114,7 @@ final class ApprovalResponseClientTests: XCTestCase {
             session: session
         ).respond(
             submit: MessageApprovalSubmit(
-                url: "https://legacy-approve.example.invalid/api/review",
+                url: "https://legacy-gateway.example.invalid/api/review",
                 ticket: "opaque-once"
             ),
             requestID: "request-1",

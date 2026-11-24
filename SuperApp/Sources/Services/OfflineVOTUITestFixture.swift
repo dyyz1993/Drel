@@ -17,10 +17,10 @@ enum OfflineVOTUITestFixture {
     }
 
     private static let identities = [
-        "app.vot.example.invalid",
-        "app.vot.legacy-infra.example.invalid"
+        "app.example.invalid",
+        "app.legacy.example.invalid"
     ]
-    private static let origin = "https://vot.example.invalid:8443"
+    private static let origin = "https://api.example.invalid:8443"
     private static let packageURL = URL(
         string: "\(origin)/drel/v0.4.10.3/package.json"
     )!

@@ -2,7 +2,7 @@
 
 `api.drel.app` is the public origin for the official Drel push and HTML-app
 gateway. Since 2026-10-26 this Cloudflare Worker serves the API directly; it no
-longer proxies to the retired legacy-infra Swift relay. The `UPSTREAM_ORIGIN`
+longer proxies to the retired legacy backend Swift relay. The `UPSTREAM_ORIGIN`
 variable stays commented in `wrangler.jsonc` only as an explicit rollback
 switch and must not be re-enabled for normal production traffic.
 

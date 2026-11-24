@@ -10,8 +10,8 @@ final class DrelOAuthManifestValidationTests: XCTestCase {
     }
 
     private func manifest(
-        clientID: String = "app.vot.example.invalid",
-        baseURL: String = "https://vot.example.invalid:8443",
+        clientID: String = "app.example.invalid",
+        baseURL: String = "https://api.example.invalid:8443",
         prefix: String = "/api/",
         scopes: [String] = ["workspace.read", "bots.read"]
     ) -> DrelOAuthManifestAuthorization {
@@ -28,18 +28,18 @@ final class DrelOAuthManifestValidationTests: XCTestCase {
     func testAcceptsExactContractManifest() throws {
         let result = try DrelOAuthManifestValidator.validate(
             authorization: manifest(),
-            startURL: "https://vot.example.invalid:8443/",
-            allowedOrigins: ["https://vot.example.invalid:8443"],
-            trustedAppID: "app.vot.example.invalid"
+            startURL: "https://api.example.invalid:8443/",
+            allowedOrigins: ["https://api.example.invalid:8443"],
+            trustedAppID: "app.example.invalid"
         )
-        XCTAssertEqual(result.resourceOrigin, "https://vot.example.invalid:8443")
+        XCTAssertEqual(result.resourceOrigin, "https://api.example.invalid:8443")
         XCTAssertEqual(result.scopes.count, 2)
     }
 
     func testRejectsWrongAppClientProviderForbiddenScopeAndPrefix() {
-        let origins = ["https://vot.example.invalid:8443"]
-        let appID = "app.vot.example.invalid"
-        let startURL = "https://vot.example.invalid:8443/"
+        let origins = ["https://api.example.invalid:8443"]
+        let appID = "app.example.invalid"
+        let startURL = "https://api.example.invalid:8443/"
         XCTAssertThrowsError(try DrelOAuthManifestValidator.validate(authorization: manifest(), startURL: startURL, allowedOrigins: origins, trustedAppID: "other.app"))
         XCTAssertThrowsError(try DrelOAuthManifestValidator.validate(authorization: manifest(clientID: "other"), startURL: startURL, allowedOrigins: origins, trustedAppID: appID))
         XCTAssertThrowsError(try DrelOAuthManifestValidator.validate(authorization: manifest(prefix: "/api"), startURL: startURL, allowedOrigins: origins, trustedAppID: appID))
@@ -51,9 +51,9 @@ final class DrelOAuthManifestValidationTests: XCTestCase {
     func testFetchPathEnforcement() throws {
         let result = try DrelOAuthManifestValidator.validate(
             authorization: manifest(),
-            startURL: "https://vot.example.invalid:8443/",
-            allowedOrigins: ["https://vot.example.invalid:8443"],
-            trustedAppID: "app.vot.example.invalid"
+            startURL: "https://api.example.invalid:8443/",
+            allowedOrigins: ["https://api.example.invalid:8443"],
+            trustedAppID: "app.example.invalid"
         )
         XCTAssertTrue(DrelOAuthManifestValidator.isAuthorizedPath("/api/config", manifest: result))
         for path in ["/config", "/api//x", "/api/../config", "/api/x?token=1", "/api/x#y", "//evil"] {
@@ -66,22 +66,22 @@ final class DrelOAuthManifestValidationTests: XCTestCase {
         encoder.keyEncodingStrategy = .convertToSnakeCase
         let raw = try encoder.encode(
             RawManifest(
-                appId: "app.vot.example.invalid",
-                startURL: "https://vot.example.invalid:8443/",
-                allowedOrigins: ["https://vot.example.invalid:8443"],
+                appId: "app.example.invalid",
+                startURL: "https://api.example.invalid:8443/",
+                allowedOrigins: ["https://api.example.invalid:8443"],
                 authorization: manifest()
             )
         )
         XCTAssertThrowsError(try DrelOAuthManifestValidator.validate(
             rawManifestData: raw,
-            allowedOrigins: ["https://vot.example.invalid:8443"],
+            allowedOrigins: ["https://api.example.invalid:8443"],
             trustedAppID: "other"
         ))
-        let noAuth = try JSONEncoder().encode(["appId": "app.vot.example.invalid"])
+        let noAuth = try JSONEncoder().encode(["appId": "app.example.invalid"])
         XCTAssertThrowsError(try DrelOAuthManifestValidator.validate(
             rawManifestData: noAuth,
-            allowedOrigins: ["https://vot.example.invalid:8443"],
-            trustedAppID: "app.vot.example.invalid"
+            allowedOrigins: ["https://api.example.invalid:8443"],
+            trustedAppID: "app.example.invalid"
         ))
     }
 }

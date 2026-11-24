@@ -89,10 +89,10 @@ summary_items = [
     "Bark/Push/message semantics",
     "Physical device install and launch",
     "Real-device Push/APNs readiness",
-    "legacy-infra Swift backend",
-    "legacy-infra static fixtures",
+    "legacy Swift backend",
+    "legacy static fixtures",
     "Node admin local source",
-    "legacy-infra Node admin console",
+    "legacy Node admin console",
 ]
 for item in summary_items:
     record(item in doc, f"Summary covers {item}", "summary item exists", "present" if item in doc else "missing", availability)
@@ -214,8 +214,8 @@ debug_center_markers = [
 for marker in debug_center_markers:
     record(marker in doc, f"Debug Center concrete screen evidence: {marker}", "marker exists", "present" if marker in doc else "missing", availability)
 
-legacy-infra_fixture_markers = [
-    "verify-legacy-infra-fixtures.sh",
+legacy_fixture_markers = [
+    "verify-legacy-fixtures.sh",
     "18 passed, 0 failed",
     "bridge-hub.html",
     "bridge-promise-smoke.html",
@@ -228,17 +228,17 @@ legacy-infra_fixture_markers = [
     "Public phone cache fixtures",
     "Public phone JSBridge fixture pages",
 ]
-for marker in legacy-infra_fixture_markers:
-    record(marker in doc, f"legacy-infra fixture evidence: {marker}", "marker exists", "present" if marker in doc else "missing", availability)
+for marker in legacy_fixture_markers:
+    record(marker in doc, f"legacy fixture evidence: {marker}", "marker exists", "present" if marker in doc else "missing", availability)
 
-legacy-infra_command_markers = [
+legacy_command_markers = [
     "27 passed, 0 failed",
     "Command token semantics",
     "url-safe token, decoded payload ok",
     "base64url-json",
 ]
-for marker in legacy-infra_command_markers:
-    record(marker in doc, f"legacy-infra command evidence: {marker}", "marker exists", "present" if marker in doc else "missing", availability)
+for marker in legacy_command_markers:
+    record(marker in doc, f"legacy command evidence: {marker}", "marker exists", "present" if marker in doc else "missing", availability)
 
 record(
     "Bridge real WebView execution not fully available/proven" not in doc,

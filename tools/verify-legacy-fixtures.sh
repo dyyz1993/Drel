@@ -1,16 +1,16 @@
 #!/bin/bash
-# Verify public legacy-infra static fixture pages used by physical iPhone WebView/cache/JSBridge checks.
+# Verify public legacy static fixture pages used by physical iPhone WebView/cache/JSBridge checks.
 
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPORT_DIR="$PROJECT_ROOT/build/reports"
-BASE_URL="${WBK_legacy-infra_STATIC_URL:-https://ae8fcb.legacy-infra.example.invalid:8443/test_resources}"
+BASE_URL="${WBK_LEGACY_BACKEND_STATIC_URL:-https://assets.example.invalid:8443/test_resources}"
 BASE_URL="${BASE_URL%/}"
 
 mkdir -p "$REPORT_DIR"
 
-REPORT="$REPORT_DIR/legacy-infra-fixtures-verification.md"
+REPORT="$REPORT_DIR/legacy-fixtures-verification.md"
 ROWS=()
 PASSED=0
 FAILED=0
@@ -35,10 +35,10 @@ check_url() {
     local url="$BASE_URL$path"
     local slug output status marker marker_errors
     slug="$(slugify "$path")"
-    output="$REPORT_DIR/legacy-infra-fixture-$slug.out"
+    output="$REPORT_DIR/legacy-backend-fixture-$slug.out"
     marker_errors=""
 
-    status="$(curl -k -L -sS --connect-timeout 10 --max-time 30 -o "$output" -w "%{http_code}" "$url" 2>>"$REPORT_DIR/legacy-infra-fixtures-curl.log" || printf "000")"
+    status="$(curl -k -L -sS --connect-timeout 10 --max-time 30 -o "$output" -w "%{http_code}" "$url" 2>>"$REPORT_DIR/legacy-backend-fixtures-curl.log" || printf "000")"
     if [ "$status" != "$expected_status" ]; then
         add_row "$name" "FAIL" "$path" "HTTP $expected_status" "HTTP $status" "$output"
         FAILED=$((FAILED + 1))
@@ -62,9 +62,9 @@ check_url() {
     fi
 }
 
-rm -f "$REPORT_DIR"/legacy-infra-fixture-*.out "$REPORT_DIR/legacy-infra-fixtures-curl.log"
+rm -f "$REPORT_DIR"/legacy-backend-fixture-*.out "$REPORT_DIR/legacy-backend-fixtures-curl.log"
 
-echo "Verifying legacy-infra static fixtures: $BASE_URL"
+echo "Verifying legacy static fixtures: $BASE_URL"
 
 check_url "Fixture index" "/index.html" "200" "WebBridgeKit" "测试"
 check_url "Bridge hub" "/bridge-hub.html" "200" "WebBridgeKit Bridge 测试中心" "35 个 Bridge Handler"
@@ -86,7 +86,7 @@ check_url "JS resource" "/js/app.js" "200"
 check_url "Image resource" "/images/logo.png" "200"
 
 {
-    echo "# legacy-infra Static Fixture Verification"
+    echo "# legacy backend Static Fixture Verification"
     echo ""
     echo "- Date: $(date '+%Y-%m-%d %H:%M:%S %Z')"
     echo "- Base URL: \`$BASE_URL\`"

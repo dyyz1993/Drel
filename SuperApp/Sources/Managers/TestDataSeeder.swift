@@ -393,7 +393,7 @@ struct TestDataSeeder {
                 id: "rule-domain-001",
                 name: "缓存所有 CDN 资源",
                 type: .domain,
-                pattern: "*.wbk.legacy-infra.example.invalid",
+                pattern: "*.gateway.example.invalid",
                 resourceType: .staticResource,
                 isEnabled: true,
                 priority: 10
@@ -411,7 +411,7 @@ struct TestDataSeeder {
                 id: "rule-regex-003",
                 name: "API 数据缓存",
                 type: .regex,
-                pattern: "https://wbk\\.legacy-infra\\.legacy-host\\.xyz:8443/v[0-9]+/data.*",
+                pattern: "https://wbk\\.legacy backend\\.legacy-host\\.xyz:8443/v[0-9]+/data.*",
                 resourceType: .dynamicResource,
                 isEnabled: true,
                 priority: 5
@@ -429,7 +429,7 @@ struct TestDataSeeder {
                 id: "rule-disabled-005",
                 name: "旧版缓存规则",
                 type: .domain,
-                pattern: "old.wbk.legacy-infra.example.invalid",
+                pattern: "old.gateway.example.invalid",
                 resourceType: .staticResource,
                 isEnabled: false,
                 priority: 0

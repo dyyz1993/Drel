@@ -180,7 +180,7 @@ with open(report_path, "w", encoding="utf-8") as handle:
     handle.write(f"\n\nSummary: {passed} passed, {failed} failed.\n")
     handle.write("\nNotes:\n")
     handle.write("- This verifies the local Node admin source and route behavior only.\n")
-    handle.write("- It does not prove the Node admin console is deployed behind the public legacy-infra host.\n")
+    handle.write("- It does not prove the Node admin console is deployed behind the public legacy host.\n")
 
 print(f"Report: {report_path}")
 print(f"Summary: {passed} passed, {failed} failed.")

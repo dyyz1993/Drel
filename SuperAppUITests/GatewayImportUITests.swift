@@ -1,7 +1,7 @@
 import XCTest
 
 /// Real-device automation for importing the self-hosted HTML app gateway
-/// (legacy-infra) through the product UI: 手册与调试 → 管理自有服务 → 粘贴配置 →
+/// (legacy backend) through the product UI: 手册与调试 → 管理自有服务 → 粘贴配置 →
 /// 验证 → 启用. Proves the full portable-onboarding flow without manual taps.
 final class GatewayImportUITests: XCTestCase {
 
@@ -9,7 +9,7 @@ final class GatewayImportUITests: XCTestCase {
     /// through the WBK_GATEWAY_UI_PAYLOAD hook so no typing or pasteboard is
     /// needed (iOS 26 blocks runner pasteboard writes).
     private static let gatewayPayload = """
-    {"id":"webbridgekit-gateway","name":"WebBridgeKit Gateway","baseURL":"https://wbk.legacy-infra.example.invalid:8443","healthPath":"/health","manifestPath":"/api/v1/html-apps","publicKeyID":"wbk-self-hosted-20260816","publicKey":"h860-f-Vu_IC9DNoOrGrMpnXydSZHjNqb2HprCJIcm8"}
+    {"id":"webbridgekit-gateway","name":"WebBridgeKit Gateway","baseURL":"https://gateway.example.invalid:8443","healthPath":"/health","manifestPath":"/api/v1/html-apps","publicKeyID":"wbk-self-hosted-20260816","publicKey":"h860-f-Vu_IC9DNoOrGrMpnXydSZHjNqb2HprCJIcm8"}
     """
 
     private var app: XCUIApplication!
@@ -22,7 +22,7 @@ final class GatewayImportUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = [
             "--UITesting",
-            "--push-server=https://wbk.legacy-infra.example.invalid:8443"
+            "--push-server=https://gateway.example.invalid:8443"
         ]
         app.launchEnvironment = [
             "AppleLanguages": "(zh-Hans)",

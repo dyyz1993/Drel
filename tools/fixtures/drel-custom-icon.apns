@@ -9,5 +9,5 @@
   },
   "title": "自定义图标",
   "body": "打开 Drel 收件箱查看此消息的自定义头像",
-  "icon": "https://ae8fcb.legacy-infra.example.invalid:8443/test_resources/images/logo.png"
+  "icon": "https://assets.example.invalid:8443/test_resources/images/logo.png"
 }
