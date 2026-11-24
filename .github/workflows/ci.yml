@@ -20,6 +20,7 @@ env:
 jobs:
   # ─── Job 1: SwiftLint ───────────────────────────────────────────
   swiftlint:
+    if: github.repository == 'dyyz1993/Drel'
     name: SwiftLint
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
@@ -40,6 +41,7 @@ jobs:
 
   # ─── Job 2: Build ───────────────────────────────────────────────
   build:
+    if: github.repository == 'dyyz1993/Drel'
     name: Build
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
@@ -104,6 +106,7 @@ jobs:
 
   # ─── Job 3: Smoke Tests (with retry) ────────────────────────────
   smoke-tests:
+    if: github.repository == 'dyyz1993/Drel'
     name: Drel Smoke Tests
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
@@ -251,6 +254,7 @@ jobs:
 
   # ─── Job 4: UI Fidelity Tests (with retry) ──────────────────────
   ui-fidelity:
+    if: github.repository == 'dyyz1993/Drel'
     name: Drel UI Fidelity Tests
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
@@ -441,6 +445,7 @@ jobs:
 
   # ─── Job 5: Design System Lint ──────────────────────────────────
   design-lint:
+    if: github.repository == 'dyyz1993/Drel'
     name: 🎨 Design System Lint
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
@@ -480,6 +485,7 @@ jobs:
   # These checks do not need Xcode; they fail fast and give a contributor the
   # reason without waiting for the application build.
   repo-conventions:
+    if: github.repository == 'dyyz1993/Drel'
     name: 📋 Repository Conventions
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     # Mermaid rendering runs one Chrome launch per diagram (~2 min each with
@@ -534,6 +540,7 @@ jobs:
   # Builds Release and scans the binary for DEBUG-only markers, plus the
   # architecture-lint Rule 9 (DEBUG-only files must be file-level #if DEBUG).
   release-purity:
+    if: github.repository == 'dyyz1993/Drel'
     name: 🔒 Release Purity
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 20

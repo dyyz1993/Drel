@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   design-lint:
+    if: github.repository == 'dyyz1993/Drel'
     name: Design System Lint
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
