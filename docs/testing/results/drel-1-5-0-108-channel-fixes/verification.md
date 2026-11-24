@@ -4,7 +4,7 @@
 
 ## 背景
 
-用户在真机验收自建推送通道（relay.legacy-infra 私有部署）时暴露出四个问题，
+用户在真机验收自建推送通道（relay.example.invalid 私有部署）时暴露出四个问题，
 全部在本记录中留证，随 build 108 一并发布（服务端两项已先行上线）。
 
 ## 1. 测试发送/复制/铃声按钮不跟随所选通道（App）
@@ -42,7 +42,7 @@
   .messagesForActiveChannel` 过滤；桌面图标角标保持全局；两处均监听
   `didChangeNotification` 即时刷新。构建+SwiftLint 通过。
 
-## 5. 自建 relay 二维码配对页（Server，已上线 relay.legacy-infra）
+## 5. 自建 relay 二维码配对页（Server，已上线 relay.example.invalid）
 
 - `GET /self-hosted/pair` 出一次性票据 + 页内 QR；Go 测试
   `TestPairingPageServesQRAndWorksWithRegister`（25/25）。

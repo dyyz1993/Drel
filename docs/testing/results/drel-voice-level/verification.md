@@ -44,7 +44,7 @@ Latest result bundles used during verification: `/tmp/wbk-core-final-*.xcresult`
 - Local manifest contract/signature: `node tools/test-voice-manifests.mjs` passed for both games with a test signing key; no claim of live gateway registration.
 - `swiftlint --quiet`: both repositories exited 0 after removing an existing duplicate Lucide branch; existing warnings remain. `bash tools/ci-lint.sh`: 18 passed, 0 failed. Crash scan: total 0.
 - Interactive local browser practice: jump character moved and score advanced; dandelion seeds moved after simulated blow. This does not prove real microphone behavior.
-- Temporary, network-only preview origin: `https://drel-voice152.legacy-infra.example.invalid:8443`; verified TLS and SHA-256 match for both game pages and their shared adapter. It depends on the development Mac and must not be used as a permanent App Review demo.
+- Temporary, network-only preview origin: `https://assets.example.invalid:8443`; verified TLS and SHA-256 match for both game pages and their shared adapter. It depends on the development Mac and must not be used as a permanent App Review demo.
 - Two device-scoped manifest inputs are prepared in `test_resources/voice-games/manifests/`; they are not registered or production-signed yet.
 - iPhone is paired, but PUA startup failed while enabling UI automation; no device acceptance or TestFlight publication is claimed.
 

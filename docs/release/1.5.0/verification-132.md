@@ -44,7 +44,7 @@ ASC build state:  FILLED_BY_RELEASE
 
 ## Physical-device acceptance
 
-Device: `developer的iPhone`, iPhone 13, iOS 18.7.3, USB TestFlight install.
+Device: `personal-iphone`, iPhone 13, iOS 18.7.3, USB TestFlight install.
 
 - TestFlight showed and installed `Drel 1.5.0 / Build 132`; the button changed
   from `更新` to `打开`.

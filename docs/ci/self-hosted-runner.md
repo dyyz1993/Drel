@@ -1,19 +1,19 @@
 # Drel Self-Hosted Runner
 
-Drel uses one repository-scoped GitHub Actions runner on the M2 Max Mac:
+Drel uses one repository-scoped GitHub Actions runner on `<runner-host>`:
 
 | Field | Value |
 |---|---|
-| Runner | `drel-m2max` |
+| Runner | `<runner-name>` |
 | Labels | `self-hosted`, `macOS`, `ARM64`, `drel-ios` |
 | Install directory | `~/runners/actions-runner-drel` |
-| LaunchAgent | `actions.runner.dyyz1993-Drel.drel-m2max` |
+| LaunchAgent | `<launchagent-name>` |
 | Work directory | `~/runners/actions-runner-drel/_work` |
 
-The runner is intentionally separate from the `quite-note` runner and accepts at
+The runner is intentionally separate from other project runners and accepts at
 most one job at a time.
 
-The LaunchAgent is configured with the local HTTP proxy on `127.0.0.1:7890`.
+The LaunchAgent is configured with the local HTTP proxy on `<proxy-host>:<proxy-port>`.
 This only applies to the runner process; local and private-network addresses are
 excluded.
 
@@ -43,16 +43,16 @@ contract checks, TestFlight upload, and Apple processing-state polling.
 ## Operations
 
 ```bash
-launchctl list | grep actions.runner.dyyz1993-Drel
+launchctl list | grep <launchagent-name>
 ~/runners/actions-runner-drel/svc.sh status
-tail -100 ~/Library/Logs/actions.runner.dyyz1993-Drel.drel-m2max/stdout.log
-tail -100 ~/Library/Logs/actions.runner.dyyz1993-Drel.drel-m2max/stderr.log
+tail -100 ~/Library/Logs/<launchagent-name>/stdout.log
+tail -100 ~/Library/Logs/<launchagent-name>/stderr.log
 ```
 
 Restart only the Drel runner:
 
 ```bash
-launchctl kickstart -k "gui/$(id -u)/actions.runner.dyyz1993-Drel.drel-m2max"
+launchctl kickstart -k "gui/$(id -u)/<launchagent-name>"
 ```
 
 ## Boundaries

@@ -6,7 +6,7 @@ Date: 2026-11-08
 
 The official `api.drel.app` API is served entirely by the Cloudflare Worker in
 `infra/cloudflare/drel-api-proxy/`. The Swift Hummingbird implementation under
-`Server/Sources/WebBridgeServer/`, its Swift tests, and the legacy-infra deployment
+`Server/Sources/WebBridgeServer/`, its Swift tests, and the legacy deployment
 scripts are **not** the official production path or modification path.
 
 The Swift implementation is not deleted because the public self-hosting archive

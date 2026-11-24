@@ -31,8 +31,8 @@ The simulator diagnostics file was additionally scanned and contained no `secret
 UI suite `OfflineVOTDiagnosticsTests` passed 4/4 on iPhone 16 Pro simulator (iOS 18.3.1):
 
 1. Both identities opened their local VOT 0.4.10.3 packages:
-   - `app.vot.example.invalid`
-   - `app.vot.legacy-infra.example.invalid`
+   - `app.example.invalid`
+   - `app.legacy.example.invalid`
    - Both rendered the VOT login shell, proving entrypoint, CSS, and JS execution rather than merely proving `didFinish`.
    - Diagnostics recorded `packageFound`, `navigationFinished`, and `pageReady` with source `offlinePackage`.
 2. Delete → online open → redownload → terminate → relaunch → offline open all passed.
@@ -82,8 +82,8 @@ xcodebuild test \
 
 Installed Drel: 1.5.4 (153). A read-only container inventory confirmed two distinct VOT package directories:
 
-- `app.vot.example.invalid`: version `0.4.10.3`, resource digest `296ef77c…c3a1e36`.
-- `app.vot.legacy-infra.example.invalid`: version `0.4.9.14`, resource digest `86b0158f…9cd2d7f`.
+- `app.example.invalid`: version `0.4.10.3`, resource digest `296ef77c…c3a1e36`.
+- `app.legacy.example.invalid`: version `0.4.9.14`, resource digest `86b0158f…9cd2d7f`.
 
 Therefore, the presence of VOT files does not prove that both cards or both identities are on 0.4.10.3. The legacy identity remains on an older local package; any UI diagnosis must first identify which card/app ID was opened.
 

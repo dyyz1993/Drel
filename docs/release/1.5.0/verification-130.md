@@ -72,7 +72,7 @@ internalBuildState:  IN_BETA_TESTING
 
 ## Physical-device acceptance
 
-Device: `developer的iPhone`, iPhone 13, iOS 18.7.3, wired TestFlight install.
+Device: `personal-iphone`, iPhone 13, iOS 18.7.3, wired TestFlight install.
 
 - Settings shows `Drel v1.5.0 (Build 130)`.
 - Build 130's v6 page proved the native path before the fixture hotfix:

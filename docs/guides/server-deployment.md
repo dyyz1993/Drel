@@ -9,13 +9,13 @@
 ### 现在线上是怎么跑的
 
 ```
-用户 → api.drel.app (CF Worker, 边缘入口)
+用户 → api.drel.app (Cloudflare Worker, 边缘入口)
           │
           └─ /managed-push/*  → Durable Object 存设备 → Worker Secret 签 APNs JWT → 苹果
-          └─ 其他路径          → 转发到 legacy-infra (Swift WebBridgeServer) → 苹果 APNs
+          └─ 其他路径          → Worker 直接承载当前 API 契约
 ```
 
-legacy-infra 上的 `webbridgeserver` 由 supervisord 托管，跑了 3 天。
+当前官方入口由 Cloudflare Worker 承载；`Server/native/` 是自托管 Go 后端，可作为独立部署目标。
 
 ### 目标
 
@@ -181,7 +181,7 @@ App 里保存了多个网关配置，用户可以随时切换。官方网关配�
 
 #### 方式 2 · 改 DNS（秒级生效，不需发版）
 
-把 `api.drel.app` 的 Worker 上游从 legacy-infra 改成你的 NAS：
+把 `api.drel.app` 的 Worker 上游从当前官方源站切换到你的 NAS：
 
 ```jsonc
 // infra/cloudflare/drel-api-proxy/wrangler.jsonc
@@ -197,7 +197,7 @@ cd infra/cloudflare/drel-api-proxy && npm run deploy
 - 影响：所有走 `api.drel.app` 的请求
 - 成本：一次 Worker 部署（秒级）
 - 回滚：把 `UPSTREAM_ORIGIN` 改回去再部署（秒级）
-- 适用：legacy-infra 要下线，或想让 CF 边缘直接连你的 NAS
+- 适用：旧源站要下线，或想让 Cloudflare 边缘直接连你的 NAS
 
 **这是最实用的方式**——CF Worker 保持入口不变，只换上游。
 
@@ -215,10 +215,10 @@ cd infra/cloudflare/drel-api-proxy && npm run deploy
 ```
 第 1 步：NAS 部署好，跑通契约测试           → 不影响线上
 第 2 步：Worker 的 UPSTREAM_ORIGIN 指向 NAS  → 秒级切换，可秒级回滚
-第 3 步：观察几天稳定后，legacy-infra 停掉        → 回收一台机器
+第 3 步：观察几天稳定后，旧源站停掉         → 回收一台机器
 ```
 
-**任何一步出问题都能立刻回退到 legacy-infra**，因为 Worker 只改一个变量。
+**任何一步出问题都能立刻回退到旧源站**，因为 Worker 只改一个变量。
 
 ---
 

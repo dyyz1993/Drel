@@ -102,10 +102,10 @@ strings -a <dSYM>/.../DWARF/<name> | grep <funcName>
 
 ### 步骤 4：核对服务端版本
 
-legacy-infra 是手工 rsync 部署的（`/root/WebBridgeKit` 无 git remote），"服务端没更新"曾多次造成假差异排查。
+legacy backend 是手工 rsync 部署的（`/root/WebBridgeKit` 无 git remote），"服务端没更新"曾多次造成假差异排查。
 
 ```bash
-curl -k https://wbk.legacy-infra.example.invalid:8443/health | grep version
+curl -k https://gateway.example.invalid:8443/health | grep version
 ```
 
 **客户端修复与服务端修复是两条发布线**：分别核对 `/health` 版本和 TestFlight 构建时间。
@@ -175,7 +175,7 @@ bash scripts/services.sh stop
 | 测试 HTTP | 8081 | 缓存测试静态资源 |
 | 原型 | 8083 | HTML 原型对比 |
 
-**物理 iPhone 用公网 legacy-infra 地址**（手机不能可靠访问 agent 本机的 localhost）；**模拟器与 CI 用本地端口**（测试依赖确定性夹具）。
+**物理 iPhone 用公网 legacy backend 地址**（手机不能可靠访问 agent 本机的 localhost）；**模拟器与 CI 用本地端口**（测试依赖确定性夹具）。
 
 ---
 

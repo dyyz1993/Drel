@@ -15,7 +15,7 @@ This handoff contains only non-secret public technical values. Do not put identi
 | App name | Drel |
 | Bundle ID | `com.webbridgekit.superapp` |
 | Apple Team ID | `B45VZCNYU3` |
-| iOS certificate | Apple Distribution: xu yingzhou (B45VZCNYU3) |
+| iOS certificate | Apple Distribution: developer (B45VZCNYU3) |
 | Certificate SHA-1 | `4AFA8471A600DE35F54E34594597F01325FD50CE` |
 | Certificate public key SHA-1 | `41FC6F874A9B21F86305852E4E4D19D8542E32DC` |
 | Public key paste block | `ios-distribution-public-key.pem` |
@@ -32,7 +32,7 @@ The certificate values were extracted from the current `WebBridgeKit App Store` 
 The MIIT App filing is now approved and normal. The issued service filing number is
 `粤ICP备15092052号-4A`. On 2026-11-20, App Store Connect rejected saving this number
 with `STATE_ERROR.ICP_NUMBER_MIIT_PROVIDER_NAME_MISMATCH`: "Your developer name does
-not match MIIT's records." The Apple provider is currently `xu yingzhou` (individual
+not match MIIT's records." The Apple provider is currently `developer` (individual
 program), while the MIIT App filing records the Chinese legal name. The filing number
 can only be saved after the Apple Developer legal-entity/provider name matches MIIT
 exactly. After Apple confirms the name update, save the number in the China-mainland
@@ -41,7 +41,7 @@ availability section and enable Mainland China availability.
 ### Apple membership-name update request (2026-11-20)
 
 Submitted the Apple Developer Membership Information Update form for the
-individual membership. Requested Roman name: `Xu Yingzhou`; requested local
+individual membership. Requested Roman name: `developer`; requested local
 name: `developer`. The notes asked Apple to align the membership legal/seller name
 with the MIIT App filing because ASC currently returns the provider-name
 mismatch error. Apple's contact form displayed the review acknowledgment:
@@ -49,7 +49,7 @@ mismatch error. Apple's contact form displayed the review acknowledgment:
 
 ### Apple support expedite case (2026-11-23)
 
-Apple Developer Support case `103022034972` was submitted through
+Apple Developer Support case `retained internally` was submitted through
 Membership and Accounts → Account Information Update → Email. It asks Apple to
 confirm and expedite the 2026-11-20 membership-name update. The case now appears
 under Apple Developer Contact Us → Recent Cases.
@@ -58,23 +58,22 @@ under Apple Developer Contact Us → Recent Cases.
 
 The Drel App filing has been submitted through JD Cloud and is at **京东云初审**:
 
-- JD Cloud order: `179438096735610449`.
+- JD Cloud order: retained internally.
 - Filed app: `Drel`.
 - Filed service domain: `filing-backend.example.invalid`.
 - Filed iOS bundle ID: `com.webbridgekit.superapp`.
-- Access resource: JD Cloud lightweight server `<jdcloud-instance>63xpiq4` / `<filing-backend-ip>`.
+- Access resource: JD Cloud lightweight server `<jdcloud-instance>` / `<filing-backend-ip>`.
 - Console estimate: 1-3 business days for provider prescreen.
 
 DNS was completed in the authoritative Aliyun DNS zone:
 
 | Record | Type | Value | TTL | Status |
 |---|---:|---|---:|---|
-| `drel.filing-backend.example.invalid` | A | `<filing-backend-ip>` | 600 | Enabled |
-| `api.drel.filing-backend.example.invalid` | A | `<filing-backend-ip>` | 600 | Enabled |
+Mainland filing backend configured privately (details retained internally)
 
 Both names resolve on the authoritative Aliyun DNS servers. Public HTTP access to JD Cloud currently returns a JDTP `403` interception page because the domain is not yet approved; this is expected before filing approval. `jd` nginx already has a `drel-filing.conf` server pair for the product landing page, privacy/terms pages, `/health.json`, and an API host health response. Nginx configuration test and local `Host` routing were verified before deployment.
 
-Do not submit another filing order while `179438096735610449` remains active.
+Do not submit another filing order while the retained internally order remains active.
 
 ### App API domain decision
 

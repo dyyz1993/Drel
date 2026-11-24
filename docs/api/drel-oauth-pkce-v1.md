@@ -37,9 +37,9 @@ Manifest 必须签名并声明：
   "authorization": {
     "schemaVersion": "1",
     "provider": "drel-device-grant-v1",
-    "clientId": "app.vot.example.invalid",
+    "clientId": "app.example.com",
     "resource": {
-      "baseURL": "https://vot.example.invalid:8443",
+      "baseURL": "https://api.example.com:8443",
       "pathPrefix": "/api/"
     },
     "scopes": [
@@ -103,7 +103,7 @@ DPoP: <ES256 proof>
 ```json
 {
   "pairingRequestId": "uuid",
-  "clientId": "app.vot.example.invalid",
+  "clientId": "app.example.com",
   "requestedScopes": ["workspace.read", "bots.read"],
   "deviceGrant": "BASE64URL_JWS"
 }
@@ -140,11 +140,11 @@ payload 必须匹配本次请求：
   "iat": 1790000000,
   "exp": 1790000300,
   "sub": "optional-device-id",
-  "aud": "app.vot.example.invalid",
-  "clientId": "app.vot.example.invalid",
-  "appId": "app.vot.example.invalid",
+  "aud": "app.example.com",
+  "clientId": "app.example.com",
+  "appId": "app.example.com",
   "pairingRequestId": "uuid",
-  "resourceOrigin": "https://vot.example.invalid:8443",
+  "resourceOrigin": "https://api.example.com:8443",
   "scope": ["workspace.read", "bots.read"]
 }
 ```

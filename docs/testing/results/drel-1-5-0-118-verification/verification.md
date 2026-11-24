@@ -130,7 +130,7 @@ Screenshots:
 - [Fullscreen enter](iphone-118-fullscreen-enter.jpg)
 - [Fullscreen exit](iphone-118-fullscreen-exit.jpg)
 - [Camera rejected](iphone-118-camera-rejected.jpg)
-- [ASC waiting for review](asc-118-waiting-for-review.png)
+- ASC screenshot retained in internal records
 
 Crash command:
 
