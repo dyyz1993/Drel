@@ -5,7 +5,7 @@ Publishing an open-source repository makes its history and its current tree
 permanent. These checks stop the two failure modes that actually bite:
 
 1. **Oversized files.** A single 515MB screen recording once sat untracked in
-   ``docs/design/``. One accidental ``git add`` would have made every clone
+   a design media folder. One accidental ``git add`` would have made every clone
    download it, and GitHub rejects blobs over 100MB outright.
 2. **Credentials.** An APNs ``.p8`` key, an admin API key or a device token
    committed once stays in the history forever.

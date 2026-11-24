@@ -71,7 +71,7 @@ Drel 的文档按"读者要做什么"组织，而不是按代码目录组织。�
 | [CHANGELOG.md](../CHANGELOG.md) | 每个版本的变更与验证证据 |
 | [docs/release/](release/) | 每个版本的发布材料（对外文案、审核说明、验证记录） |
 | [docs/adr/](adr/) | 架构决策记录 |
-| [docs/plans/](plans/) | 设计计划 |
+| （设计计划保留在维护者的内部记录中） | — |
 | [docs/verification/](verification/) | 模块可用性验证报告 |
 | [docs/testing/results/](testing/results/) | 回归测试与可视化证据 |
 | [docs/architecture/](architecture/) | 协议与架构说明 |

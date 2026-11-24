@@ -173,4 +173,4 @@ pages. A rename breaks compatibility across three ends for no functional gain.
 - `Sources/Message/PushCipher.swift`, `Sources/Message/SelfHostedPushCrypto.swift`
   (app group / keychain hardcoding)
 - `project.yml` (framework/app target configuration coupling)
-- `docs/plans/2026-08-28-drel-phased-release-roadmap.md` (product scope)
+- 分阶段发布路线图（保留在内部记录中，product scope）

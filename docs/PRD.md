@@ -1665,7 +1665,7 @@ class CacheIntegrationTests: XCTestCase {
 
 本 PRD 的旧版时间表不再作为 Drel 的发布承诺。Drel 的唯一版本范围、
 发布顺序、明确排除项、TestFlight 准入条件和 App Store 提交门，统一维护在
-[`docs/plans/2026-08-28-drel-phased-release-roadmap.md`](plans/2026-08-28-drel-phased-release-roadmap.md)。
+分阶段发布路线图保留在内部记录中（不随开源仓库分发）。
 
 当前约定为：
 

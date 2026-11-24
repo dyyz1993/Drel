@@ -527,7 +527,7 @@ class TabBarController: UITabBarController {
         case .openCommandExamples:
             showAppShellInfo(
                 title: "UI v4",
-                message: "This entry is reserved for the next module pass. The detailed implementation contract is in docs/ui-v4/SCREEN_SPECS.md."
+                message: "This entry is reserved for the next module pass. The detailed implementation contract lives in the internal design records."
             )
         }
     }

@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BASELINE_DIR="$PROJECT_ROOT/docs/screenshots/ui-redesign"
+BASELINE_DIR="${VISUAL_REGRESSION_BASELINE_DIR:-$HOME/.agents/projects/Drel/private-docs/internal-archive/docs/screenshots/ui-redesign}"
 ACTUAL_DIR="$PROJECT_ROOT/build/screenshots/ui-redesign"
 OUTPUT_DIR="/tmp/wbk-diff-report"
 THRESHOLD="5.0"

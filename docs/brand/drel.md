@@ -142,7 +142,7 @@ vector/construction source remains a recommended follow-up asset.
 | iOS icon set | `SuperApp/Sources/Assets.xcassets/AppIcon.appiconset` | Generated device/store exports | approved |
 | Node admin mark | `Server/node/drel-mark.png` | Product-facing admin surface | approved derivative |
 | Website mark | `docs/site/assets/drel-mark.svg` | Public website identity | approved web source |
-| Store screenshots | `docs/screenshots/` | App Store media | draft; recapture from final TestFlight build |
+| Store screenshots | retained in private records | App Store media | draft; recapture from final TestFlight build |
 
 Legacy `webbridgekit-*` assets remain valid for the SDK/open-source identity and
 must not be deleted as part of Drel product branding.
@@ -195,7 +195,7 @@ No entry in this document is legal advice or a guarantee of global uniqueness.
 | App Review notes | `docs/app-store-review-notes.md` | prepared | Must match the exact submitted build |
 | Support page | `https://drel.app/support/` | live | Uses `support@drel.app` |
 | Privacy page | `https://drel.app/privacy/` | live | Uses `privacy@drel.app` |
-| Screenshot set | `docs/screenshots/` | pending final capture | Capture from the final TestFlight build with no secrets/debug data |
+| Screenshot set | retained in private records | pending final capture | Capture from the final TestFlight build with no secrets/debug data |
 | Social avatar/share image | not yet canonical | pending | Produce approved square avatar and 1200 × 630 share image |
 | Press/launch cover | not yet canonical | pending | Keep claims within shipped 1.0 scope |
 

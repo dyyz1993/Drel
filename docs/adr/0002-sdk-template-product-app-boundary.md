@@ -99,4 +99,4 @@ business presentation.
 - `docs/PRD.md`
 - `docs/ARCHITECTURE.md`
 - `docs/adr/0001-generic-html-app-runtime.md`
-- `docs/plans/2026-08-12-official-selfhosted-onboarding-design.md`
+- 官方自托管引导设计（保留在内部记录中）
