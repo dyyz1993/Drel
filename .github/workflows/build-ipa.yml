@@ -6,10 +6,11 @@ name: Build IPA
 #
 # TestFlight mode needs these repository secrets:
 #   WEBK_FRAMEWORK_TOKEN      read access to the private WebBridgeKit-Framework repo
-#   BUILD_CERTIFICATE_BASE64  base64 of the CI .p12 (Apple Development + Distribution)
-#   P12_PASSWORD              password of that .p12
-#   KEYCHAIN_PASSWORD         any password; used for the ephemeral CI keychain
 #   ASC_KEY_P8 / ASC_KEY_ID / ASC_ISSUER   App Store Connect API key for altool
+#
+# Signing uses the runner's login keychain directly (self-hosted runner on a
+# trusted machine that keeps the current Apple Development + Distribution
+# identities and WebBridgeKit App Store provisioning profiles installed).
 
 on:
   push:
@@ -56,29 +57,6 @@ jobs:
           WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       # ── Signed TestFlight path (tag pushes only) ──────────────────────────
-      - name: Import signing certificate
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${BUILD_CERTIFICATE_BASE64:-}" ]]; then
-            echo "::error::BUILD_CERTIFICATE_BASE64 secret is missing; cannot sign."
-            exit 1
-          fi
-          CERT_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing-${GITHUB_RUN_ID}.keychain-db"
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security import "$CERT_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
-
       - name: Write App Store Connect API key
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
@@ -121,8 +99,6 @@ jobs:
           WBK_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER }}
           WBK_ASC_KEY_PATH: ${{ runner.temp }}/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
           WBK_MARKETING_VERSION: ${{ steps.release.outputs.version }}
-          WBK_SIGNING_KEYCHAIN: ${{ runner.temp }}/app-signing-${{ github.run_id }}.keychain-db
-          WBK_SIGNING_KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
           set -euo pipefail
           bash tools/publish-drel-testflight.sh "${{ steps.release.outputs.build }}"
