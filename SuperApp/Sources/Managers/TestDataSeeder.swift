@@ -411,7 +411,7 @@ struct TestDataSeeder {
                 id: "rule-regex-003",
                 name: "API 数据缓存",
                 type: .regex,
-                pattern: "https://wbk\\.legacy backend\\.legacy-host\\.xyz:8443/v[0-9]+/data.*",
+                pattern: "https://gateway\\.example\\.invalid:8443/v[0-9]+/data.*",
                 resourceType: .dynamicResource,
                 isEnabled: true,
                 priority: 5
