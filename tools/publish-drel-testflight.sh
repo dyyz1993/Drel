@@ -78,7 +78,12 @@ bad() { printf '\033[0;31m[FAIL]\033[0m %s\n' "$*"; exit 1; }
 BUILD="$1"
 if [[ -z "$BUILD" ]]; then
   BUILD=$($ASC_API get "/v1/builds?filter%5Bapp%5D=$APP_ID&limit=1&sort=-uploadedDate" 2>/dev/null \
-    | grep -oE '"version": *"[0-9]+"' | grep -oE '[0-9]+' | head -1)
+    | python3 -c 'import json,sys
+try:
+    rows = json.load(sys.stdin).get("data") or []
+    print(rows[0]["attributes"]["version"] if rows else "")
+except Exception:
+    print("")')
   [[ -n "$BUILD" ]] || bad "无法读取当前最新 build 号，请显式传入"
   BUILD=$((BUILD + 1))
   echo "未指定 build 号，自动取最新+1 = $BUILD"
