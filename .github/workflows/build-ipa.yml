@@ -99,6 +99,7 @@ jobs:
           WBK_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER }}
           WBK_ASC_KEY_PATH: ${{ runner.temp }}/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
           WBK_MARKETING_VERSION: ${{ steps.release.outputs.version }}
+          WBK_ARCHIVE_SIGNING: project
         run: |
           set -euo pipefail
           bash tools/publish-drel-testflight.sh "${{ steps.release.outputs.build }}"
