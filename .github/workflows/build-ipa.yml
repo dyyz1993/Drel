@@ -90,6 +90,24 @@ jobs:
           echo "build=$BUILD" >> "$GITHUB_OUTPUT"
           echo "Releasing Drel $VERSION ($BUILD)"
 
+      - name: Unlock login keychain for signing
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          LOGIN_KEYCHAIN_PASSWORD: ${{ secrets.LOGIN_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${LOGIN_KEYCHAIN_PASSWORD:-}" ]]; then
+            echo "::error::LOGIN_KEYCHAIN_PASSWORD secret is missing."
+            exit 1
+          fi
+          security unlock-keychain -p "$LOGIN_KEYCHAIN_PASSWORD" login.keychain-db
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: -s \
+            -k "$LOGIN_KEYCHAIN_PASSWORD" login.keychain-db >/dev/null
+          security show-keychain-info login.keychain-db
+          echo "login keychain unlocked and codesign partition authorized"
+
       - name: Debug signing context (runner session)
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
