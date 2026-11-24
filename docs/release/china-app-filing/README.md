@@ -27,7 +27,34 @@ This handoff contains only non-secret public technical values. Do not put identi
 
 The certificate values were extracted from the current `WebBridgeKit App Store` provisioning profile (`webbridgekit-appstore-main.mobileprovision`). Re-check them if the App Store distribution certificate changes.
 
-## Filing status (2026-11-11)
+## Filing status (2026-11-20)
+
+The MIIT App filing is now approved and normal. The issued service filing number is
+`粤ICP备15092052号-4A`. On 2026-11-20, App Store Connect rejected saving this number
+with `STATE_ERROR.ICP_NUMBER_MIIT_PROVIDER_NAME_MISMATCH`: "Your developer name does
+not match MIIT's records." The Apple provider is currently `xu yingzhou` (individual
+program), while the MIIT App filing records the Chinese legal name. The filing number
+can only be saved after the Apple Developer legal-entity/provider name matches MIIT
+exactly. After Apple confirms the name update, save the number in the China-mainland
+availability section and enable Mainland China availability.
+
+### Apple membership-name update request (2026-11-20)
+
+Submitted the Apple Developer Membership Information Update form for the
+individual membership. Requested Roman name: `Xu Yingzhou`; requested local
+name: `developer`. The notes asked Apple to align the membership legal/seller name
+with the MIIT App filing because ASC currently returns the provider-name
+mismatch error. Apple's contact form displayed the review acknowledgment:
+"Thanks for contacting us." No ASC ICP number was saved at that time.
+
+### Apple support expedite case (2026-11-23)
+
+Apple Developer Support case `103022034972` was submitted through
+Membership and Accounts → Account Information Update → Email. It asks Apple to
+confirm and expedite the 2026-11-20 membership-name update. The case now appears
+under Apple Developer Contact Us → Recent Cases.
+
+## Original submission status (2026-11-11)
 
 The Drel App filing has been submitted through JD Cloud and is at **京东云初审**:
 
