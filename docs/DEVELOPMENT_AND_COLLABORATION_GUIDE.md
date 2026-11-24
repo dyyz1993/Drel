@@ -2,8 +2,6 @@
 
 Drel 与底层框架 `WebBridgeKit-Framework` 的协作约定，以及应用层遇到框架问题时的标准排查流程。
 
-> 本文取代了早期引用但从未存在于本仓库的 `DEVELOPMENT_AND_COLLABORATION_GUIDE.md`。
-
 ---
 
 ## 1. 仓库分工
@@ -11,11 +9,16 @@ Drel 与底层框架 `WebBridgeKit-Framework` 的协作约定，以及应用层�
 | 仓库 | 归属 | 公开性 |
 |---|---|---|
 | `Drel`（本仓库） | iOS 产品、通知扩展、UI 测试、官网、技能、服务端 | **公开（MIT）** |
-| `WebBridgeKit-Framework`（同级） | 通用运行时 SDK、协议、缓存、消息、Bridge 引擎 | **闭源** |
+| `WebBridgeKit-Framework`（同级） | 通用运行时 SDK、协议、缓存、消息、Bridge 引擎 | **公开（MIT）** |
 
-Drel 通过 CocoaPods 以预编译 `WebBridgeKit.xcframework` 消费框架产物。
+Drel 通过 CocoaPods 以**源码**方式引用框架（`pod 'WebBridgeKit', :path => …`），不分发预编译 xcframework。
 
-### 本地开发时的框架路径
+### 首次克隆：两个仓库并列放置
+
+```bash
+git clone https://github.com/dyyz1993/WebBridgeKit-Framework.git
+git clone https://github.com/dyyz1993/Drel.git
+```
 
 `Podfile` 默认从 `../WebBridgeKit-Framework` 取源码：
 
@@ -24,23 +27,20 @@ wbk_path = ENV.fetch('WBK_FRAMEWORK_PATH', '../WebBridgeKit-Framework')
 pod 'WebBridgeKit', :path => wbk_path
 ```
 
-外部贡献者没有该仓库时，依赖回退到预编译的 xcframework（见 §2）。
+框架目录不存在时，`xcodegen generate`（会校验框架源码路径）与 `pod install` 都会失败——**没有自动回退**。框架不在默认位置时，用 `WBK_FRAMEWORK_PATH=/path/to/WebBridgeKit-Framework` 指定。
 
 ---
 
-## 2. 两种依赖模式
+## 2. 同步框架改动与钉版
 
-| 模式 | 触发条件 | 用途 |
-|---|---|---|
-| **源码模式** | `../WebBridgeKit-Framework` 存在 | 框架开发者同步改 SDK 与宿主 |
-| **二进制模式** | 该目录不存在 | 外部贡献者、CI、只改 App 的场景 |
-
-`pod install` 会自动选择，不需要手动切换。切换模式后建议：
+框架与宿主协同开发时，先在框架仓库修改 SDK 并跑其测试，再回到本仓库重新安装依赖：
 
 ```bash
 rm -rf Pods/ Podfile.lock
 pod install
 ```
+
+发布链路通过 `framework-revision.txt` 钉住框架提交。重写框架历史或推进框架 main 后，必须同步更新该文件，否则 CI 会在框架校验步骤失败。
 
 ---
 

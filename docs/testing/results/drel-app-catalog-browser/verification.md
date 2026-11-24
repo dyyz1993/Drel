@@ -64,10 +64,10 @@ Test cases:
 
 ## Artifacts
 
-- [Catalog list](screenshots/catalog-list.png)
-- [Trust and capability detail](screenshots/catalog-detail.png)
-- [Added to Home](screenshots/added-to-home.png)
-- [Opened without adding](screenshots/opened-without-adding.png)
+- Catalog list（截图保留在内部记录）
+- Trust and capability detail（截图保留在内部记录）
+- Added to Home（截图保留在内部记录）
+- Opened without adding（截图保留在内部记录）
 
 ## Source
 

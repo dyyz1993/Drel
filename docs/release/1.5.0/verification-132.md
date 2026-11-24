@@ -57,10 +57,10 @@ Device: `personal-iphone`, iPhone 13, iOS 18.7.3, USB TestFlight install.
 - v10 Start awaited the native callback, then started only after success. The
   accelerometer calibrated at 30Hz and game-over reported `传感器：bridge`.
 
-![Build 132 in TestFlight](../../testing/results/drel-gesture-gate/artifacts/iphone-132-testflight-build.jpg)
-![User-click consent](../../testing/results/drel-gesture-gate/artifacts/iphone-132-user-click-consent.jpg)
-![Always grant does not repeat](../../testing/results/drel-gesture-gate/artifacts/iphone-132-always-no-reprompt-stream.jpg)
-![v10 callback success](../../testing/results/drel-gesture-gate/artifacts/iphone-132-v10-callback-success-bridge.jpg)
+（截图 `iphone-132-testflight-build.jpg` 保留在内部记录）
+（截图 `iphone-132-user-click-consent.jpg` 保留在内部记录）
+（截图 `iphone-132-always-no-reprompt-stream.jpg` 保留在内部记录）
+（截图 `iphone-132-v10-callback-success-bridge.jpg` 保留在内部记录）
 
 ## Publication
 
@@ -105,5 +105,5 @@ Physical retest after revoking `motion=always`:
 - The accelerometer started and calibrated; the page returned to native Bridge
   input rather than touch fallback.
 
-![v11 revoked restart consent](../../testing/results/drel-gesture-gate/artifacts/iphone-132-v11-revoked-restart-consent.jpg)
-![v11 regrant callback success](../../testing/results/drel-gesture-gate/artifacts/iphone-132-v11-regrant-callback-success.jpg)
+（截图 `iphone-132-v11-revoked-restart-consent.jpg` 保留在内部记录）
+（截图 `iphone-132-v11-regrant-callback-success.jpg` 保留在内部记录）

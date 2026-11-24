@@ -37,8 +37,8 @@ build 118; see `docs/release/1.5.0/verification-118.md`.
 | Store entitlements | PASS | production APNs, communication notifications, `get-task-allow=false` |
 | TestFlight build 113 | PASS, `VALID` | ASC build ID `957fd228-fc84-4947-b216-51df36b8fc95` |
 | IPA SHA-256 | PASS | `753c0707e48010c7ffb861aaf08988ae09a7ed981274418e637fd7d423711deb` |
-| Physical installed build | PASS | [Build version](iphone-113-build-version.jpg) |
-| Physical storage cleanup | PASS | [Storage screen](iphone-113-storage-clean.jpg) |
+| Physical installed build | PASS | Build version（截图保留在内部记录） |
+| Physical storage cleanup | PASS | Storage screen（截图保留在内部记录） |
 
 The Bridge browser matrix is stored in
 `build/reports/bridge-v1-113/http-matrix.json`; screenshots are under

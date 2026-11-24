@@ -84,6 +84,6 @@ Device: `personal-iphone`, iPhone 13, iOS 18.7.3, wired TestFlight install.
 - From 浏览全部应用 → gyro detail → 打开应用, `×` returned to the catalog
   list; `返回我的应用` returned to My Apps.
 
-![Build 130 installed on TestFlight](../../testing/results/drel-gyro-sensors/artifacts/iphone-130-settings-build.jpg)
+（截图 `iphone-130-settings-build.jpg` 保留在内部记录）
 
-![v8 physical accelerometer stream](../../testing/results/drel-gyro-sensors/artifacts/iphone-130-gyro-v8-bridge.jpg)
+（截图 `iphone-130-gyro-v8-bridge.jpg` 保留在内部记录）

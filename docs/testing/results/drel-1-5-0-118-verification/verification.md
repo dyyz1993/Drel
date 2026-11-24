@@ -121,15 +121,15 @@ Observed installed identity:
 
 Screenshots:
 
-- [Action demo version 3](iphone-118-action-demo-version-3.jpg)
-- [Clipboard success](iphone-118-clipboard-success.jpg)
-- [Share sheet](iphone-118-share-sheet.jpg)
-- [Location prompt](iphone-118-location-permission-prompt.jpg)
-- [Location success](iphone-118-location-success.jpg)
-- [One location grant](iphone-118-permission-one-location-grant.jpg)
-- [Fullscreen enter](iphone-118-fullscreen-enter.jpg)
-- [Fullscreen exit](iphone-118-fullscreen-exit.jpg)
-- [Camera rejected](iphone-118-camera-rejected.jpg)
+- Action demo version 3（截图保留在内部记录）
+- Clipboard success（截图保留在内部记录）
+- Share sheet（截图保留在内部记录）
+- Location prompt（截图保留在内部记录）
+- Location success（截图保留在内部记录）
+- One location grant（截图保留在内部记录）
+- Fullscreen enter（截图保留在内部记录）
+- Fullscreen exit（截图保留在内部记录）
+- Camera rejected（截图保留在内部记录）
 - ASC screenshot retained in internal records
 
 Crash command:

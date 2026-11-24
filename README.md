@@ -32,14 +32,20 @@ Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark �
 
 ## 2. 环境准备与联调构建
 
-默认约定将 `WebBridgeKit-Framework` 与 `Drel` 并列放置在同一父目录下（可通过环境变量 `WBK_FRAMEWORK_PATH` 自定义底层框架路径）：
+默认约定将 `WebBridgeKit-Framework` 与 `Drel` 并列放置在同一父目录下（可通过环境变量 `WBK_FRAMEWORK_PATH` 自定义底层框架路径）。两个仓库均为 MIT 开源，首次使用先并列克隆：
 
 ```bash
+# 0. 并列克隆两个仓库（框架缺失时工程无法生成，没有预编译回退）
+git clone https://github.com/dyyz1993/WebBridgeKit-Framework.git
+git clone https://github.com/dyyz1993/Drel.git
+cd Drel
+
 # 1. 生成 Xcode 工程并安装依赖（自动关联 ../WebBridgeKit-Framework）
 xcodegen generate
 pod install
 
-# 2. 启动本地配套测试服务（:8080 后端 / :8081 静态资源 / :8083 原型）
+# 2.（可选）启动本地联调用的旧版 Swift 测试服务（:8080 / :8081 / :8083）
+#    仅用于本地协议联调；生产自托管请使用 Server/native/（见 Server/README.md）
 bash scripts/services.sh start
 bash scripts/services.sh verify
 
@@ -56,6 +62,12 @@ bash tools/verify-drel-critical-alert-policy.sh
 bash tools/verify-apns-single-attempt.sh
 bash tools/verify-node-admin-local.sh
 ```
+
+### 装到你自己的 iPhone 上
+
+- **模拟器**：上面的步骤开箱即用，不需要任何开发者证书。
+- **真机**：需要你自己的付费 Apple Developer 账号。`project.yml` 默认使用作者的 Team 与 Bundle ID（`com.webbridgekit.superapp`），请把 `DEVELOPMENT_TEAM` 与 Bundle ID 改成你自己的，再用自动签名运行；通知扩展 `NotificationServiceExtension` 的 Bundle ID 与 App Group 也要一并改。
+- **只想使用成品**：无需自行构建，请通过官网 [drel.app](https://drel.app) 获取已发布版本。
 
 ## 3. 应用层启动注入配置
 

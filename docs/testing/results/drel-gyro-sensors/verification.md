@@ -109,11 +109,11 @@ v2 action policy:       PASS
 
 ### 截图
 
-![Bridge 传感器调试面板](artifacts/gyro-v7-simulator-debug-panel.png)
+（截图 `gyro-v7-simulator-debug-panel.png` 保留在内部记录）
 
-![Simulator 虚拟倾斜后游戏运行](artifacts/gyro-v7-simulator-synthetic-game.png)
+（截图 `gyro-v7-simulator-synthetic-game.png` 保留在内部记录）
 
-![从全部应用返回我的应用](artifacts/catalog-returned-to-my-apps.png)
+（截图 `catalog-returned-to-my-apps.png` 保留在内部记录）
 
 ## Build 130 真机与 v8 热修（2026-10-31）
 
@@ -138,6 +138,6 @@ deviceKey shadow:       refreshed to v8
 v8 真机复测：开始后 18Hz，校准后 30Hz，游戏结束显示 `传感器：bridge`。
 从“浏览全部应用”打开后，`×` 回到应用列表，`返回我的应用`回到我的应用。
 
-![iPhone Build 130](artifacts/iphone-130-settings-build.jpg)
+（截图 `iphone-130-settings-build.jpg` 保留在内部记录）
 
-![iPhone v8 Bridge accelerometer](artifacts/iphone-130-gyro-v8-bridge.jpg)
+（截图 `iphone-130-gyro-v8-bridge.jpg` 保留在内部记录）
