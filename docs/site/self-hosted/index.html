@@ -93,7 +93,7 @@
               <p class="option-desc">Your own push address on your own hostname. Hosted apps and everything else keep working.</p>
               <ul class="option-list">
                 <li>One Go binary, or one Docker image</li>
-                <li>Needs an APNs signer authorized for your topic</li>
+                <li>The bundled community key covers the stock app — no Apple account needed</li>
                 <li>About 15 minutes</li>
               </ul>
               <a class="button secondary" href="#option-a">Read option A →</a>
@@ -212,7 +212,7 @@ bash tools/prepare-drel-deployment.sh both --domain push.example.com</pre>
 
         <section id="option-a">
           <h2>Option A · Push relay only</h2>
-          <p>You get an address like <code>https://push.example.com/<your-key></code> that works in any Bark-compatible script. Hosted apps, the hosted gateway and the official push service stay as they are.</p>
+          <p>You get an address like <code>https://push.example.com/<your-key></code> that works in any Bark-compatible script. Keep the stock Drel app and pair it with your relay: notifications travel from your relay straight to Apple and never pass through the official push service. Hosted apps and the hosted gateway stay as they are.</p>
           <pre class="docs-code"># Build the static Linux binary on a development machine
 bash tools/build-drel-selfhosted-native.sh
 scp Server/native/dist/drel-selfhosted root@server:/usr/local/bin/
@@ -224,9 +224,10 @@ DREL_SELF_HOSTED_PUBLIC_BASE_URL=https://push.example.com
 DREL_DATA_DIR=/var/lib/drel-selfhosted
 APNS_ENVIRONMENT=production
 APNS_TOPIC=com.webbridgekit.superapp
-APNS_KEY_ID=your-key-id
-APNS_TEAM_ID=your-team-id
-APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_your-key-id.p8
+APNS_KEY_ID=4M53447M36
+APNS_TEAM_ID=B45VZCNYU3
+APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8
+# copy Server/community-apns/AuthKey_4M53447M36.p8 there, mode 0640
 
 systemctl daemon-reload && systemctl enable --now drel-selfhosted
 curl https://push.example.com/health   # apnsReady must be true</pre>
@@ -234,7 +235,7 @@ curl https://push.example.com/health   # apnsReady must be true</pre>
             <strong>Prefer a Cloudflare Tunnel.</strong> The service listens on <code>127.0.0.1</code> only, so you never open port 443 or 8080 to the internet. If the host already runs Nginx, use <code>Server/nginx/drel-self-hosted.conf.template</code> instead.
           </div>
           <div class="docs-callout">
-            <strong>The APNs authority boundary.</strong> Direct APNs delivery needs a signer authorized for the app's topic. A stock Drel build cannot use a key from a different Apple team — so a fully independent relay requires your own signed Drel build and your own topic-specific <code>.p8</code>. Without a valid key the relay reports <code>apnsReady: false</code> and refuses pairing, which is the correct behaviour.
+            <strong>The APNs authority boundary.</strong> Direct APNs delivery needs a signer authorized for the app's topic. The repository ships one on purpose: <code>Server/community-apns/AuthKey_4M53447M36.p8</code> is registered to the stock Drel app only and to the production environment only, so it reaches TestFlight and App Store builds but no other app and no debug build. Whoever runs your relay can send notifications to the devices that paired with it — nothing more. The key can be revoked at any time. Running your own signed Drel build? Its bundle ID is yours, so create your own topic-specific <code>.p8</code>. Without a valid key the relay reports <code>apnsReady: false</code> and refuses pairing, which is the correct behaviour.
           </div>
         </section>
 

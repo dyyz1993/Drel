@@ -11,13 +11,14 @@
 
 | 你想要 | 选 | 要部署什么 | 大概工作量 |
 |---|---|---|---|
-| 能给自己的手机发通知，但应用还托管在官方 | **A · 只自建推送** | 1 个 Go 二进制 | 15 分钟 |
+| 能给自己的手机发通知，但应用还托管在官方 | **A · 只自建推送**（社区钥匙或自有 build） | 1 个 Go 二进制 | 15 分钟 |
 | 团队私有应用市场：强离线包、原生能力、应用身份 | **B · 只自建网关** | 1 个 Docker 容器 | 30 分钟 |
 | 完全脱离官方：私有推送 **+** 私有应用市场 | **C · 两套都自建** | 上面两个，可同机或分机 | 1 小时 |
 
 **判断诀窍**：
 
-- 只想要"发通知" → **A**
+- 只想要"发通知"，并且继续用官方 Drel App → **A 的社区钥匙路径**；没有
+  Apple 开发者账号也推荐先用它
 - 只想要"管自己的应用" → **B**
 - 两个都要 → **C**
 
@@ -98,27 +99,57 @@ Cloudflare Worker（推送）+ 任意服务器（网关）
 
 **你得到的**：`https://push.example.com/<你的key>` 这样的推送地址，可用在任何兼容 Bark 的脚本里。
 
-**前提**：直连 APNs 需要一个为你的 App topic 签发的私钥。**stock Drel App 不能用别的 Apple 团队的 key**——所以要走这条路，你需要一份**自己的 Drel build**（自己的 bundle id、自己的 `.p8`、自己的 App Group）。
+方案 A 有两条互相独立的前提路径：
 
-一条命令生成它：
+**(a) 官方 Drel App + 仓库自带社区钥匙（推荐给没有 Apple 开发者账号的人）。**
+推送中继用社区钥匙直连 Apple，通知不经过 `api.drel.app` 或运营者服务器。
+见 [2.1 使用社区 APNs 钥匙](#21-使用社区-apns-钥匙无需-apple-开发者账号)。
 
-```bash
-bash tools/rebrand-drel-selfhosted.sh \
-  --bundle-id com.acme.drel \
-  --team-id YOUR_TEAM_ID \
-  --key-id YOUR_APNS_KEY_ID \
-  --gateway https://hub.acme.com
+**(b) 自己的 Drel build + 自己的 `.p8`（完全独立）。**
+适合你有 Apple 开发者账号，并且希望使用自己的 bundle id 和独立身份。
+见 [§4 完全自建](#4-完全自建自己的-build--自己-p8--直连-apns)。
+
+> **没有 Apple 开发者账号？** 可以继续只部署网关（见方案 B），推送交给官方通道；
+> 这种通知会经过运营者服务器，且网关要先登记。也可以部署自己的推送中继并使用
+> 仓库社区钥匙；这种通知直连 Apple，不经过运营者服务器。
+
+### 2.1 使用社区 APNs 钥匙（无需 Apple 开发者账号）
+
+仓库在 [`Server/community-apns/README.md`](../../Server/community-apns/README.md)
+附带一把**有意公开**的 topic-specific APNs 钥匙。它的作用是让你在没有 Apple
+开发者账号的情况下，继续用官方 Drel App 搭建自己的推送中继：
+
+```
+官方 Drel App → 你的中继 → Apple APNs
 ```
 
-它会把整棵树复制一份并改写全部标识（bundle id、App Group、keychain service、
-URL scheme、APNs topic、编译进包的默认网关），**不动官方 checkout**。
-产物在 `build/selfhosted-app/`，里面还有 `BUILD-NOTES.md` 说明后续步骤。
+这把钥匙默认只能签发官方 App topic 的 provider token，并且**只在 production
+环境有效**。持有它的中继运营者可以给已知设备令牌发通知，但不能读取消息或设备数据。
 
-> **没有 Apple 开发者账号？** 那就只部署网关（见方案 B），推送继续用官方的。
-> 应用市场、离线包、原生能力全在自己手里，消息投递交给官方托管。
-> 网关需先向官方通道运营者登记，才能经由官方通道发应用通知。
+三条硬限制：
 
-### 2.1 准备
+1. **只支持官方 App**：topic 固定为 `com.webbridgekit.superapp`，不能推运营者
+   Apple 团队里的其他 App；自己重新打包的 Drel 必须用自己的 `.p8`（见 §4）。
+2. **只在 production 有效**：TestFlight 和 App Store 包可用；debug/开发签名包
+   的沙盒设备令牌会收到 `BadEnvironmentKeyInToken`。
+3. **可单独吊销**：运营者吊销这把钥匙后，所有继续使用它的自建中继都会停止投递，
+   直到换上新钥匙。
+
+四种配置方式：
+
+| 形态 | 配置 |
+|---|---|
+| **prepare 脚本** | `bash tools/prepare-drel-deployment.sh relay|both` 生成的 env 默认使用社区钥匙的 Key ID、Team ID、topic 和仓库内 `.p8` 路径 |
+| **native Compose** | 保留 `DREL_APNS_KEY_HOST_PATH=./community-apns/AuthKey_4M53447M36.p8`、`APNS_KEY_ID=4M53447M36`、`APNS_TEAM_ID=B45VZCNYU3`；显式保留 `APNS_TOPIC=com.webbridgekit.superapp` 和 `APNS_ENVIRONMENT=production` |
+| **systemd** | 把仓库同步或复制到服务器后，将 `APNS_KEY_PATH` 指向 `AuthKey_4M53447M36.p8` 的绝对路径；服务账号读取权限建议为 `0640` |
+| **自部署 Worker** | 用 `APNS_AUTH_KEY_P8` 写入该 `.p8` 内容，并设置上述 Key ID、Team ID 和 topic |
+
+默认值仍然是：`APNS_TOPIC=com.webbridgekit.superapp`、
+`APNS_ENVIRONMENT=production`、`APNS_KEY_ID=4M53447M36`、
+`APNS_TEAM_ID=B45VZCNYU3`。完整用途、吊销/轮换顺序和安全边界见
+[社区钥匙说明](../../Server/community-apns/README.md)。
+
+### 2.2 准备
 
 ```bash
 bash tools/prepare-drel-deployment.sh relay --domain push.example.com
@@ -126,14 +157,11 @@ bash tools/prepare-drel-deployment.sh relay --domain push.example.com
 
 生成 `build/deployment/drel.env`，填好里面的 `TODO` 值。
 
-你还需要**一个为你的 App topic 签发的 APNs 私钥**（`AuthKey_XXXX.p8`）。
-把它放到服务器的 `/etc/drel-selfhosted/secrets/`，权限设为 `0640`，属主给运行服务的用户。
+官方 Drel App 可以直接使用仓库自带的社区 APNs 钥匙；只要上面的 Key ID、
+Team ID、topic 和环境保持一致，中继 `/health` 应报告 `apnsReady: true`。
+如果你部署的是自己的 Drel build，才需要换成为你自己的 topic 签发的 `.p8`。
 
-> **stock Drel App 不能用别的 Apple 团队的 key。** 想完全自建直连 APNs，
-> 你需要自己签发一个 Drel build 并用你自己的 topic；或者走 §2.4 的加密模式，
-> 让官方托管签名器替你签。
-
-### 2.2 部署（二选一）
+### 2.3 部署（二选一）
 
 #### 形态 1 · Go 二进制 + systemd（推荐，最省资源）
 
@@ -148,8 +176,11 @@ scp Server/native/dist/drel-selfhosted root@server:/usr/local/bin/
 scp Server/native/drel-selfhosted.service root@server:/etc/systemd/system/
 
 # 3. 放配置
-ssh root@server 'mkdir -p /etc/drel-selfhosted'
+ssh root@server 'mkdir -p /etc/drel-selfhosted/secrets && id drel >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin drel'
 scp build/deployment/drel.env root@server:/etc/drel-selfhosted/drel-selfhosted.env
+scp Server/community-apns/AuthKey_4M53447M36.p8 root@server:/etc/drel-selfhosted/secrets/
+ssh root@server 'chown drel:drel /etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8 && chmod 0640 /etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8'
+# 生成的 drel.env 已把 APNS_KEY_PATH 指向这个文件；用自己的 build 时换成你自己的 .p8。
 
 # 4. 启动
 ssh root@server 'systemctl daemon-reload && systemctl enable --now drel-selfhosted'
@@ -160,16 +191,17 @@ ssh root@server 'systemctl daemon-reload && systemctl enable --now drel-selfhost
 ```bash
 cd Server
 cp ../build/deployment/drel.env .env
-# 额外设置三个宿主机路径变量
-echo 'DREL_APNS_KEY_HOST_PATH=/etc/drel-selfhosted/secrets/AuthKey_XXXX.p8' >> .env
+# 镜像是 scratch，需要挂载宿主机的 CA 证书包；钥匙默认挂载仓库里的社区 .p8。
 echo 'DREL_CA_CERTIFICATES_HOST_PATH=/etc/ssl/certs/ca-certificates.crt' >> .env
-echo 'DREL_APNS_KEY_GID=994' >> .env   # 能读 .p8 的数字组 ID
 docker compose -f docker-compose.self-hosted-native.yml up -d --build
 ```
 
+用自己的 0640 私钥时，再设置 `DREL_APNS_KEY_HOST_PATH`（私钥路径）和
+`DREL_APNS_KEY_GID`（能读它的数字组 ID），并同时改 `APNS_KEY_ID`、`APNS_TEAM_ID`。
+
 镜像基于 `scratch`，`.p8` 只读挂载进去，容器 `read_only` 且丢弃所有 capability。
 
-### 2.3 配域名与 HTTPS
+### 2.4 配域名与 HTTPS
 
 服务只监听 `127.0.0.1:8080`，**不要开 443 或 8080 入站端口**。三种暴露方式：
 
@@ -179,7 +211,7 @@ docker compose -f docker-compose.self-hosted-native.yml up -d --build
 | **已有 Nginx** | 用 `Server/nginx/drel-self-hosted.conf.template`，替换两处占位符 | 服务器已经在跑 Nginx |
 | **Caddy** | `Server/Caddyfile` 会自动签发和续期证书 | 想要零配置 HTTPS |
 
-### 2.4 验证
+### 2.5 验证
 
 ```bash
 # 1. 健康检查：apnsReady 必须是 true
@@ -202,7 +234,7 @@ curl -G "https://push.example.com/<device-key>/Build%20ready/Open%20Drel"
 
 `.p8` 通过只读挂载进容器，**永远不要 COPY 进镜像**。
 
-### 2.5 加密模式（可选）
+### 2.6 加密模式（可选）
 
 如果不想让服务器读到消息内容，用发送端加密：
 
@@ -535,9 +567,9 @@ GATEWAY_KEY_ID=gw-2026-10-23
 GATEWAY_PRIVATE_KEY=<生成的>
 GATEWAY_PUBLIC_BASE_URL=https://hub.example.com
 
-APNS_KEY_ID=your-key-id
-APNS_TEAM_ID=your-team-id
-APNS_KEY_PATH=/run/secrets/drel/AuthKey_your-key-id.p8
+APNS_KEY_ID=4M53447M36
+APNS_TEAM_ID=B45VZCNYU3
+APNS_KEY_PATH=/run/secrets/drel/AuthKey_4M53447M36.p8
 APNS_TOPIC=com.webbridgekit.superapp
 APNS_ENVIRONMENT=production
 ```
@@ -672,14 +704,16 @@ Worker 会拒绝所有配对和投递请求。
 
 ## 6. 密钥都在哪（一张图看懂）
 
-部署时最该先想清楚的问题是：**每个私钥住在哪一端**。答案很干脆——**每个私钥只在一处生成，之后永不移动**。
+部署时最该先想清楚的问题是：**每个私钥住在哪一端**。自有私钥应只在一处
+生成，之后永不移动；社区钥匙是唯一有意公开并随仓库分发的例外。
 
 | 密钥 | 在哪生成 | 留在哪 | 私钥会不会上线 |
 |---|---|---|---|
 | `deviceKey` | 手机本地随机 | 手机 + 你的 relay（当查表名用） | 不是私钥 |
 | X25519 加密密钥对 | 手机本地 | 私钥在手机钥匙串 | **绝不** |
 | 配对票据 pairingToken | 你的 relay 签发 | 一次性、短期有效 | 一次性凭据 |
-| APNs `.p8` | 你的服务器 | 你的 relay | **绝不** |
+| 自有 APNs `.p8` | Apple 开发者门户 | 你自己的 relay | **绝不** |
+| 社区 APNs `.p8` | Apple 开发者门户 | 仓库和社区 relay | 有意公开；仅限官方 App 和 production |
 | 网关 Ed25519 私钥 | 你的服务器 | 你的 gateway | **绝不** |
 
 完整时序图（官方 relay、私有化 relay、苹果 APNs 三方的关系 + 密钥流向）：
@@ -692,6 +726,8 @@ Worker 会拒绝所有配对和投递请求。
 - 你的 relay 存的是**你的 X25519 公钥**，不是你手机的私钥。加密信封只有手机能解。
 - 配对票据由 relay 签发、一次性、带过期时间，**不能被重放到另一台手机**。
 - relay 用 `.p8` 在本地签 provider JWT，**苹果只收到签名后的 JWT**，收不到私钥。
+  社区钥匙是例外：它已被有意发布，用来让官方 App 也能自建中继；持有它的人
+  仍只能给已知设备令牌发通知，不能读取内容。
 - 换网关或换公钥身份会清除旧授权——授权不跟随到新身份。
 
 ---
@@ -701,12 +737,15 @@ Worker 会拒绝所有配对和投递请求。
 | 材料 | 能做什么 | **不能**做什么 | 恢复方式 |
 |---|---|---|---|
 | 设备推送地址 | 给那台 Drel 发通知 | 读消息历史、取 APNs Token、访问手机 | 在 Drel 里重置地址 |
-| topic 专属 APNs 签名器 | 为一个 bundle/topic 认证投递 | 读通知内容、访问 Apple 账号、给任意 App 发消息 | 保持私有；所属 App 团队撤销并轮换 |
+| 自有 topic 专属 APNs 签名器 | 为一个 bundle/topic 认证投递 | 读通知内容、访问 Apple 账号、给任意 App 发消息 | 保持私有；所属 App 团队撤销并轮换 |
+| 社区 APNs 签名器 | 为官方 App 的 production 投递认证 | 读通知内容、访问 Apple 账号、给其他 App 或沙盒环境发消息 | 使用者在仓库更新后换钥匙；运营者在门户单独吊销 |
 | iPhone 私钥 | 在那台设备上解密加密信封 | 发 APNs 通知、被服务端导出 | 移除或重置服务端连接 |
 
 **三条硬规则**：
 
-1. **永远不要发布 Drel 的 APNs `.p8`。** topic 限定虽然缩小了影响面，但持有者仍能伪造发给已知 Token 的告警。
+1. **自己的 APNs `.p8` 永远不要发布。** topic 限定虽然缩小了影响面，但持有者
+   仍能伪造发给已知 Token 的告警。仓库社区钥匙是有意公开的例外：它只绑定官方
+   App topic 和 production，并且可以单独吊销。
 2. **配置里只能出现公开端点和公钥。** 不得包含 APNs Token、设备 Key、API Secret、管理 Token、密码或私钥；客户端会在解析前主动拒绝这些字段。
 3. **生产网关必须是精确的 HTTPS Origin。** 只有开发构建允许 `localhost` HTTP；发布版不会静默接受普通 HTTP。
 

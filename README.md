@@ -14,7 +14,7 @@ Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark �
 | 编译并跑起来 | [第 2 节](#2-环境准备与联调构建) |
 | 查完整文档地图 | [docs/README.md](docs/README.md) |
 | 看每个版本的变更 | [CHANGELOG.md](CHANGELOG.md) |
-| 部署网关与推送服务 | [docs/guides/deployment.md](docs/guides/deployment.md) |
+| 部署网关与推送服务 | [docs/guides/deployment.md](docs/guides/deployment.md)；官方 App 可用 [社区 APNs 钥匙](Server/community-apns/README.md) 自建推送 |
 | 开发一个 HTML 应用 | [docs/guides/app-development.md](docs/guides/app-development.md) |
 | 调用原生能力（Bridge） | [docs/guides/bridge-api.md](docs/guides/bridge-api.md) |
 
@@ -26,7 +26,9 @@ Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark �
 - **`NotificationServiceExtension/`**：独立 APNs 通知扩展（负责 `PushCipher` 对称加密消息与 `drel.push-envelope.v1` X25519 自托管信封的端到端解密及自定义头像处理，零 CocoaPods 依赖）。
 - **`DrelUITests/`**：28 个 XCUITest 端到端与 UI 保真度测试套件。
 - **官方 API**：`infra/cloudflare/drel-api-proxy/`（Cloudflare Worker，承载 `api.drel.app`）。
-- **自托管服务端**：`Server/native/`（Go 二进制，推荐）；`Server/Sources/WebBridgeServer/` 为已废弃的 Swift 旧实现，仅保留给既有部署迁移。
+- **自托管服务端**：`Server/native/`（Go 二进制，推荐）；官方 App 可用
+  [`Server/community-apns/`](Server/community-apns/README.md) 的社区 APNs 钥匙
+  自建生产推送，无需 Apple 开发者账号。`Server/Sources/WebBridgeServer/` 为已废弃的 Swift 旧实现，仅保留给既有部署迁移。
 - **`deploy/` & `infra/`**：网关 Nginx 配置与 Cloudflare Worker 边缘代理（`infra/cloudflare/drel-api-proxy/`）。
 - **`tools/` & `scripts/`**：应用层发布门禁、真机冒烟、容器安全策略校验与本地三服务管理脚本。
 

@@ -10,6 +10,11 @@ permanent. These checks stop the two failure modes that actually bite:
 2. **Credentials.** An APNs ``.p8`` key, an admin API key or a device token
    committed once stays in the history forever.
 
+   One credential is deliberately public: ``Server/community-apns/
+   AuthKey_4M53447M36.p8`` is a production-only, topic-specific community key
+   for the official Drel app. Its exact path and SHA-256 are pinned below so
+   no other ``.p8`` file and no altered copy can pass the gate.
+
 The checks run against the working tree and the index, so they also catch a
 file that was staged but not committed.
 
@@ -20,6 +25,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import subprocess
 import sys
@@ -41,10 +47,12 @@ SKIP_DIRS = {
 # Patterns that indicate a real credential. Kept deliberately narrow: a broad
 # entropy matcher produces far too many false positives on hashed asset
 # names, base64 icon payloads and test fixtures.
+PRIVATE_KEY_HEADER = "-----BEGIN " "PRIVATE KEY-----"
+
 SECRET_PATTERNS = [
     (
         "APNs provider key",
-        re.compile(r"-----BEGIN PRIVATE KEY-----[\s\S]{0,80}?AuthKey_"),
+        re.compile(PRIVATE_KEY_HEADER + r"[\s\S]{0,80}?AuthKey_"),
     ),
     (
         "APNs key file name",
@@ -52,7 +60,7 @@ SECRET_PATTERNS = [
     ),
     (
         "Apple private key body",
-        re.compile(r"-----BEGIN PRIVATE KEY-----\s*MIG[A-Za-z0-9+/=]{40,}"),
+        re.compile(PRIVATE_KEY_HEADER + r"\s*MIG[A-Za-z0-9+/=]{40,}"),
     ),
     (
         "generic assigned secret",
@@ -63,18 +71,14 @@ SECRET_PATTERNS = [
     ),
 ]
 
-# Allow-listed text that legitimately looks like a secret.
-ALLOWLIST = [
-    re.compile(r"example\.com"),
-    re.compile(r"YOUR_KEY"),
-    re.compile(r"changeme-admin-api-key"),
-    re.compile(r"\.p8['\"]?\s*$"),
-    re.compile(r"APNS_KEY_PATH"),
-    re.compile(r"APNS_KEY_DIRECTORY"),
-    re.compile(r"keychainService"),
-    re.compile(r"push-crypto"),
-    re.compile(r"com\.webbridgekit\.superapp"),
-]
+# The only credential allowed in the repository. Apple topic-specific provider
+# keys can be scoped to one app topic and one environment and revoked without
+# affecting operator keys; the digest detects replacement or accidental edits.
+PUBLIC_CREDENTIALS = {
+    "Server/community-apns/AuthKey_4M53447M36.p8":
+        "96c17321bc7a1c18f8c185a6845a7adfec4148a4a04ff5df2fe1f08296c22f5e",
+}
+PUBLIC_CREDENTIAL_FILE_NAMES = {Path(path).name for path in PUBLIC_CREDENTIALS}
 
 TEXT_SUFFIXES = {
     ".md", ".swift", ".sh", ".py", ".json", ".yml", ".yaml", ".txt", ".plist",
@@ -106,8 +110,18 @@ def staged_files() -> list[str]:
     return [p for p in output.split("\0") if p]
 
 
-def is_allowlisted(text: str) -> bool:
-    return any(pattern.search(text) for pattern in ALLOWLIST)
+def secret_failures(
+    text: str
+) -> list[tuple[str, int]]:
+    """Return each credential-shaped match except the registered public name."""
+    failures: list[tuple[str, int]] = []
+    for label, pattern in SECRET_PATTERNS:
+        for match in pattern.finditer(text):
+            if match.group() in PUBLIC_CREDENTIAL_FILE_NAMES:
+                continue
+            line_number = text[: match.start()].count("\n") + 1
+            failures.append((label, line_number))
+    return failures
 
 
 def check_large_files(max_bytes: int, failures: list[str]) -> int:
@@ -150,16 +164,42 @@ def check_secrets(failures: list[str]) -> int:
         except OSError:
             continue
         checked += 1
-        if is_allowlisted(text):
-            continue
-        for label, pattern in SECRET_PATTERNS:
-            match = pattern.search(text)
-            if not match:
-                continue
-            line_number = text[: match.start()].count("\n") + 1
+        for label, line_number in secret_failures(text):
             failures.append(
                 f"[secret] {relative}:{line_number} looks like a {label}. "
                 f"Move it to a secret store and rotate it if it was ever real."
+            )
+    return checked
+
+
+def check_public_credentials(failures: list[str]) -> int:
+    """Ensure only the registered community APNs key can be tracked or staged."""
+    checked = 0
+    candidates = sorted(set(tracked_files()) | set(staged_files()))
+    for relative in candidates:
+        if Path(relative).suffix.lower() != ".p8":
+            continue
+        checked += 1
+        expected_digest = PUBLIC_CREDENTIALS.get(relative)
+        if expected_digest is None:
+            failures.append(
+                f"[public-credential] {relative} is not the registered community "
+                "APNs key. Only the community APNs key can be committed here; "
+                "other .p8 files must stay in a secret store."
+            )
+            continue
+        path = ROOT / relative
+        if not path.is_file():
+            failures.append(
+                f"[public-credential] {relative} is tracked or staged but missing."
+            )
+            continue
+        actual_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual_digest != expected_digest:
+            failures.append(
+                f"[public-credential] {relative} does not match its registered "
+                "SHA-256. The content differs from the registered fingerprint, "
+                "so another key must not be placed here."
             )
     return checked
 
@@ -221,15 +261,11 @@ def check_history_secrets(failures: list[str]) -> int:
         except OSError:
             continue
         checked += 1
-        if is_allowlisted(text):
-            continue
-        for label, pattern in SECRET_PATTERNS:
-            if pattern.search(text):
-                failures.append(
-                    f"[history] {relative} contains something shaped like a {label}. "
-                    f"History is permanent — rotate the credential and rewrite the commit."
-                )
-                break
+        for label, _ in secret_failures(text):
+            failures.append(
+                f"[history] {relative} contains something shaped like a {label}. "
+                f"History is permanent — rotate the credential and rewrite the commit."
+            )
     return checked
 
 
@@ -243,6 +279,7 @@ def main() -> int:
     max_bytes = int(args.max_file_mb * 1024 * 1024)
 
     files = check_large_files(max_bytes, failures)
+    public_credentials = check_public_credentials(failures)
     scanned = check_secrets(failures)
     untracked = check_ignored_but_present(failures)
     required = check_required_files(failures)
@@ -250,6 +287,7 @@ def main() -> int:
 
     print(f"Repository: {ROOT}")
     print(f"Files size-checked:   {files:>6}")
+    print(f"Public credentials:   {public_credentials:>6}")
     print(f"Files secret-scanned: {scanned:>6}")
     print(f"Untracked files:      {untracked:>6}")
     print(f"Required files:       {required:>6}")

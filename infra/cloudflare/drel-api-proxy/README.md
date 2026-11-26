@@ -100,6 +100,15 @@ npm run deploy
 Durable Object migrations in the file create their own storage per worker, so
 an independent instance never shares state with the official deployment.
 
+An operator without an Apple developer account can use Drel's intentionally
+published community key to run this push Worker for the stock official App.
+Set `APNS_AUTH_KEY_P8` to the contents of
+`../../../Server/community-apns/AuthKey_4M53447M36.p8`,
+`APNS_KEY_ID=4M53447M36`, `APNS_TEAM_ID=B45VZCNYU3`, and
+`APNS_TOPIC=com.webbridgekit.superapp`. That key works only with production
+TestFlight/App Store tokens for the official topic and can be revoked
+independently; see [`Server/community-apns/README.md`](../../../Server/community-apns/README.md).
+
 ### Official deployment
 
 ```bash

@@ -20,7 +20,7 @@ is MIT licensed too, and the two repositories build side by side.
 | Build and run it | [Section 2](#2-setup-and-build) |
 | Browse the full documentation map | [docs/README.md](docs/README.md) (Chinese) |
 | See what changed in each version | [CHANGELOG.md](CHANGELOG.md) |
-| Deploy the gateway and push service | [docs/guides/deployment.md](docs/guides/deployment.md) (Chinese) |
+| Deploy the gateway and push service | [docs/guides/deployment.md](docs/guides/deployment.md) (Chinese). The official App can use the [community APNs key](Server/community-apns/README.md) for self-hosted push. |
 | Develop an HTML app | [docs/guides/app-development.md](docs/guides/app-development.md) (Chinese) |
 | Call native capabilities (Bridge) | [docs/guides/bridge-api.md](docs/guides/bridge-api.md) (Chinese) |
 | Use the SDK in your own app | [WebBridgeKit-Framework](https://github.com/dyyz1993/WebBridgeKit-Framework) |
@@ -41,7 +41,10 @@ product name all use Drel.
 - **`SuperAppUITests/`**: 28 XCUITest end-to-end and UI fidelity suites.
 - **Official API**: `infra/cloudflare/drel-api-proxy/`, a Cloudflare Worker that
   serves `api.drel.app`.
-- **Self-hosted server**: `Server/native/`, a Go binary (recommended).
+- **Self-hosted server**: `Server/native/`, a Go binary (recommended). The
+  official App can use the intentionally published [community APNs
+  key](Server/community-apns/README.md) for production self-hosted push
+  without an Apple developer account.
   `Server/Sources/WebBridgeServer/` is the deprecated Swift implementation,
   kept only so existing deployments can be audited and migrated.
 - **`deploy/` and `infra/`**: the gateway Nginx configuration and the edge proxy.

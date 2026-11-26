@@ -89,9 +89,11 @@ The operator then needs, from the Apple developer portal:
 The relay then signs the provider JWT itself and posts straight to APNs.
 There is no official relay in that path.
 
-If the operator has no Apple developer account, say so and offer the
-gateway-only option instead: they keep the hosted push service and run
-only their own app market.
+If the operator has no Apple developer account, first offer the community-key
+route in “Option A”: the stock Drel App can pair with their relay, which uses
+Drel's intentionally published production-only topic key. A gateway-only
+deployment is the alternative when notifications may pass through the official
+channel after registration.
 
 ## Option A — push relay only
 
@@ -115,9 +117,9 @@ DREL_SELF_HOSTED_PUBLIC_BASE_URL=https://push.example.com
 DREL_DATA_DIR=/var/lib/drel-selfhosted
 APNS_ENVIRONMENT=production
 APNS_TOPIC=com.webbridgekit.superapp
-APNS_KEY_ID=your-key-id
-APNS_TEAM_ID=your-team-id
-APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_your-key-id.p8
+APNS_KEY_ID=4M53447M36
+APNS_TEAM_ID=B45VZCNYU3
+APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8
 ```
 
 ```bash
@@ -166,12 +168,13 @@ push address is `https://push.example.com/<device-key>`.
 
 ### The APNs authority boundary
 
-Direct APNs delivery needs a signer authorized for the app's topic. The
-stock Drel build cannot use a key from a different Apple team. So a fully
-independent relay requires the operator's own signed Drel build and their own
-topic-specific `.p8`. Say this plainly rather than implying a stock install
-can do it. Without a valid key the relay must fail closed: it reports
-`apnsReady: false` and refuses pairing.
+Direct APNs delivery needs a signer authorized for the app's topic. The stock
+Drel build can use Drel's intentionally published community key because it is
+bound to the official topic and Apple production. A fully independent relay
+for another bundle requires the operator's own signed Drel build and their own
+private topic-specific `.p8`. Say this plainly rather than implying that the
+community key covers a rebranded install. Without a valid key the relay must
+fail closed: it reports `apnsReady: false` and refuses pairing.
 
 ## Option B — gateway only
 
@@ -270,9 +273,9 @@ push routes together.
 Add the APNs settings to the same `Server/.env`:
 
 ```dotenv
-APNS_KEY_ID=your-key-id
-APNS_TEAM_ID=your-team-id
-APNS_KEY_PATH=/run/secrets/drel/AuthKey_your-key-id.p8
+APNS_KEY_ID=4M53447M36
+APNS_TEAM_ID=B45VZCNYU3
+APNS_KEY_PATH=/run/secrets/drel/AuthKey_4M53447M36.p8
 APNS_TOPIC=com.webbridgekit.superapp
 APNS_ENVIRONMENT=production
 ```
@@ -302,8 +305,10 @@ domains separated. The cost is two services and two certificates.
 
 ## Safety rules to repeat every time
 
-1. **Never publish the APNs `.p8`.** A topic-scoped key still lets the holder
-   forge alerts to known device tokens.
+1. **Never publish an operator-owned APNs `.p8`.** A topic-scoped key still
+   lets the holder forge alerts to known device tokens. The repository's
+   community key is the intentional exception: official topic only, production
+   only, and independently revocable.
 2. **The gateway configuration carries public endpoints and a public key
    only.** Never put an APNs token, device key, API secret, admin token,
    password or private key in it — the client rejects those fields before
@@ -315,9 +320,9 @@ domains separated. The cost is two services and two certificates.
 
 ## Do not
 
-- Do not tell the user a stock Drel install can hand its APNs key to every
-  deployment. It cannot, and the relay must fail closed without a valid
-  signer.
+- Do not tell the user the community key can cover a rebranded Drel install.
+  It cannot; a rebranded install needs its own topic-specific `.p8`, and every
+  relay must fail closed without a valid signer.
 - Do not skip the "readiness" check. A relay that reports `apnsReady: false`
   and refuses pairing is behaving correctly.
 - Do not suggest the application needs changes. It never does.

@@ -13,15 +13,16 @@ mode. It is simple and the relay can read its title, body, and URL.
 Sender-side encryption is an optional strict-privacy mode: only it prevents
 the relay and APNs from reading business content.
 
-Never publish Drel's APNs `.p8`. A topic-specific key narrows scope but remains
-a private signing key that can forge alerts to known Drel tokens. The stock
-`com.webbridgekit.superapp` App cannot use a key from a different Apple team,
-so an entirely independent direct deployment requires the operator's own
-signed Drel bundle/topic and their private topic-specific signer. For the
-stock App, the viable privacy route is a future managed APNs signer that
-forwards only a sender-encrypted envelope; it cannot read content, but it does
-receive delivery metadata. Until either path is intentionally provisioned, a
-server without a valid signer must remain fail-closed and refuse pairing.
+Drel intentionally publishes a community APNs `.p8` in
+[`community-apns/`](community-apns/README.md). It lets the stock
+`com.webbridgekit.superapp` App run a direct relay without an Apple developer
+account: notifications go from that relay straight to Apple production. The
+key is topic-specific, production-only, and revocable independently. Anyone
+holding it can sign provider requests only for that official topic and only
+for APNs tokens known to their relay; they cannot read notifications or device
+data. An operator's own key for their own Drel bundle/topic remains private:
+never publish, commit, or paste it. A server without a valid signer must
+remain fail-closed and refuse pairing.
 
 ## Deploy
 
@@ -46,14 +47,16 @@ DREL_SELF_HOSTED_PUBLIC_BASE_URL=https://push.example.com
 DREL_DATA_DIR=/var/lib/drel-selfhosted
 APNS_ENVIRONMENT=production
 APNS_TOPIC=com.webbridgekit.superapp
-APNS_KEY_ID=your-key-id
-APNS_TEAM_ID=your-team-id
-APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_your-key-id.p8
+APNS_KEY_ID=4M53447M36
+APNS_TEAM_ID=B45VZCNYU3
+APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8
 ```
 
-The deployment operator puts their private topic-specific `.p8` in the service
-directory and makes it readable only by the `drel` service account. Do not
-commit it, publish it, or paste it into chat. Run `systemctl daemon-reload &&
+The deployment operator installs the checked-in community topic-specific `.p8`
+for the stock App, or their own private topic-specific `.p8` for their own
+Drel build, in the service directory and makes it readable only by the `drel`
+service account. Never commit, publish, or paste an operator-owned key. Run
+`systemctl daemon-reload &&
 systemctl enable --now drel-selfhosted`. The native process
 only accepts loopback traffic; publish it with a named Cloudflare Tunnel whose
 public hostname is `push.example.com` and whose origin service is
@@ -80,11 +83,12 @@ Build the static Linux binary first, then start the dedicated Compose file:
 bash tools/build-drel-selfhosted-native.sh
 cd Server
 cp .env.example .env
-# Fill the final HTTPS URL, APNs key/team values, and the three DREL_*_HOST_PATH/GID values.
+# Fill the final HTTPS URL and the CA/GID host values. Keep the community
+# APNs defaults for the stock App, or substitute your own private key values.
 docker compose -f docker-compose.self-hosted-native.yml up -d --build
 ```
 
-`DREL_APNS_KEY_HOST_PATH` is the **host** pathname of the private `.p8` and
+`DREL_APNS_KEY_HOST_PATH` is the **host** pathname of the provider `.p8` and
 `DREL_APNS_KEY_GID` is the numeric group that already has read permission on
 that file. The Compose file maps the key read-only and retains its `0640`
 protection; do not make it world-readable just to satisfy the container.
@@ -115,12 +119,13 @@ physical-device checklist.
    matching `DREL_SELF_HOSTED_DOMAIN`,
    `DREL_SELF_HOSTED_PUBLIC_BASE_URL=https://push.example.com`,
    `DREL_SELF_HOSTED_ACME_EMAIL`, and a new `ADMIN_API_KEY`.
-2. Create a local `secrets/` directory (already excluded from source control),
-   place a production topic-specific `.p8` for `com.webbridgekit.superapp`
-   inside it, and set `APNS_KEY_ID`,
-   `APNS_TEAM_ID`, `APNS_KEY_PATH=/run/secrets/drel/<your-key>.p8`, and
-   `APNS_TOPIC=com.webbridgekit.superapp`. The `.p8` belongs only on your
-   server, must be readable by the container, and must never be committed.
+2. Use the checked-in production community key for the stock App:
+   `APNS_KEY_ID=4M53447M36`, `APNS_TEAM_ID=B45VZCNYU3`,
+   `APNS_KEY_PATH=/run/secrets/drel/AuthKey_4M53447M36.p8`, and
+   `APNS_TOPIC=com.webbridgekit.superapp`. Copy that repository file into the
+   mounted secret path and make it readable by the container. For your own
+   rebranded build, use your own private production topic-specific `.p8`
+   instead; it belongs only on your server and must never be committed.
    Apple also permits older team-scoped keys, but a production topic-specific
    key gives this deployment the narrowest available scope.
 3. For TestFlight/App Store devices use `APNS_ENVIRONMENT=production`.

@@ -195,6 +195,10 @@ tools/__pycache__/
 
 # App Store Connect API keys must never enter the repo (they live in ~/.appstoreconnect/)
 *.p8
+# Intentionally public community APNs key: topic-locked to the official Drel
+# app, production-only, independently revocable, and pinned by SHA-256 in
+# tools/verify-repo-hygiene.py.
+!Server/community-apns/AuthKey_4M53447M36.p8
 *.mobileprovision
 
 # Cloudflare local runtime state

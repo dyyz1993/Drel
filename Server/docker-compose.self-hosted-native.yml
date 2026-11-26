@@ -14,8 +14,10 @@ services:
       DREL_SELF_HOSTED_PUBLIC_BASE_URL: ${DREL_SELF_HOSTED_PUBLIC_BASE_URL:?set the final HTTPS public URL}
       APNS_ENVIRONMENT: ${APNS_ENVIRONMENT:-production}
       APNS_TOPIC: ${APNS_TOPIC:-com.webbridgekit.superapp}
-      APNS_KEY_ID: ${APNS_KEY_ID:?set the APNs key id}
-      APNS_TEAM_ID: ${APNS_TEAM_ID:?set the Apple team id}
+      # Defaults use the repository's intentionally public community key. It
+      # only works for production notifications to the official Drel app.
+      APNS_KEY_ID: ${APNS_KEY_ID:-4M53447M36}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-B45VZCNYU3}
       # The host path stays outside the image. It is mounted to one fixed
       # in-container location so the Go service never needs a host pathname.
       APNS_KEY_PATH: /run/secrets/drel/apns-provider-key.p8
@@ -24,7 +26,7 @@ services:
       SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
     volumes:
       - drel-native-data:/var/lib/drel-selfhosted
-      - ${DREL_APNS_KEY_HOST_PATH:?set the host path to the private .p8}:/run/secrets/drel/apns-provider-key.p8:ro
+      - ${DREL_APNS_KEY_HOST_PATH:-./community-apns/AuthKey_4M53447M36.p8}:/run/secrets/drel/apns-provider-key.p8:ro
       - ${DREL_CA_CERTIFICATES_HOST_PATH:?set the host CA bundle path}:/etc/ssl/certs/ca-certificates.crt:ro
     ports:
       - "127.0.0.1:${DREL_NATIVE_HOST_PORT:-8080}:8080"
@@ -33,10 +35,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    # The mounted `.p8` stays mode 0640 root:drel on the host. Supply that
-    # host group's numeric GID here rather than weakening the key's mode.
+    # The bundled key is 0644 and the container's primary group is 65532.
+    # With your own 0640 key, set this to the numeric GID allowed to read it.
     group_add:
-      - ${DREL_APNS_KEY_GID:?set the numeric group id that can read the .p8}
+      - ${DREL_APNS_KEY_GID:-65532}
     restart: unless-stopped
 
 volumes:

@@ -3,8 +3,8 @@
 #
 # The script is deliberately split into steps so the operator can run, check
 # and stop at any point. It never invents a secret: it generates what it can
-# locally (the Ed25519 gateway key) and refuses to continue when something
-# only the operator can supply (the APNs provider key).
+# locally (the Ed25519 gateway key) and preselects the bundled public APNs
+# community key; operator-owned deployment values remain explicit.
 #
 # Usage:
 #   bash tools/prepare-drel-deployment.sh gateway    # option B: gateway only
@@ -81,7 +81,7 @@ else
 
   {
     echo "# Drel self-hosted deployment - generated $(date -u +%Y-%m-%d)"
-    echo "# Fill in every value marked TODO, then copy this file to your server."
+    echo "# Fill in operator values marked TODO, then copy this file to your server."
     echo ""
     if [[ "$MODE" != "relay" ]]; then
       echo "## Gateway (option B and C)"
@@ -100,9 +100,13 @@ else
       echo "DREL_DATA_DIR=/var/lib/drel-selfhosted"
       echo "APNS_ENVIRONMENT=production"
       echo "APNS_TOPIC=com.webbridgekit.superapp"
-      echo "APNS_KEY_ID=TODO-your-apns-key-id"
-      echo "APNS_TEAM_ID=TODO-your-apple-team-id"
-      echo "APNS_KEY_PATH=/run/secrets/drel/AuthKey_TODO.p8"
+      # The bundled community key works only for production notifications to
+      # the official Drel app. Replace all three values for your own build.
+      # The path is the host path the systemd unit reads; the Compose file
+      # mounts the key itself and ignores APNS_KEY_PATH.
+      echo "APNS_KEY_ID=4M53447M36"
+      echo "APNS_TEAM_ID=B45VZCNYU3"
+      echo "APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8"
       echo ""
     fi
     echo "## TLS (Caddy reads this)"
@@ -121,12 +125,17 @@ cat <<EOF
     bash tools/build-drel-selfhosted-native.sh
     scp Server/native/dist/drel-selfhosted root@server:/usr/local/bin/
     scp Server/native/drel-selfhosted.service root@server:/etc/systemd/system/
+    ssh root@server 'mkdir -p /etc/drel-selfhosted/secrets'
+    scp Server/community-apns/AuthKey_4M53447M36.p8 root@server:/etc/drel-selfhosted/secrets/
+    ssh root@server 'chown drel:drel /etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8 && chmod 0640 /etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8'
     # copy $ENVFILE to /etc/drel-selfhosted/drel-selfhosted.env, then:
     systemctl daemon-reload && systemctl enable --now drel-selfhosted
 
   Option A (relay only), Docker:
     cd Server
     cp $ENVFILE .env
+    echo 'DREL_CA_CERTIFICATES_HOST_PATH=/etc/ssl/certs/ca-certificates.crt' >> .env
+    # the bundled community key is mounted by default; no key variable needed
     docker compose -f docker-compose.self-hosted-native.yml up -d --build
 
   Option B or C (gateway, or both), Docker with automatic TLS:

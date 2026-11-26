@@ -5,7 +5,7 @@
 #
 #   dist/drel-selfhosted          the static Linux binary
 #   dist/drel-selfhosted.service  the systemd unit
-#   dist/drel.env                 the environment file to fill in
+#   dist/drel.env                 the environment file to review and copy
 #   dist/reverse-proxy.conf       an Nginx or Caddy snippet
 #   dist/DEPLOY.md                the steps for the target machine
 #
@@ -82,7 +82,7 @@ rm -f /tmp/drel-pkg-gw.pem
 
 cat > "$OUT/dist/drel.env" <<EOF
 # Drel self-hosted server — generated $(date -u +%Y-%m-%d)
-# Fill in every TODO, then: chmod 600 drel.env
+# Fill in operator TODOs, then: chmod 600 drel.env
 #
 # The GATEWAY_PRIVATE_KEY below is the Ed25519 private key. It signs the
 # application manifests the phone trusts. Anyone holding it can publish
@@ -105,12 +105,14 @@ GATEWAY_PRIVATE_KEY=$GATEWAY_KEY
 # Required for POST and DELETE on /api/v1/html-apps.
 ADMIN_API_KEY=TODO-generate-a-long-random-value
 
-# ── APNs delivery (only needed to deliver to a phone) ───────────────
+# ── APNs delivery ───────────────────────────────────────────────────
+# The bundled community key works only for production notifications to the
+# official Drel app. Replace all three values for your own app build.
 APNS_ENVIRONMENT=production
 APNS_TOPIC=com.webbridgekit.superapp
-APNS_KEY_ID=TODO-your-apns-key-id
-APNS_TEAM_ID=TODO-your-apple-team-id
-APNS_KEY_PATH=/etc/drel/secrets/AuthKey_TODO.p8
+APNS_KEY_ID=4M53447M36
+APNS_TEAM_ID=B45VZCNYU3
+APNS_KEY_PATH=/etc/drel/secrets/AuthKey_4M53447M36.p8
 EOF
 chmod 600 "$OUT/dist/drel.env"
 ok "Wrote $OUT/dist/drel.env (mode 600)"
@@ -138,9 +140,11 @@ sudo chmod 600 /etc/drel/drel.env
 sudo nano /etc/drel/drel.env
 \`\`\`
 
-Set \`ADMIN_API_KEY\` to a long random value. If you deliver to a phone, also
-put your \`AuthKey_XXXX.p8\` in \`/etc/drel/secrets/\` and set \`APNS_KEY_PATH\`
-to its path. Keep the file mode at 0640.
+Set \`ADMIN_API_KEY\` to a long random value. Copy the bundled public key to
+\`/etc/drel/secrets/AuthKey_4M53447M36.p8\`; the generated environment file
+already points there. Keep the file mode at 0640. For your own app build,
+replace \`APNS_TOPIC\`, \`APNS_KEY_ID\`, \`APNS_TEAM_ID\`, and
+\`APNS_KEY_PATH\` together.
 
 ## 3. Start the service
 
@@ -188,7 +192,7 @@ ok "$OUT"
 echo
 echo "  dist/drel-selfhosted          the binary"
 echo "  dist/drel-selfhosted.service  systemd unit"
-echo "  dist/drel.env                 environment file (fill in the TODOs)"
+echo "  dist/drel.env                 environment file (fill in operator TODOs)"
 echo "  dist/reverse-proxy.caddyfile   Caddy config"
 echo "  dist/reverse-proxy.nginx.conf  Nginx config"
 echo "  DEPLOY.md                      the steps for the target machine"

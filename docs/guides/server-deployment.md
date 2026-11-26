@@ -111,8 +111,8 @@ ssh nas 'chmod 600 /etc/drel/drel.env'
 | `GATEWAY_PRIVATE_KEY` | `prepare-drel-deployment.sh` 生成的 seed | ✅ |
 | `GATEWAY_KEY_ID` | 你自己起，如 `gw-2026-10-23` | ✅ |
 | `ADMIN_API_KEY` | 随机长字符串 | ✅ |
-| `APNS_KEY_ID` / `APNS_TEAM_ID` | Apple 开发者后台 | 推送到手机时需要 |
-| `APNS_KEY_PATH` | `.p8` 放这台机器上的路径 | 同上 |
+| `APNS_KEY_ID` / `APNS_TEAM_ID` | 社区钥匙默认 `4M53447M36` / `B45VZCNYU3`；自己的 build 用 Apple 开发者后台值 | 推送到手机时需要 |
+| `APNS_KEY_PATH` | 社区钥匙 `AuthKey_4M53447M36.p8` 放这台机器上的路径；自己的 build 用自己的 `.p8` | 同上 |
 | `DREL_SELF_HOSTED_PUBLIC_BASE_URL` | `https://hub.yourdomain.com` | ✅ |
 
 ### 3.4 启动（systemd）
