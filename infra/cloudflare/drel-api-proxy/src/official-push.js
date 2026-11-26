@@ -26,6 +26,7 @@
 
 import { createPublicKey } from "node:crypto";
 import { apnsJWT, signerIsReady } from "./managed-push.js";
+import { OFFICIAL_MANIFESTS, OPTIONAL_AUDIO_MANIFESTS } from "./official-manifests.js";
 
 const encoder = new TextEncoder();
 
@@ -36,6 +37,16 @@ const APPROVAL_STATES = ["pending", "approved", "rejected", "cancelled", "expire
 const APPROVAL_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 const APPROVAL_ACTION_ID = /^[A-Za-z0-9._-]{1,64}$/;
 const HTML_APP_ID = /^[A-Za-z0-9._-]{1,64}$/;
+// A relayed push names the gateway it came from as drel.selfhosted.<origin>.
+const SELF_HOSTED_CHANNEL_PREFIX = "drel.selfhosted.";
+const GATEWAY_PUSH_CONTEXT = "drel.gateway-push.v1";
+const GATEWAY_PUSH_CLOCK_SKEW_SECONDS = 600;
+// DER prefix of an SPKI Ed25519 public key; the raw 32-byte key follows it.
+const ED25519_SPKI_PREFIX = Uint8Array.from(
+  atob("MCowBQYDK2VwAyEA"),
+  (character) => character.charCodeAt(0)
+);
+const gatewayVerifyKeys = new Map();
 
 function json(value, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -80,6 +91,20 @@ function base64URLEncode(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64URLDecode(value) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(padded + "=".repeat((4 - (padded.length % 4)) % 4));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function hex(bytes) {
+  return [...new Uint8Array(bytes)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function newMessageID() {
@@ -161,6 +186,14 @@ export function buildPlainAPNsPayload(input, messageID, sourceChannel) {
 }
 
 function validatePushRequest(input) {
+  // These reach the phone as launch instructions; a non-string value would
+  // be relayed as-is and silently ignored there, so refuse it here.
+  for (const field of ["appId", "url"]) {
+    const value = input[field];
+    if (value !== undefined && value !== null && value !== "" && typeof value !== "string") {
+      return `${field} must be a string`;
+    }
+  }
   if (input.route) {
     if (typeof input.route !== "string" || !input.route.startsWith("/")
       || input.route.startsWith("//") || input.route.length > 2048) {
@@ -778,14 +811,20 @@ export async function handleOfficialPush(request, env) {
 
   if (path === "/push" && request.method === "POST") {
     let body;
+    let rawBody;
     try {
-      body = await request.json();
+      // A registered gateway signs the body as sent, so keep the exact text.
+      rawBody = await request.text();
+      body = JSON.parse(rawBody);
     } catch {
+      return failure(400, "invalid JSON push");
+    }
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
       return failure(400, "invalid JSON push");
     }
     body.deviceKey = body.deviceKey ?? body.device_key;
     body.appId = body.appId ?? body.appid;
-    return deliverPushRequest(env, body, url.origin);
+    return deliverPushRequest(env, body, url.origin, { headers: request.headers, rawBody });
   }
 
   const isBark =
@@ -852,7 +891,219 @@ function adminAuthorized(request, env) {
   return request.headers.get("x-admin-key") === env.ADMIN_API_KEY;
 }
 
-async function deliverPushRequest(env, input, origin) {
+/* ── Who may use the operator's APNs credential ─────────────────────── */
+
+/** `https://host[:port]` in lowercase, or null when the value is not an HTTPS origin. */
+function gatewayOrigin(value) {
+  if (typeof value !== "string" || !value) return null;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" ? parsed.origin.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The gateways the operator registered, keyed by normalized origin.
+ *
+ * `ok` is false only when the variable is set but does not hold a JSON
+ * array, so a typo in the list is reported instead of silently unregistering
+ * every gateway.
+ */
+function registeredGateways(env) {
+  const gateways = new Map();
+  const raw = env.DREL_REGISTERED_GATEWAYS;
+  if (raw === undefined || raw === null || raw === "") return { ok: true, gateways };
+  let entries;
+  try {
+    entries = JSON.parse(raw);
+  } catch {
+    return { ok: false, gateways };
+  }
+  if (!Array.isArray(entries)) return { ok: false, gateways };
+  for (const entry of entries) {
+    const origin = gatewayOrigin(entry && entry.origin);
+    let key;
+    try {
+      key = base64URLDecode(String(entry && entry.publicKey));
+    } catch {
+      key = null;
+    }
+    // An entry that is not a usable key is not a registration.
+    if (!origin || !key || key.byteLength !== 32) continue;
+    gateways.set(origin, { keyId: typeof entry.keyId === "string" ? entry.keyId : "", key });
+  }
+  return { ok: true, gateways };
+}
+
+function gatewayVerifyKey(entry) {
+  const id = base64URLEncode(entry.key);
+  let pending = gatewayVerifyKeys.get(id);
+  if (!pending) {
+    const spki = new Uint8Array(ED25519_SPKI_PREFIX.length + entry.key.byteLength);
+    spki.set(ED25519_SPKI_PREFIX, 0);
+    spki.set(entry.key, ED25519_SPKI_PREFIX.length);
+    pending = crypto.subtle
+      .importKey("spki", spki, { name: "Ed25519" }, false, ["verify"])
+      .catch((error) => {
+        gatewayVerifyKeys.delete(id);
+        throw error;
+      });
+    gatewayVerifyKeys.set(id, pending);
+  }
+  return pending;
+}
+
+async function gatewaySignatureIsValid(entry, timestamp, rawBody, signature) {
+  let signed;
+  try {
+    signed = base64URLDecode(signature);
+  } catch {
+    return false;
+  }
+  if (signed.byteLength !== 64) return false;
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(rawBody));
+  const message = encoder.encode(`${GATEWAY_PUSH_CONTEXT}\n${timestamp}\n${hex(digest)}`);
+  try {
+    return await crypto.subtle.verify(
+      { name: "Ed25519" },
+      await gatewayVerifyKey(entry),
+      signed,
+      message
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A push that claims a self-hosted gateway has to prove it: the gateway must
+ * be registered, and the request must be signed with the key registered for
+ * exactly that origin. Checking the origin alone would let any sender borrow
+ * a registered name.
+ */
+async function authorizeGatewayPush(env, claimedOrigin, init) {
+  const { ok, gateways } = registeredGateways(env);
+  if (!ok) return failure(503, "DREL_REGISTERED_GATEWAYS is not valid JSON");
+  const entry = gateways.get(gatewayOrigin(claimedOrigin));
+  if (!entry) {
+    return failure(403, "self-hosted gateway is not registered to push through the official channel");
+  }
+  const headers = init.headers;
+  const timestamp = headers.get("x-drel-gateway-timestamp") || "";
+  const signature = headers.get("x-drel-gateway-signature") || "";
+  const keyID = headers.get("x-drel-gateway-key-id") || "";
+  if (!/^\d{1,15}$/.test(timestamp) || !signature || typeof init.rawBody !== "string") {
+    return failure(403, "self-hosted gateway push requires a signature");
+  }
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > GATEWAY_PUSH_CLOCK_SKEW_SECONDS) {
+    return failure(403, "self-hosted gateway signature has expired");
+  }
+  if (entry.keyId && keyID && keyID !== entry.keyId) {
+    return failure(403, "self-hosted gateway signature is invalid");
+  }
+  const valid = await gatewaySignatureIsValid(entry, timestamp, init.rawBody, signature);
+  return valid ? null : failure(403, "self-hosted gateway signature is invalid");
+}
+
+/** Every app id a `drel://app?app_id=…` external launch link names, in order. */
+function appLinkIDs(value) {
+  if (typeof value !== "string" || !value) return [];
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return [];
+  }
+  if (parsed.protocol.toLowerCase() !== "drel:" || !isAppHost(parsed.hostname)) return [];
+  // The phone reads the last app_id it finds; check each spelling so a
+  // duplicated parameter cannot show the edge one app and open another.
+  return parsed.searchParams.getAll("app_id").filter(Boolean);
+}
+
+/**
+ * Whether a URL host names the Drel app scheme's `app` host. The phone's
+ * Foundation URL decodes percent-escapes in the host; the WHATWG parser used
+ * here does not, so `drel://%61pp` has to be recognised explicitly or an
+ * untagged push could slip a launch link past the allowlist.
+ */
+function isAppHost(hostname) {
+  if (hostname.toLowerCase() === "app") return true;
+  try {
+    return decodeURIComponent(hostname).toLowerCase() === "app";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the official gateway serves an app id: one of its built-in
+ * manifests, or a manifest registered there that this device may read.
+ * Returns "unavailable" when the registry cannot answer.
+ */
+async function officialGatewayServes(env, deviceKey, appID) {
+  if (!HTML_APP_ID.test(appID)) return false;
+  if (OFFICIAL_MANIFESTS.some((manifest) => manifest.appId === appID)
+    || OPTIONAL_AUDIO_MANIFESTS.some((manifest) => manifest.appId === appID)) {
+    return true;
+  }
+  const namespace = env.GATEWAY_MANIFEST_REGISTRY;
+  if (!namespace) return false;
+  const query = deviceKey ? `?key=${encodeURIComponent(deviceKey)}` : "";
+  try {
+    const response = await namespace.get(namespace.idFromName("html-app-gateway-v1")).fetch(
+      `https://registry/api/v1/html-apps/${encodeURIComponent(appID)}${query}`
+    );
+    if (response.ok) return true;
+    return response.status === 404 ? false : "unavailable";
+  } catch {
+    return "unavailable";
+  }
+}
+
+/**
+ * Readable pushes are signed with the operator's own APNs credential, so the
+ * edge decides what they may name. A self-hosted gateway must be registered
+ * and must sign its push. An untagged push keeps the official identity and
+ * may only launch apps the official gateway itself serves. Encrypted
+ * deliveries are opaque to the edge and never reach this check.
+ *
+ * Returns null when the push may continue, otherwise the response to send.
+ */
+async function authorizePlainPush(env, input, init) {
+  const channel = typeof input.drelSourceChannel === "string" ? input.drelSourceChannel : "";
+  if (channel.toLowerCase().startsWith(SELF_HOSTED_CHANNEL_PREFIX)) {
+    const claimed = channel.slice(SELF_HOSTED_CHANNEL_PREFIX.length);
+    const denied = await authorizeGatewayPush(env, claimed, init);
+    if (denied) return denied;
+    // The phone groups messages by this tag with a case-sensitive prefix
+    // match, so relay the canonical form rather than whatever the sender
+    // wrote: a variant spelling would land a gateway message in the official
+    // inbox or create a phantom channel.
+    input.drelSourceChannel = SELF_HOSTED_CHANNEL_PREFIX + gatewayOrigin(claimed);
+    return null;
+  }
+  const appIDs = new Set();
+  if (typeof input.appId === "string" && input.appId) appIDs.add(input.appId);
+  for (const linked of appLinkIDs(input.url)) appIDs.add(linked);
+  for (const appID of appIDs) {
+    const served = await officialGatewayServes(env, input.deviceKey, appID);
+    if (served === true) continue;
+    if (served === "unavailable") {
+      return failure(503, "official gateway manifest lookup is unavailable");
+    }
+    const shown = appID.length > 64 ? `${appID.slice(0, 64)}…` : appID;
+    return failure(
+      403,
+      `HTML app "${shown}" is not served by the official gateway; `
+        + "send it from a registered gateway or host it on the official gateway"
+    );
+  }
+  return null;
+}
+
+async function deliverPushRequest(env, input, origin, init = {}) {
   const validationError = validatePushRequest(input);
   if (validationError) return failure(400, validationError);
   if (!edgeSignerReady(env)) {
@@ -860,6 +1111,8 @@ async function deliverPushRequest(env, input, origin) {
   }
   const device = await lookupDevice(env, input.deviceKey);
   if (!device) return failure(404, "no paired recipient");
+  const denied = await authorizePlainPush(env, input, init);
+  if (denied) return denied;
 
   const messageID = newMessageID();
   // Only relay an incoming drelSourceChannel through — the official surface

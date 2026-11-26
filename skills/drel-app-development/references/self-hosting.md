@@ -177,6 +177,9 @@ can do it. Without a valid key the relay must fail closed: it reports
 
 The user keeps using any compatible push relay — including the hosted one —
 but controls app identity, offline packages and native action declarations.
+For the hosted push service, the gateway must first be registered with the
+official channel before it can deliver app notifications; see
+`docs/guides/deployment.md`, section “3.6 让应用通知经由官方通道送达”.
 
 ### Generate the signing key
 

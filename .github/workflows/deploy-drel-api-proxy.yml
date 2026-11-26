@@ -70,7 +70,7 @@ jobs:
           health = json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "health.json")))
           assert health["status"] == "ok"
           assert health["servedBy"] == "edge"
-          assert health["version"] == "2026.11.26-route-schema"
+          assert health["version"] == "2026.11.27-gateway-allowlist"
           PY
           KEY="ci-route-$(date +%s)-$RANDOM"
           printf '%s' "{\"deviceKey\":\"$KEY\",\"title\":\"route validation\",\"body\":\"missing appId\",\"route\":\"/tasks/42\"}" > "$RUNNER_TEMP/missing.json"

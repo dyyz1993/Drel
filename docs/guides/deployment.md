@@ -116,6 +116,7 @@ URL scheme、APNs topic、编译进包的默认网关），**不动官方 checko
 
 > **没有 Apple 开发者账号？** 那就只部署网关（见方案 B），推送继续用官方的。
 > 应用市场、离线包、原生能力全在自己手里，消息投递交给官方托管。
+> 网关需先向官方通道运营者登记，才能经由官方通道发应用通知。
 
 ### 2.1 准备
 
@@ -220,7 +221,8 @@ node Server/examples/drel-encrypt-and-push.mjs \
 
 **你要的**：团队私有应用市场——强离线包、原生能力声明、应用身份，全部自己控制。
 
-**你不需要**：自建推送服务。推送继续用官方的 `api.drel.app`，或者任何别的兼容 relay。
+**你不需要**：自建推送服务。应用与离线包不经过官方；只有应用通知经由官方 `api.drel.app` 送达。
+网关需要先向官方通道登记，见 [3.6 让应用通知经由官方通道送达](#36-让应用通知经由官方通道送达需要登记)。
 
 **你得到的**：一个 `https://hub.example.com`，手机导入它之后：
 - 只信任你签名的应用
@@ -348,6 +350,93 @@ Drel → 设置 → 自有服务/网关管理 → 扫码或粘贴：
 客户端会依次验证健康 JSON、响应来源、每份应用清单、来源限制、公钥 ID 和清单签名，**展示报告后由用户点"启用"才保存**。
 
 **切换网关时不会带走旧授权**——换 origin 或公钥身份会清除原网关已验证应用的能力授权。
+
+### 3.6 让应用通知经由官方通道送达（需要登记）
+
+官方通道只允许**登记过的自建网关**把应用通知经 `api.drel.app` 送出。
+登记名单保存在官方 Worker 的加密配置项 `DREL_REGISTERED_GATEWAYS` 里。
+
+登记流程：
+
+1. 网关运营者公开网关公钥：
+
+   ```bash
+   curl https://hub.example.com/api/v1/gateway
+   # { "publicKeyId": "gw-2026-10-23", "publicKey": "<Base64URL 的 32 字节 raw public key>" }
+   ```
+
+2. 网关运营者把网关地址和上一步接口返回交给官方通道运营者。
+3. 官方通道运营者写入 Worker secret：
+
+   ```bash
+   cd infra/cloudflare/drel-api-proxy
+   npx wrangler secret put DREL_REGISTERED_GATEWAYS <<'JSON'
+   [
+     {
+       "origin": "https://hub.example.com",
+       "keyId": "gw-2026-11-27",
+       "publicKey": "<32 字节原始 Ed25519 公钥的 base64url>"
+     }
+   ]
+   JSON
+   ```
+
+   数组里一个网关一项，`origin` 必须是 https。未设置或为空时，
+   没有任何网关被登记；改动后重新执行上面的命令覆盖整份名单。
+   这个 secret 只能由有 Cloudflare 账号权限的人写入，Git 推送触发的部署
+   不会读取或覆盖它。
+
+网关经官方通道发通知的唯一方式是 `POST https://api.drel.app/push`。
+请求体必须是 JSON，并带 `deviceKey` 和来源标签
+`drelSourceChannel`（值固定为 `drel.selfhosted.<网关地址>`）。
+Bark 风格的网址（查询参数）形式带不了来源标签，所以不能用。
+通过验证后，边缘会把标签归一成小写地址、去掉尾斜杠再转发给手机，
+所以同一个网关的通知始终落在同一个自建频道里。
+
+请求还要带三个请求头：
+
+| 请求头 | 值 |
+|---|---|
+| `X-Drel-Gateway-Timestamp` | Unix 秒，与服务器时间相差不能超过 10 分钟 |
+| `X-Drel-Gateway-Signature` | `base64url( Ed25519( 网关私钥 GATEWAY_PRIVATE_KEY 那个 32 字节 seed, UTF-8("drel.gateway-push.v1\n" + 时间戳 + "\n" + 请求体原始字节的 SHA-256 十六进制) ) )` |
+| `X-Drel-Gateway-Key-Id` | 可选 |
+
+签名覆盖请求体原始字节。推荐用参考脚本构造并签名请求：
+
+```bash
+GATEWAY_PRIVATE_KEY=<seed> node Server/examples/drel-official-gateway-push.mjs \
+  https://hub.example.com \
+  <deviceKey> \
+  '{"title":"Build ready","body":"Order 1024 is ready","appId":"com.example.orders","route":"/app/orders/1024"}'
+```
+
+登记过的网关可以点名自己的应用（`appId` + `route`），手机收到通知后
+从已导入的网关打开它。脚本会自动补上 `deviceKey` 和 `drelSourceChannel` 并签名。默认请求
+`https://api.drel.app/push`，可用环境变量 `DREL_PUSH_URL` 覆盖接口地址。
+
+不带来源标签的普通推送保持官方身份。这种推送不允许点名任何 HTML 应用：
+不能带 `appId`（含旧写法 `appid`），也不能在 `url` 里放
+`drel://app?app_id=…` 应用链接，除非该应用由官方网关提供——官方内置应用，
+或已在官方网关登记且对该设备可见的应用。否则返回 403。
+
+被拒绝时返回 403 和 JSON `{"error": "…"}`。可能的文案是：
+
+- `self-hosted gateway is not registered to push through the official channel`
+- `self-hosted gateway push requires a signature`
+- `self-hosted gateway signature has expired`
+- `self-hosted gateway signature is invalid`
+- `HTML app "<appId>" is not served by the official gateway; send it from a registered gateway or host it on the official gateway`
+
+`DREL_REGISTERED_GATEWAYS` 不是合法 JSON 时返回 503 和
+`DREL_REGISTERED_GATEWAYS is not valid JSON`。
+官方网关的应用登记表暂时无法查询时也返回 503 和
+`official gateway manifest lookup is unavailable`，这种情况下不放行任何请求。
+
+两个限制需要如实说明：
+
+- 端到端加密的推送在官方服务器上只是一团密文，服务器无法判断它属于哪个网关，
+  因此**不在**这条登记名单的管辖范围内。
+- 经官方通道送达的通知会消耗官方通道的请求额度。
 
 ---
 

@@ -20,7 +20,7 @@
     // registration without the admin key (paired-key check, 20/key cap,
     // private manifests visible only to ?key=<deviceKey> listings).
     // 2026-11-02: gate audio demo manifests by client action support.
-    "DREL_EDGE_VERSION": "2026.11.26-route-schema"
+    "DREL_EDGE_VERSION": "2026.11.27-gateway-allowlist"
   },
   "durable_objects": {
     "bindings": [
