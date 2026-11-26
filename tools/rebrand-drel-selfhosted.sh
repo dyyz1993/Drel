@@ -122,6 +122,14 @@ edits = [
     ("SuperApp/Sources/OAuth/DrelOAuthKeychain.swift", r"com\.webbridgekit\.superapp(?=\.)", bundle),
     ("SuperApp/Sources/Services/OfficialPushIdentityStore.swift", r"com\.webbridgekit\.superapp(?=\.)", bundle),
     ("SuperApp/Sources/Info.plist", r"<string>drel</string>", f"<string>{scheme}</string>"),
+    ("SuperApp/Sources/Info.plist", r"<string>app\.drel\.link</string>", f"<string>{bundle}.link</string>"),
+    # Drop the legacy scheme declaration outright. Release builds already
+    # ignore the scheme (DREL_CONTAINER_ONLY returns false), so keeping the
+    # declaration only makes iOS offer this app as a handler that does nothing.
+    ("SuperApp/Sources/Info.plist",
+     r"\s*<dict>\s*<key>CFBundleURLName</key>\s*<string>com\.webbridgekit\.demo</string>\s*"
+     r"<key>CFBundleURLSchemes</key>\s*<array>\s*<string>webbridgekit</string>\s*</array>\s*</dict>",
+     ""),
     # The operator already passed --team-id; apply it so automatic signing
     # does not start out bound to the official team.
     ("project.yml", r'DEVELOPMENT_TEAM: "?[A-Z0-9]{10}"?', f'DEVELOPMENT_TEAM: "{team}"'),
@@ -162,10 +170,21 @@ say "Pinning the framework path"
 # rebranded copy sits deeper than the original checkout.
 FRAMEWORK_ABS="$(cd "$ROOT/.." && pwd)/WebBridgeKit-Framework"
 if [[ -d "$FRAMEWORK_ABS" ]]; then
+  # A relative path only makes sense when the rebranded tree sits under the
+  # same checkout. Anywhere else (another volume, /tmp, ...) os.path.relpath
+  # emits "../.." chains that collide with a leading slash, and xcodegen
+  # crashes on them, so fall back to the absolute path.
   FRAMEWORK_REL="$(python3 - "$OUT" "$FRAMEWORK_ABS" <<'PY'
 import os, sys
-out, target = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
-print(os.path.relpath(target, out))
+out, target = os.path.realpath(sys.argv[1]), os.path.realpath(sys.argv[2])
+rel = os.path.relpath(target, out)
+common = os.path.commonpath([out, target])
+# When the tree and the framework share no directory below the filesystem
+# root, relpath degenerates into "../../../../Users/..." and xcodegen aborts.
+# A shared real ancestor (the usual "build/selfhosted-app" layout) is fine.
+if common == os.sep:
+    rel = target
+print(rel)
 PY
 )"
   python3 - "$OUT" "$FRAMEWORK_REL" <<'PY'
@@ -250,9 +269,9 @@ cat > "$OUT/BUILD-NOTES.md" <<EOF
 
 ## Coexistence with the official Drel app
 
-The \`webbridgekit://\` deep-link scheme is shared with the official app. When
-both builds are installed on one phone, iOS picks either app for those links.
-The \`$SCHEME://\` scheme is unique to this build and is never ambiguous.
+This build does not declare the official \`webbridgekit://\` scheme, so it never
+competes with the official app for those links. Its only URL scheme is
+\`$SCHEME://\`, which is derived from your bundle id.
 
 ## Build steps
 
