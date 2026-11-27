@@ -472,10 +472,13 @@ jobs:
           if [ -n "${WEBK_FRAMEWORK_TOKEN:-}" ]; then
             FRAMEWORK_URL="https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git"
           fi
-          git clone --depth 1 --branch main "$FRAMEWORK_URL" "$WBK_FRAMEWORK_PATH"
-          EXPECTED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
+          PINNED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
+          git init -q "$WBK_FRAMEWORK_PATH"
+          git -C "$WBK_FRAMEWORK_PATH" remote add origin "$FRAMEWORK_URL"
+          git -C "$WBK_FRAMEWORK_PATH" fetch --depth 1 origin "$PINNED_FRAMEWORK_REVISION"
+          git -C "$WBK_FRAMEWORK_PATH" checkout --detach FETCH_HEAD
           ACTUAL_FRAMEWORK_REVISION="$(git -C "$WBK_FRAMEWORK_PATH" rev-parse HEAD)"
-          [[ "$ACTUAL_FRAMEWORK_REVISION" == "$EXPECTED_FRAMEWORK_REVISION" ]] || {
+          [[ "$ACTUAL_FRAMEWORK_REVISION" == "$PINNED_FRAMEWORK_REVISION" ]] || {
             echo "::error::Framework revision does not match the pinned release revision"
             exit 1
           }

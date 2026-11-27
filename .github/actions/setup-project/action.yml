@@ -50,17 +50,22 @@ runs:
       run: |
         set -euo pipefail
         # xcodegen validates framework source paths while generating the project,
-        # so the framework must exist before generation. It is public: clone it
-        # anonymously unless a token is configured, e.g. for a private fork.
+        # so the framework must exist before generation. It is public: fetch it
+        # anonymously unless a token is configured, e.g. for a private fork. The
+        # pinned commit is fetched directly, so a new commit on the framework's
+        # main branch does not break this build until the pin is moved on purpose.
         python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
         FRAMEWORK_URL="https://github.com/dyyz1993/WebBridgeKit-Framework.git"
         if [ -n "${WEBK_FRAMEWORK_TOKEN:-}" ]; then
           FRAMEWORK_URL="https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git"
         fi
-        git clone --depth 1 --branch main "$FRAMEWORK_URL" ../WebBridgeKit-Framework
-        EXPECTED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
+        PINNED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
+        git init -q ../WebBridgeKit-Framework
+        git -C ../WebBridgeKit-Framework remote add origin "$FRAMEWORK_URL"
+        git -C ../WebBridgeKit-Framework fetch --depth 1 origin "$PINNED_FRAMEWORK_REVISION"
+        git -C ../WebBridgeKit-Framework checkout --detach FETCH_HEAD
         ACTUAL_FRAMEWORK_REVISION="$(git -C ../WebBridgeKit-Framework rev-parse HEAD)"
-        [[ "$ACTUAL_FRAMEWORK_REVISION" == "$EXPECTED_FRAMEWORK_REVISION" ]] || {
+        [[ "$ACTUAL_FRAMEWORK_REVISION" == "$PINNED_FRAMEWORK_REVISION" ]] || {
           echo "::error::Framework revision does not match the pinned release revision"
           exit 1
         }
