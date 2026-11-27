@@ -33,6 +33,7 @@ case "$MARKETING_VERSION" in
   1.5.2) RELEASE_SCHEME=Drel152Store ;;
   1.5.3) RELEASE_SCHEME=Drel153Store ;;
   1.5.4) RELEASE_SCHEME=Drel15Store ;;
+  1.5.5) RELEASE_SCHEME=Drel15Store ;;
   *) echo "Unsupported release version: $MARKETING_VERSION" >&2; exit 1 ;;
 esac
 export DREL_V2_EXPECTED_VERSION="$MARKETING_VERSION"
