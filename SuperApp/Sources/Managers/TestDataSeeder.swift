@@ -367,7 +367,7 @@ struct TestDataSeeder {
             APIKey(
                 id: "key-webhook-005",
                 name: "Webhook 签名密钥",
-                value: "whsec_abcdef1234567890fedcba0987654321",
+                value: "whsec_replace-with-your-webhook-signing-secret",
                 createdAt: date("2026-05-01T00:00:00Z"),
                 expiresAt: nil,
                 description: "用于验证 GitHub Webhook 签名",
