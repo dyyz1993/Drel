@@ -1,7 +1,8 @@
 # Drel 1.5.5 Build 160 Release Verification
 
-Verified: pending. This record is completed once the `v1.5.5+160` build has
-been uploaded and accepted by App Store Connect.
+Verified: 2026-11-27. Build 160 was uploaded by the `Build IPA` workflow,
+accepted by App Store Connect, attached to a new 1.5.5 App Store version and
+submitted for review. Physical-device acceptance of build 160 is still open.
 
 ## Change
 
@@ -10,8 +11,9 @@ been uploaded and accepted by App Store Connect.
   builds 145-159, where the fixes landed, and the version was never released.
   The App Store still serves 1.5.3.
 - Build 160 is archived from `main`. The release records were committed
-  in `8b2d6ee`; the `v1.5.5+160` tag points at the commit that adds this
-  line. Its app sources
+  in `8b2d6ee`; the `v1.5.5+160` tag points at `eba47bc`, the commit that
+  taught the publish script and the action policy gate about 1.5.5. Its app
+  sources
   differ from build 159 (`3c2c35d`) only in a demo-data placeholder string
   (`bdc4ebb`); everything else added since is CI, documentation, server code
   and the self-hosting material, none of which is compiled into the app.
@@ -31,10 +33,11 @@ been uploaded and accepted by App Store Connect.
 | Gate | Result |
 |---|---|
 | CI on `main` before the release commit | Run `46004526398` (`d004c2e`): SwiftLint, Build, Repository Conventions, Design System Lint, Release Purity, Smoke Tests and UI Fidelity Tests all passed. |
-| `tools/verify-release-notes.py`, `tools/verify-release-identity.py --marketing 1.5.5 --build 160`, `tools/verify-repo-hygiene.py`, `tools/verify-docs-links.py`, `tools/verify-drel-developer-docs.py` | pending |
-| Tag build `v1.5.5+160` (`Build IPA` workflow: archive with project signing, distribution contract checks, TestFlight upload) | pending. The first two tag pushes started no build: GitHub also honours the workflow skip marker when it appears anywhere in the tagged commit's message, and both commits carried it. |
-| App Store Connect processing state of build 160 | pending |
-| Physical-device acceptance | pending |
+| `tools/verify-release-notes.py`, `tools/verify-release-identity.py --marketing 1.5.5 --build 160`, `tools/verify-repo-hygiene.py`, `tools/verify-docs-links.py`, `tools/verify-drel-developer-docs.py`, `tools/verify-drel-v2-action-policy.sh` | All passed on the release commit before the tag was pushed. |
+| Tag build `v1.5.5+160` (`Build IPA` workflow: archive with project signing, distribution contract checks, TestFlight upload) | Run `46018205985` passed (archive, export, upload, archive verification before and after upload). The earlier tag pushes did not produce a build: two pointed at commits whose message carried the workflow skip marker, and one stopped before archiving because the publish script did not know 1.5.5 yet. |
+| App Store Connect processing state of build 160 | `VALID`, uploaded 2026-11-27T14:50Z, build id `d532e4c5-1b19-4c16-b62a-60161b014513`, `internalBuildState=IN_BETA_TESTING`. |
+| App Store version 1.5.5 | Created from 1.5.4's metadata (`asc release stage`), What's New replaced with the 1.5.5 text in de-DE, zh-Hans, ja, ko and en-US, review notes updated, readiness report 0 errors / 0 blocking. Submitted 2026-11-27T15:03Z: submission `ff1d3de7-69b8-439a-8209-b7e5709f4844`, version id `6c20da1c-bb0c-4f0f-aa57-ec961036f29a`, state `WAITING_FOR_REVIEW`, release type `MANUAL`. |
+| Physical-device acceptance | Open. Build 160 is installable from TestFlight. |
 
 ## Open item
 
