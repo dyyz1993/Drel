@@ -97,12 +97,16 @@ entry lacks a scope, a verification level, or a resolvable evidence file.
 
 ### Pull requests from a fork
 
-Fork the repository and open the pull request against `main`. Continuous
-integration runs on the maintainers' own machines, and a pull request from a
-fork does not run there: its jobs are skipped, even after a maintainer approves
-the run. Run the checks under "Build and verify", plus the gates your change
-touches, locally and paste the results into the pull request. A maintainer will
-then run the same checks from a branch inside this repository before merging.
+Fork the repository and open the pull request against `main`. After a
+maintainer approves the workflow run, **CI (fork pull requests)** runs on
+GitHub-hosted runners. It checks the API proxy and self-hosted Go server,
+portable documentation and repository gates, SwiftLint, and a simulator build
+of the app. This hosted workflow is not a replacement for the maintainers'
+internal CI: interface tests and release checks still run when a maintainer
+tests the change from a branch inside this repository.
+
+Run the checks under "Build and verify", plus the gates your change touches,
+locally and paste the results into the pull request.
 
 See [the development and collaboration guide](docs/DEVELOPMENT_AND_COLLABORATION_GUIDE.md)
 for App/Framework ownership and debugging procedures.

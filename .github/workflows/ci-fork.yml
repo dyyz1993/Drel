@@ -1,0 +1,116 @@
+name: CI (fork pull requests)
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-fork-${{ github.event.pull_request.head.repo.full_name }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name != github.repository
+    name: Hosted Linux checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test Drel API proxy
+        working-directory: infra/cloudflare/drel-api-proxy
+        run: |
+          npm install
+          npm test
+          npm run check
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: Server/native/go.mod
+
+      - name: Test Go server
+        working-directory: Server/native
+        run: go test ./...
+
+      - name: Fetch pinned WebBridgeKit Framework
+        run: |
+          set -euo pipefail
+          python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
+          git init -q ../WebBridgeKit-Framework
+          git -C ../WebBridgeKit-Framework remote add origin https://github.com/dyyz1993/WebBridgeKit-Framework.git
+          git -C ../WebBridgeKit-Framework fetch --depth 1 origin "$(cat framework-revision.txt)"
+          git -C ../WebBridgeKit-Framework checkout --detach FETCH_HEAD
+          ACTUAL_FRAMEWORK_REVISION="$(git -C ../WebBridgeKit-Framework rev-parse HEAD)"
+          [[ "$ACTUAL_FRAMEWORK_REVISION" == "$(cat framework-revision.txt)" ]] || {
+            echo "::error::Framework revision does not match the pinned release revision"
+            exit 1
+          }
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Run portable repository gates
+        run: |
+          python3 tools/verify-docs-links.py
+          python3 tools/verify-drel-developer-docs.py
+          python3 tools/verify-repo-hygiene.py
+          python3 tools/verify-release-notes.py
+          bash tools/verify-deliverable-boundaries.sh
+
+  macos:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name != github.repository
+    name: Hosted macOS lint and build
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tooling
+        run: brew install xcodegen cocoapods swiftlint
+
+      - name: Fetch pinned WebBridgeKit Framework
+        run: |
+          set -euo pipefail
+          python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
+          git init -q ../WebBridgeKit-Framework
+          git -C ../WebBridgeKit-Framework remote add origin https://github.com/dyyz1993/WebBridgeKit-Framework.git
+          git -C ../WebBridgeKit-Framework fetch --depth 1 origin "$(cat framework-revision.txt)"
+          git -C ../WebBridgeKit-Framework checkout --detach FETCH_HEAD
+          ACTUAL_FRAMEWORK_REVISION="$(git -C ../WebBridgeKit-Framework rev-parse HEAD)"
+          [[ "$ACTUAL_FRAMEWORK_REVISION" == "$(cat framework-revision.txt)" ]] || {
+            echo "::error::Framework revision does not match the pinned release revision"
+            exit 1
+          }
+
+      - name: Show hosted Xcode version
+        run: xcodebuild -version
+
+      - name: Lint app Swift sources
+        run: swiftlint lint --config .swiftlint.yml SuperApp/Sources/ NotificationServiceExtension/
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml --project .
+
+      - name: Install CocoaPods dependencies
+        run: pod install
+
+      - name: Build Drel for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -workspace Drel.xcworkspace \
+            -scheme Drel \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
