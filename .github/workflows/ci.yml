@@ -83,7 +83,7 @@ jobs:
 
       - name: Upload Build Artifacts
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-results
           path: |
@@ -92,7 +92,7 @@ jobs:
 
       - name: Upload DerivedData
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: derived-data
           path: ~/Library/Developer/Xcode/DerivedData/Drel-*/
@@ -181,7 +181,7 @@ jobs:
 
       - name: Upload Test Results
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: smoke-test-results
           path: build/test-results/
@@ -198,7 +198,7 @@ jobs:
 
       - name: Upload Screenshots
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: screenshots-smoke-tests
           path: screenshots/
@@ -223,7 +223,7 @@ jobs:
 
       - name: Upload Diagnostics
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: smoke-diagnostics
           path: diagnostics/
@@ -239,7 +239,7 @@ jobs:
 
       - name: Upload Crash Logs
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: crash-logs-smoke
           path: |
@@ -373,7 +373,7 @@ jobs:
 
       - name: Upload Screenshots
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-fidelity-screenshots
           path: build/screenshots/actual/
@@ -381,7 +381,7 @@ jobs:
 
       - name: Upload Diff Report
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-fidelity-diff-report
           path: build/ui-fidelity-diff-report/
@@ -389,7 +389,7 @@ jobs:
 
       - name: Upload Test Results
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-fidelity-test-results
           path: build/test-results/UIFidelityResults.xcresult
@@ -431,7 +431,7 @@ jobs:
 
       - name: Upload Crash Logs
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: crash-logs-ui-fidelity
           path: |
@@ -531,7 +531,7 @@ jobs:
 
       - name: Upload site staging output
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: drel-site-staging
           path: build/drel-site-staging
