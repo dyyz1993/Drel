@@ -468,9 +468,11 @@ jobs:
           # way setup-project does instead of depending on residue from
           # whichever job ran before this one on the runner.
           python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
-          git clone --depth 1 --branch main \
-            "https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git" \
-            "$WBK_FRAMEWORK_PATH"
+          FRAMEWORK_URL="https://github.com/dyyz1993/WebBridgeKit-Framework.git"
+          if [ -n "${WEBK_FRAMEWORK_TOKEN:-}" ]; then
+            FRAMEWORK_URL="https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git"
+          fi
+          git clone --depth 1 --branch main "$FRAMEWORK_URL" "$WBK_FRAMEWORK_PATH"
           EXPECTED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
           ACTUAL_FRAMEWORK_REVISION="$(git -C "$WBK_FRAMEWORK_PATH" rev-parse HEAD)"
           [[ "$ACTUAL_FRAMEWORK_REVISION" == "$EXPECTED_FRAMEWORK_REVISION" ]] || {

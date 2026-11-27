@@ -31,14 +31,16 @@ contract checks, TestFlight upload, and Apple processing-state polling.
 
 ## Required Repository Secrets
 
-- `WEBK_FRAMEWORK_REPO`
-- `WEBK_FRAMEWORK_TOKEN`
 - `BUILD_CERTIFICATE_BASE64`
 - `P12_PASSWORD`
 - `KEYCHAIN_PASSWORD`
 - `ASC_KEY_P8`
 - `ASC_KEY_ID`
 - `ASC_ISSUER`
+
+The framework repository is public, so the workflows clone it anonymously and
+need no framework secret. Set `WEBK_FRAMEWORK_TOKEN` only when the framework
+has to come from a private fork.
 
 ## Operations
 

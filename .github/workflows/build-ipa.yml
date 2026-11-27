@@ -5,7 +5,8 @@ name: Build IPA
 #   workflow_dispatch  → unsigned smoke archive (no credentials required)
 #
 # TestFlight mode needs these repository secrets:
-#   WEBK_FRAMEWORK_TOKEN      read access to the private WebBridgeKit-Framework repo
+#   WEBK_FRAMEWORK_TOKEN      optional: only for a private WebBridgeKit-Framework
+#                             (the framework is public and is cloned anonymously)
 #   ASC_KEY_P8 / ASC_KEY_ID / ASC_ISSUER   App Store Connect API key for altool
 #
 # Signing uses the runner's login keychain directly (self-hosted runner on a
