@@ -19,21 +19,23 @@ contract, release record and verification report.
 
 ## Checkout and setup
 
-Both active repositories are private and require authorized GitHub access.
-The public `dyyz1993/WebBridgeKit` repository is the legacy monorepo and remains
-the public distribution source for the `drel-app-development` skill.
+Both repositories are public and MIT licensed, so building needs no GitHub
+access. The older `dyyz1993/WebBridgeKit` repository is the legacy monorepo
+and remains the public distribution source for the `drel-app-development` skill.
 
 Install Xcode, XcodeGen, CocoaPods and SwiftLint, then clone both repositories
 beside each other in your development directory:
 
 ```bash
-git clone git@github.com:dyyz1993/WebBridgeKit-Framework.git
-git clone git@github.com:dyyz1993/Drel.git
+git clone https://github.com/dyyz1993/WebBridgeKit-Framework.git
+git clone https://github.com/dyyz1993/Drel.git
 cd Drel
 xcodegen generate
 pod install
 open Drel.xcworkspace
 ```
+
+Building and running on a simulator needs no Apple Developer account.
 
 For another SDK checkout, set `WBK_FRAMEWORK_PATH` when running `pod install`.
 The application target and scheme are `Drel`; `SuperApp/` is the retained source
@@ -88,9 +90,19 @@ entry lacks a scope, a verification level, or a resolvable evidence file.
 - Keep commits scoped and use Conventional Commits, such as `fix(app): ...`.
 - Run checks appropriate to the changed behavior and record their results in the PR.
 - Open pull requests against `main` and obtain maintainer review before merging.
-- Contributors with access use [Drel issues](https://github.com/dyyz1993/Drel/issues).
-  Public users can use [Drel support](https://drel.app/support/) or
-  [support@drel.app](mailto:support@drel.app).
+- Use [Drel issues](https://github.com/dyyz1993/Drel/issues) for bugs and
+  proposals, [Drel support](https://drel.app/support/) or
+  [support@drel.app](mailto:support@drel.app) for usage questions, and
+  [SECURITY.md](SECURITY.md) for vulnerabilities.
+
+### Pull requests from a fork
+
+Fork the repository and open the pull request against `main`. Continuous
+integration runs on the maintainers' own machines, and a pull request from a
+fork does not run there: its jobs are skipped, even after a maintainer approves
+the run. Run the checks under "Build and verify", plus the gates your change
+touches, locally and paste the results into the pull request. A maintainer will
+then run the same checks from a branch inside this repository before merging.
 
 See [the development and collaboration guide](docs/DEVELOPMENT_AND_COLLABORATION_GUIDE.md)
 for App/Framework ownership and debugging procedures.
