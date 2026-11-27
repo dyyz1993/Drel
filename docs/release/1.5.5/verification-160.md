@@ -9,7 +9,9 @@ been uploaded and accepted by App Store Connect.
   Store Connect approved 1.5.4 as build 143 on 2026-11-10; that build predates
   builds 145-159, where the fixes landed, and the version was never released.
   The App Store still serves 1.5.3.
-- Build 160 is archived from `main` at the release commit. Its app sources
+- Build 160 is archived from `main`. The release records were committed
+  in `8b2d6ee`; the `v1.5.5+160` tag points at the commit that adds this
+  line. Its app sources
   differ from build 159 (`3c2c35d`) only in a demo-data placeholder string
   (`bdc4ebb`); everything else added since is CI, documentation, server code
   and the self-hosting material, none of which is compiled into the app.
