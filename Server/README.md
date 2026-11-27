@@ -83,8 +83,9 @@ Build the static Linux binary first, then start the dedicated Compose file:
 bash tools/build-drel-selfhosted-native.sh
 cd Server
 cp .env.example .env
-# Fill the final HTTPS URL and the CA/GID host values. Keep the community
-# APNs defaults for the stock App, or substitute your own private key values.
+# Set the final HTTPS URL and confirm the host CA bundle. The bundled 0644
+# community key and GID defaults work for the stock App; keep its APNs values
+# unchanged, or substitute your own private key values together.
 docker compose -f docker-compose.self-hosted-native.yml up -d --build
 ```
 
@@ -119,13 +120,16 @@ physical-device checklist.
    matching `DREL_SELF_HOSTED_DOMAIN`,
    `DREL_SELF_HOSTED_PUBLIC_BASE_URL=https://push.example.com`,
    `DREL_SELF_HOSTED_ACME_EMAIL`, and a new `ADMIN_API_KEY`.
-2. Use the checked-in production community key for the stock App:
+2. For the stock App, the example already selects the checked-in production
+   community key by mounting `Server/community-apns`: keep
    `APNS_KEY_ID=4M53447M36`, `APNS_TEAM_ID=B45VZCNYU3`,
+   `APNS_KEY_DIRECTORY=./community-apns`,
    `APNS_KEY_PATH=/run/secrets/drel/AuthKey_4M53447M36.p8`, and
-   `APNS_TOPIC=com.webbridgekit.superapp`. Copy that repository file into the
-   mounted secret path and make it readable by the container. For your own
-   rebranded build, use your own private production topic-specific `.p8`
-   instead; it belongs only on your server and must never be committed.
+   `APNS_TOPIC=com.webbridgekit.superapp`; do not change APNs values. For your
+   own rebranded build, copy your own private production topic-specific `.p8`
+   outside Git, point `APNS_KEY_DIRECTORY` at it, and change the key ID, team,
+   path, and topic together; it belongs only on your server and must never be
+   committed.
    Apple also permits older team-scoped keys, but a production topic-specific
    key gives this deployment the narrowest available scope.
 3. For TestFlight/App Store devices use `APNS_ENVIRONMENT=production`.

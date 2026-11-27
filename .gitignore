@@ -75,6 +75,7 @@ build_*/
 *.py
 !tools/*.py
 *.example
+!Server/.env.example
 *.patch
 manifest_cache_demo
 inject_pinned_data.swift

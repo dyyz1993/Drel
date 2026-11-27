@@ -38,7 +38,7 @@ product name all use Drel.
   decrypts `PushCipher` symmetric messages and `drel.push-envelope.v1` X25519
   self-hosted envelopes end to end and renders custom avatars. It has no
   CocoaPods dependencies.
-- **`SuperAppUITests/`**: 28 XCUITest end-to-end and UI fidelity suites.
+- **`SuperAppUITests/`**: more than 28 XCUITest end-to-end and UI fidelity suites.
 - **Official API**: `infra/cloudflare/drel-api-proxy/`, a Cloudflare Worker that
   serves `api.drel.app`.
 - **Self-hosted server**: `Server/native/`, a Go binary (recommended). The

@@ -558,7 +558,8 @@ bash tools/verify-drel-backend-contract.sh \
 
 ### 4.1 变体 C1 · 同机部署（最简单）
 
-**一个容器同时提供网关和推送**——因为 Swift server 本来就同时注册了两类路由。
+**一个 Go 服务同时提供网关和推送**。新部署使用 Go；下面的 Swift 容器仅为
+兼容既有部署保留。
 
 ```dotenv
 # Server/.env

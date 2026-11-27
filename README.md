@@ -24,7 +24,7 @@ Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark �
 
 - **`SuperApp/`**：完整产品宿主源码（首页、收信箱 Inbox、PWA 应用中心、发现页、设置、审批流、展示目录）与资源。
 - **`NotificationServiceExtension/`**：独立 APNs 通知扩展（负责 `PushCipher` 对称加密消息与 `drel.push-envelope.v1` X25519 自托管信封的端到端解密及自定义头像处理，零 CocoaPods 依赖）。
-- **`DrelUITests/`**：28 个 XCUITest 端到端与 UI 保真度测试套件。
+- **`SuperAppUITests/`**：28 个以上 XCUITest 端到端与 UI 保真度测试套件。
 - **官方 API**：`infra/cloudflare/drel-api-proxy/`（Cloudflare Worker，承载 `api.drel.app`）。
 - **自托管服务端**：`Server/native/`（Go 二进制，推荐）；官方 App 可用
   [`Server/community-apns/`](Server/community-apns/README.md) 的社区 APNs 钥匙
