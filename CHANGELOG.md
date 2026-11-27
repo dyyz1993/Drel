@@ -16,6 +16,34 @@ Each release line carries three pieces of evidence:
 - **Evidence** — a link to the verification record under
   `docs/testing/results/` or `docs/release/`.
 
+## [1.5.5] — 2026-11-27
+
+### Changed
+
+- 1.5.5 is the first Store release of the fixes recorded under 1.5.4. App
+  Store Connect approved 1.5.4 as build 143, which predates builds 145-159
+  where those fixes landed, and that version was never released. Build 160
+  is built from `main`; its app sources differ from build 159 only in a
+  demo-data placeholder string. — Scope: `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.5/verification-160.md](docs/release/1.5.5/verification-160.md)
+
+### Fixed
+
+- On a confirmed offline cold start, an installed strong-offline package that
+  passes integrity verification now launches even when a newer version
+  exists, instead of failing on a version mismatch. Landed with build 156. —
+  Scope: `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.5/verification-160.md](docs/release/1.5.5/verification-160.md)
+
+### Added
+
+- Drel Device Grant v1: an HTML app running in Drel can hold a device-bound
+  login that the user approves once; later opens, refreshes and notification
+  links sign in silently. Landed with builds 157-159. It is not called out in
+  the Store release notes because the authorization prompt has not been
+  confirmed on a physical device. — Scope: `App` — Verified: `none` —
+  Evidence: [docs/release/1.5.5/verification-160.md](docs/release/1.5.5/verification-160.md)
+
 ## [1.5.4] — 2026-11-10
 
 ### Added
