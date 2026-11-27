@@ -25,7 +25,7 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Cache Homebrew
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
@@ -46,7 +46,7 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The shell verification gates (deliverable boundaries, template gate,
       # design lint) rely on ripgrep.
@@ -112,7 +112,7 @@ jobs:
     needs: build
     continue-on-error: true
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download DerivedData
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
@@ -261,7 +261,7 @@ jobs:
     needs: build
     continue-on-error: true
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download DerivedData
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
@@ -452,7 +452,7 @@ jobs:
     timeout-minutes: 10
     needs: build
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install ripgrep
         run: brew install ripgrep
@@ -494,7 +494,7 @@ jobs:
     # a cold npm exec); give the eight diagrams headroom.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Repository hygiene (no large files, no credentials)
         run: python3 tools/verify-repo-hygiene.py --check-history
@@ -548,7 +548,7 @@ jobs:
     timeout-minutes: 20
     needs: build
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
