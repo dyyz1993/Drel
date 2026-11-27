@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   smoke:
-    if: github.repository == 'dyyz1993/Drel'
+    if: github.repository == 'dyyz1993/Drel' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     name: Validate drel-ios runner
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30

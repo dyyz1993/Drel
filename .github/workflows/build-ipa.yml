@@ -36,7 +36,7 @@ concurrency:
 
 jobs:
   build-ipa:
-    if: github.repository == 'dyyz1993/Drel'
+    if: github.repository == 'dyyz1993/Drel' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     name: Build and publish IPA
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 60
