@@ -32,7 +32,7 @@ been uploaded and accepted by App Store Connect.
 |---|---|
 | CI on `main` before the release commit | Run `46004526398` (`d004c2e`): SwiftLint, Build, Repository Conventions, Design System Lint, Release Purity, Smoke Tests and UI Fidelity Tests all passed. |
 | `tools/verify-release-notes.py`, `tools/verify-release-identity.py --marketing 1.5.5 --build 160`, `tools/verify-repo-hygiene.py`, `tools/verify-docs-links.py`, `tools/verify-drel-developer-docs.py` | pending |
-| Tag build `v1.5.5+160` (`Build IPA` workflow: archive with project signing, distribution contract checks, TestFlight upload) | pending |
+| Tag build `v1.5.5+160` (`Build IPA` workflow: archive with project signing, distribution contract checks, TestFlight upload) | pending. The first two tag pushes started no build: GitHub also honours the workflow skip marker when it appears anywhere in the tagged commit's message, and both commits carried it. |
 | App Store Connect processing state of build 160 | pending |
 | Physical-device acceptance | pending |
 
