@@ -2,6 +2,16 @@
 
 Drel 的原生能力通过网页内的 JavaScript 调用。**但它不是一个"通用 JS Bridge"**——能调用什么，取决于网关签名清单里声明了什么，以及用户在原生面板上做了什么决定。
 
+## English summary
+
+This is Drel's public Bridge API contract for trusted, signed web apps. Native
+actions are gated by manifest declarations, exact origins, foreground user
+gestures, and user authorization. Start with the
+[action demo](https://drel.app/test/actions/), review the action table and
+Manifest v2 requirements, then continue to the
+[app development guide](app-development.md) and
+[deployment guide](deployment.md).
+
 本文是 Drel Store 版当前公开的能力契约。
 
 > **版本范围**：Drel 1.5.0 / 1.5.1；1.5.2（138）为 TestFlight 构建，正式商店可用性以 App Store 为准。

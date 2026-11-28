@@ -2,6 +2,15 @@
 
 从"一个普通网页"到"一个可安装、可离线、可被推送精确拉起的应用"。
 
+## English summary
+
+This is the main guide for developing HTML apps that run inside Drel. It
+progresses from an ordinary page to an installable PWA, a strong-offline
+package, and native Bridge integration. Start with the public
+[action demos](https://drel.app/test/), use the
+[deployment guide](deployment.md) for self-hosting, and continue to the
+[Bridge API reference](bridge-api.md) for action contracts and authorization.
+
 > **在线演示**：`https://drel.app/test/` 下有四个可动手的样例
 > **Drel 版本**：1.5.0 · 在线环境：`https://drel.app`
 

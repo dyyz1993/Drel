@@ -36,7 +36,7 @@
       </section>
       <section>
         <h2>Open-source push service</h2>
-        <p>The Drel push service is based on the open-source WebBridgeKit server. V1 uses the official Drel endpoint in the iOS app; gateway import, offline web-tool packages, and web-tool management are planned for later releases.</p>
+        <p>The Drel push service is based on the open-source WebBridgeKit server. V1 uses the official Drel endpoint in the iOS app; gateway import, strong-offline packages, and managed web tools are available. Self-hosted deployments are documented in the <a href="/self-hosted/">self-hosting guide</a>.</p>
       </section>
       <section>
         <h2>A notification did not arrive</h2>
@@ -49,7 +49,7 @@
       </section>
       <section>
         <h2>An HTTPS page does not open</h2>
-        <p>Confirm the target URL uses HTTPS and is reachable. Drel's first Store release does not install web tools, inject WebBridge.js, or allow remote pages to call native Bridge capabilities.</p>
+        <p>Confirm the target URL uses HTTPS and is reachable. Drel installs managed web tools only from trusted, signed sources and does not let ordinary remote pages call native Bridge capabilities by default.</p>
       </section>
       <section class="notice">
         <h2>Security reports</h2>

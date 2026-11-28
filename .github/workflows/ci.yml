@@ -25,11 +25,11 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Cache Homebrew
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips hosted cache storage.
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Homebrew
           key: brew-${{ runner.os }}-swiftlint
@@ -46,7 +46,7 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # The shell verification gates (deliverable boundaries, template gate,
       # design lint) rely on ripgrep.
@@ -57,7 +57,6 @@ jobs:
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Reclaim self-hosted build disk
         shell: bash
@@ -84,7 +83,7 @@ jobs:
 
       - name: Upload Build Artifacts
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: build-results
           path: |
@@ -93,7 +92,7 @@ jobs:
 
       - name: Upload DerivedData
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: derived-data
           path: ~/Library/Developer/Xcode/DerivedData/Drel-*/
@@ -113,11 +112,11 @@ jobs:
     needs: build
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Download DerivedData
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: derived-data
           path: ~/Library/Developer/Xcode/DerivedData/
@@ -126,7 +125,6 @@ jobs:
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Cleanup & Prepare Simulator
         id: prep
@@ -183,7 +181,7 @@ jobs:
 
       - name: Upload Test Results
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: smoke-test-results
           path: build/test-results/
@@ -200,7 +198,7 @@ jobs:
 
       - name: Upload Screenshots
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: screenshots-smoke-tests
           path: screenshots/
@@ -208,7 +206,7 @@ jobs:
 
       - name: Publish Test Report
         if: always()
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@db71d41eb79864e25ab0337e395c352e84523afe # v4.3.1
         with:
           report_paths: build/test-results/smoke-junit.xml
           check_name: "Smoke Test Results"
@@ -225,7 +223,7 @@ jobs:
 
       - name: Upload Diagnostics
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: smoke-diagnostics
           path: diagnostics/
@@ -241,7 +239,7 @@ jobs:
 
       - name: Upload Crash Logs
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: crash-logs-smoke
           path: |
@@ -263,11 +261,11 @@ jobs:
     needs: build
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Download DerivedData
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: derived-data
           path: ~/Library/Developer/Xcode/DerivedData/
@@ -276,7 +274,6 @@ jobs:
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Cleanup & Prepare Simulator
         id: prep
@@ -344,11 +341,11 @@ jobs:
       - name: Check Reference Images
         id: references
         run: |
-          if [ -d "docs/ui-fidelity/references" ] && [ "$(ls -A docs/ui-fidelity/references/*.png 2>/dev/null)" ]; then
-            echo "has_references=true" >> $GITHUB_OUTPUT
-            echo "Found $(ls docs/ui-fidelity/references/*.png 2>/dev/null | wc -l | tr -d ' ') reference images"
+          if find docs/ui-fidelity/references -maxdepth 1 -type f -name '*.png' -print -quit 2>/dev/null | grep -q .; then
+            echo "has_references=true" >> "$GITHUB_OUTPUT"
+            echo "Found $(find docs/ui-fidelity/references -maxdepth 1 -type f -name '*.png' 2>/dev/null | wc -l | tr -d ' ') reference images"
           else
-            echo "has_references=false" >> $GITHUB_OUTPUT
+            echo "has_references=false" >> "$GITHUB_OUTPUT"
             echo "No reference images — saving current as baseline"
           fi
 
@@ -356,9 +353,9 @@ jobs:
         if: steps.references.outputs.has_references == 'false'
         run: |
           mkdir -p docs/ui-fidelity/references
-          if ls build/screenshots/actual/*.png 1>/dev/null 2>&1; then
+          if find build/screenshots/actual -maxdepth 1 -type f -name '*.png' -print -quit 2>/dev/null | grep -q .; then
             cp build/screenshots/actual/*.png docs/ui-fidelity/references/
-            echo "Saved $(ls docs/ui-fidelity/references/*.png 2>/dev/null | wc -l | tr -d ' ') baseline images"
+            echo "Saved $(find docs/ui-fidelity/references -maxdepth 1 -type f -name '*.png' 2>/dev/null | wc -l | tr -d ' ') baseline images"
           fi
 
       - name: Run Diff Comparison
@@ -376,7 +373,7 @@ jobs:
 
       - name: Upload Screenshots
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ui-fidelity-screenshots
           path: build/screenshots/actual/
@@ -384,7 +381,7 @@ jobs:
 
       - name: Upload Diff Report
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ui-fidelity-diff-report
           path: build/ui-fidelity-diff-report/
@@ -392,7 +389,7 @@ jobs:
 
       - name: Upload Test Results
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ui-fidelity-test-results
           path: build/test-results/UIFidelityResults.xcresult
@@ -400,7 +397,7 @@ jobs:
 
       - name: Publish Test Report
         if: always()
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@db71d41eb79864e25ab0337e395c352e84523afe # v4.3.1
         with:
           report_paths: build/test-results/ui-fidelity-junit.xml
           check_name: "UI Fidelity Test Results"
@@ -434,7 +431,7 @@ jobs:
 
       - name: Upload Crash Logs
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: crash-logs-ui-fidelity
           path: |
@@ -455,7 +452,7 @@ jobs:
     timeout-minutes: 10
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install ripgrep
         run: brew install ripgrep
@@ -463,19 +460,15 @@ jobs:
       - name: Fetch WebBridgeKit Framework
         shell: bash
         env:
-          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
         run: |
           set -euo pipefail
           # ci-lint.sh deliverable-boundaries resolves the shared push wire
-          # contract through the sibling framework checkout; fetch it the same
-          # way setup-project does instead of depending on residue from
-          # whichever job ran before this one on the runner.
+          # contract through the public sibling framework checkout; fetch it
+          # the same way setup-project does instead of depending on residue
+          # from whichever job ran before this one on the runner.
           python3 -c 'import shutil,os; shutil.rmtree("../WebBridgeKit-Framework") if os.path.exists("../WebBridgeKit-Framework") else None'
           FRAMEWORK_URL="https://github.com/dyyz1993/WebBridgeKit-Framework.git"
-          if [ -n "${WEBK_FRAMEWORK_TOKEN:-}" ]; then
-            FRAMEWORK_URL="https://x-access-token:${WEBK_FRAMEWORK_TOKEN}@github.com/dyyz1993/WebBridgeKit-Framework.git"
-          fi
           PINNED_FRAMEWORK_REVISION="$(cat framework-revision.txt)"
           git init -q "$WBK_FRAMEWORK_PATH"
           git -C "$WBK_FRAMEWORK_PATH" remote add origin "$FRAMEWORK_URL"
@@ -501,7 +494,7 @@ jobs:
     # a cold npm exec); give the eight diagrams headroom.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Repository hygiene (no large files, no credentials)
         run: python3 tools/verify-repo-hygiene.py --check-history
@@ -538,7 +531,7 @@ jobs:
 
       - name: Upload site staging output
         if: github.event_name == 'workflow_dispatch'  # PR/push CI skips quota-blocked artifact storage.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: drel-site-staging
           path: build/drel-site-staging
@@ -555,13 +548,12 @@ jobs:
     timeout-minutes: 20
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Project
         uses: ./.github/actions/setup-project
         env:
           WBK_FRAMEWORK_PATH: ${{ vars.WBK_FRAMEWORK_PATH || '../WebBridgeKit-Framework' }}
-          WEBK_FRAMEWORK_TOKEN: ${{ secrets.WEBK_FRAMEWORK_TOKEN }}
 
       - name: Verify Release binary has no DEBUG-only code
         run: bash tools/verify-release-no-debug.sh
