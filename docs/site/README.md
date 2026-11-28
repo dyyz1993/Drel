@@ -75,14 +75,14 @@ verified inboxes.
 
 - App Store: https://apps.apple.com/cn/app/drel/id6802806992 (verified product
   page; regionless links redirected to the storefront homepage during the audit).
-- App and services: https://github.com/dyyz1993/Drel (private, access required).
-- SDK: https://github.com/dyyz1993/WebBridgeKit-Framework (private, access required).
+- App and services: https://github.com/dyyz1993/Drel (public, MIT License).
+- SDK: https://github.com/dyyz1993/WebBridgeKit-Framework (public, MIT License).
 - Public skill installation intentionally remains
   `npx skills add dyyz1993/WebBridgeKit --skill drel-app-development`.
-  This is legacy distribution, not the current product source. Do not redirect
-  public users to a private repository for installation.
+  This is legacy distribution, not the current product source. Public users can
+  also build from the public repository.
 - Public support stays at https://drel.app/support/ and support@drel.app;
-  GitHub issue links in the app require repository access.
+  GitHub Issues are public.
 
 ## Search and release checks
 

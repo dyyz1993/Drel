@@ -2,6 +2,16 @@
 
 Drel 的文档按"读者要做什么"组织，而不是按代码目录组织。从这里找到你的路径。
 
+## English summary
+
+This page is Drel's documentation map. Start with the
+[Push API](https://drel.app/docs/push/) to send notifications; use the
+[deployment guide](guides/deployment.md) and
+[Self-hosted overview](https://drel.app/self-hosted/) for private deployment.
+Build apps with the [app development guide](guides/app-development.md), then
+use the [Bridge API reference](guides/bridge-api.md). The reader-specific
+tables below point to the remaining contracts and workflows.
+
 ---
 
 ## 面向使用者
