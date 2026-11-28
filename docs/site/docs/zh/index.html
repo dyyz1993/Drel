@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-Hans"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drel 开发者指南：推送与 Bridge</title><meta name="description" content="使用 curl 发送 Drel 推送，下载版本化 Schema，并为受信任网页调用原生能力。"><link rel="canonical" href="https://drel.app/docs/zh/"><link rel="stylesheet" href="/assets/site.css"></head>
 <body><header class="docs-shell nav"><a class="brand" href="/">Drel</a><nav class="nav-links"><a href="/docs/">Docs</a><a href="/docs/push/">Push API</a><a href="/docs/bridge/">Bridge API</a><a href="/test/actions/">Demo</a></nav></header>
-<main class="docs-shell"><div class="docs-content"><section class="docs-hero"><span class="eyebrow">开发者指南 · 2026-11-03</span><h1>从一条推送地址开始</h1><p>Drel 提供推送接口，也为已签名的可信网页提供受控原生能力。这是两个独立接口：发送推送不需要 Bridge，推送本身也不会授予网页权限。</p></section>
+<main class="docs-shell"><div class="docs-content"><section class="docs-hero"><span class="eyebrow">开发者指南 · 2026-11-28</span><h1>从一条推送地址开始</h1><p>Drel 提供推送接口，也为已签名的可信网页提供受控原生能力。这是两个独立接口：发送推送不需要 Bridge，推送本身也不会授予网页权限。</p><p>当前版本状态：1.5.4（构建 143）已发布；1.5.5（构建 160）已送审，过审后手动发布。</p></section>
 <section><h2>1. 获取地址与发送通知</h2><p>在 Drel 首页复制“你的推送地址”，形如 <code>https://api.drel.app/&lt;YOUR_DEVICE_KEY&gt;</code>。地址就是向你的设备发送通知的凭证，不要提交到仓库、截图或公开日志。</p><p>把下列占位地址换成自己的地址；执行命令会实际发送一条通知：</p><pre class="docs-code">DREL_PUSH_URL='https://api.drel.app/YOUR_DEVICE_KEY'
 curl --get "$DREL_PUSH_URL" \
   --data-urlencode 'title=Build complete' \
@@ -19,7 +19,7 @@ console.log({ appVersion: r?.appVersion, buildNumber: r?.buildNumber,
   bridgeVersion: r?.bridgeVersion, containerVersion: r?.containerVersion,
   offlinePackageVersion: r?.offlinePackageVersion,
   isOfflinePackage: r?.isOfflinePackage, screen: r?.screen, viewport: r?.viewport });</pre><p>版本与构建号是字符串；屏幕与视口会随运行环境变化。服务端可从 User-Agent 识别 Drel，网页优先使用结构化字段。不要将 UA 或版本号当成授权凭证。</p></section>
-<section><h2>能力与授权查询（1.5.3 测试版）</h2><p><strong>已随 1.5.3（142）TestFlight 提供：</strong>以下 <code>getCapabilities</code> 接口的正式商店可用性以实际发布为准。旧版（包括 1.5.2 Build 138）请处理不支持的返回，不要假设所有用户已经升级。</p><pre class="docs-code">async function readCapabilities() {
+<section><h2>能力与授权查询（1.5.4 已发布）</h2><p><strong>已随 1.5.4（143）App Store 提供：</strong>以下 <code>getCapabilities</code> 接口可供正式版使用。旧版（包括 1.5.2 Build 138）请处理不支持的返回，不要假设所有用户已经升级。</p><pre class="docs-code">async function readCapabilities() {
   const bridge = window.BarkBridge;
   if (typeof bridge?.callNative !== 'function') return null;
   try {

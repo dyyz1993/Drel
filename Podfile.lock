@@ -24,7 +24,7 @@ PODS:
   - RxSwift (6.9.0)
   - SnapKit (5.7.1)
   - SwiftSoup (2.11.3)
-  - WebBridgeKit (1.4.0):
+  - WebBridgeKit (1.4.1):
     - Moya/RxSwift (~> 15.0)
     - RealmSwift (~> 10.42)
     - RxCocoa (~> 6.0)
@@ -77,7 +77,7 @@ SPEC CHECKSUMS:
   RxSwift: 31649ace6aceeb422e16ff71c60804f9c3281ed9
   SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a
   SwiftSoup: 959c9ac70d7053fbf476341bfac90ab228523f2a
-  WebBridgeKit: a09d7566d2a8f9528765287a05af0152eddee1c9
+  WebBridgeKit: 2bd5e46e28da0393c70fdae72dfb3e547123d81d
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
 PODFILE CHECKSUM: 52588fcd979f3bd986b836c226a2401d73b61b67

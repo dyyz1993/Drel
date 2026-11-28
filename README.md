@@ -2,7 +2,7 @@
 
 中文 | [English](README.en.md)
 
-基于 `WebBridgeKit-Framework` 构建的完整 iOS 产品宿主应用（Target、Scheme 与对外产品名均为 `Drel`）、通知服务扩展（`NotificationServiceExtension`）、UI 自动化测试套件（`DrelUITests/`）及配套服务端（`Server/`）。
+基于 `WebBridgeKit-Framework` 构建的完整 iOS 产品宿主应用（Target、Scheme 与对外产品名均为 `Drel`）、通知服务扩展（`NotificationServiceExtension`）、UI 自动化测试套件（`SuperAppUITests/`）及配套服务端（`Server/`）。
 
 Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark 兼容推送」的完整产品层公开出来，底层 SDK [`WebBridgeKit-Framework`](../WebBridgeKit-Framework) 同样以 MIT 开源，两仓库按并列目录约定协同构建。
 

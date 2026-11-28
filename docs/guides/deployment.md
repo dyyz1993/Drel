@@ -2,6 +2,15 @@
 
 选一个你需要的方案，照着做。三个方案互不依赖。
 
+## English summary
+
+This guide covers three independent self-hosting paths: push-only,
+gateway-only, or both together. Start at the
+[30-second options table](#0-三十秒选方案), then review the push, gateway, and
+relay topology before configuring keys. The public
+[Self-hosted overview](https://drel.app/self-hosted/) is the product-facing
+entry point; the detailed path below covers builds, proxies, and verification.
+
 > **先看这一页就够。** 想让 AI 帮你部署，读 [Drel 技能包](https://drel.app/skills/drel-app-development/)，
 > 然后直接对它说"帮我部署方案 B"。
 
