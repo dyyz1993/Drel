@@ -131,6 +131,54 @@ test("the canonical payload matches the Go and Swift byte order", async () => {
   assert.equal(canonical, expected);
 });
 
+test("an authorization block is served but never part of the signed payload", async () => {
+  const env = testEnv();
+  const authorization = {
+    schemaVersion: "1",
+    provider: "drel-device-grant-v1",
+    clientId: MANIFEST.appId,
+    resource: { baseURL: "https://app.example.com", pathPrefix: "/api/" },
+    scopes: ["workspace.read"],
+    refreshPolicy: { idleTimeoutSeconds: 15552000, absoluteLifetimeSeconds: 31536000, rotateOnRefresh: true },
+  };
+  const signed = await signGatewayManifest(env, { ...MANIFEST, authorization });
+
+  // The block still reaches the OAuth layer on the phone.
+  assert.deepEqual(signed.authorization, authorization);
+
+  // The phone rebuilds the signed bytes from its decoded model, which only
+  // knows these fields (HTMLAppManifest.CodingKeys minus `signature`).
+  const { createPublicKey, verify } = await import("node:crypto");
+  const phoneModelKeys = [
+    "schemaVersion", "appId", "name", "startURL", "allowedOrigins",
+    "capabilities", "capabilities_v2", "routes", "cache", "webManifest", "drel_offline",
+  ];
+  const rebuilt = {};
+  for (const key of phoneModelKeys) {
+    if (signed[key] !== undefined) rebuilt[key] = signed[key];
+  }
+  // Swift JSONEncoder(.sortedKeys): sort keys at every level.
+  const sortKeys = (value) => Array.isArray(value)
+    ? value.map(sortKeys)
+    : (value && typeof value === "object")
+      ? Object.fromEntries(Object.keys(value).sort().map((k) => [k, sortKeys(value[k])]))
+      : value;
+  const nodePublicKey = createPublicKey({
+    key: Buffer.concat([
+      Buffer.from("302e020100300506032b657004220420", "hex"),
+      Buffer.from(env.GATEWAY_PRIVATE_KEY, "base64url"),
+    ]),
+    format: "der",
+    type: "pkcs8",
+  });
+  const canonical = Buffer.from(JSON.stringify(sortKeys(rebuilt)), "utf8");
+  assert.equal(
+    verify(null, canonical, nodePublicKey, Buffer.from(signed.signature.value, "base64url")),
+    true,
+    "signature must verify against the phone's rebuilt payload, not the stored document",
+  );
+});
+
 test("a manifest signed by Go verifies against the worker key material", async () => {
   const env = testEnv();
   // Reproduce what the Go server produces for the same document.

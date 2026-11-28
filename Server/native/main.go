@@ -161,7 +161,9 @@ func (gs *gatewayStore) signLocked(m map[string]any) (map[string]any, error) {
 	}
 	unsigned := make(map[string]any, len(m))
 	for k, v := range m {
-		if k != "signature" {
+		// The phone rebuilds the signed payload from its decoded model, which
+		// has no "authorization" field; signing it broke verification there.
+		if k != "signature" && k != "authorization" {
 			unsigned[k] = v
 		}
 	}
@@ -176,6 +178,11 @@ func (gs *gatewayStore) signLocked(m map[string]any) (map[string]any, error) {
 	signed := make(map[string]any, len(unsigned)+1)
 	for k, v := range unsigned {
 		signed[k] = v
+	}
+	// Serve the authorization block alongside the signed document; it is read
+	// by the OAuth layer and is intentionally outside the signature.
+	if auth, ok := m["authorization"]; ok {
+		signed["authorization"] = auth
 	}
 	signed["signature"] = map[string]any{
 		"algorithm": "ed25519",

@@ -146,7 +146,10 @@ export async function signGatewayManifest(env, manifest) {
   const { privateKey } = await gatewaySigningKey(env);
   const unsigned = {};
   for (const [key, value] of Object.entries(manifest)) {
-    if (key !== "signature") unsigned[key] = value;
+    // The phone rebuilds the signed payload from its decoded manifest model,
+    // which has no `authorization` field. Signing that block made every
+    // manifest carrying one fail verification on the device.
+    if (key !== "signature" && key !== "authorization") unsigned[key] = value;
   }
   // The signed bytes must be the canonical (sorted-key) serialization, which
   // is exactly what the phone rebuilds before it verifies.
@@ -154,7 +157,7 @@ export async function signGatewayManifest(env, manifest) {
   const signature = new Uint8Array(
     await crypto.subtle.sign({ name: "Ed25519" }, privateKey, canonical)
   );
-  return {
+  const signed = {
     ...canonicalize(unsigned),
     signature: {
       algorithm: "ed25519",
@@ -162,6 +165,10 @@ export async function signGatewayManifest(env, manifest) {
       value: base64URLEncode(signature),
     },
   };
+  // Serve the authorization block alongside the signed document; it is read by
+  // the OAuth layer and is intentionally outside the signature.
+  if (manifest.authorization !== undefined) signed.authorization = manifest.authorization;
+  return signed;
 }
 
 /**
