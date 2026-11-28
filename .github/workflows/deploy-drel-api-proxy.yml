@@ -35,6 +35,9 @@ jobs:
     if: github.repository == 'dyyz1993/Drel' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
     runs-on: [self-hosted, macOS, ARM64, drel-ios]
+    # The deploy job pauses here until a reviewer approves it in the
+    # "production-api" environment; validate still runs without approval.
+    environment: production-api
     defaults:
       run:
         working-directory: infra/cloudflare/drel-api-proxy
