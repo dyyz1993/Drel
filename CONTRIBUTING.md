@@ -20,8 +20,9 @@ contract, release record and verification report.
 ## Checkout and setup
 
 Both repositories are public and MIT licensed, so building needs no GitHub
-access. The older `dyyz1993/WebBridgeKit` repository is the legacy monorepo
-and remains the public distribution source for the `drel-app-development` skill.
+access. The older `dyyz1993/WebBridgeKit` repository is the archived legacy
+monorepo; the `drel-app-development` skill is distributed from this repository
+(`npx skills add dyyz1993/Drel --skill drel-app-development`).
 
 Install Xcode, XcodeGen, CocoaPods and SwiftLint, then clone both repositories
 beside each other in your development directory:

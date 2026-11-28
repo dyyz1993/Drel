@@ -47,7 +47,6 @@ Build ──────┤──► Unit Tests (Core B)   ├──► ✅
 - **Concurrency control** — same branch cancels older runs
 - **CocoaPods cache** — keyed by `Podfile.lock` hash
 - **DerivedData cache** — keyed by `Podfile.lock` + `project.yml`
-- **SPM Server cache** — caches `Server/.build` for Swift Hummingbird backend
 - **Build artifact sharing** — Build job uploads DerivedData; test jobs download and reuse (skip recompilation)
 - **Retry on flaky tests** — each unit test scheme retries up to 2×, Smoke/UI Fidelity retry up to 3×
 - **Code coverage** — collected and uploaded as artifact
@@ -136,7 +135,6 @@ swiftlint --fix --config .swiftlint.yml Sources/ SuperApp/Sources/
 
 - CocoaPods cache key: `Podfile.lock` hash
 - DerivedData cache key: `Podfile.lock` + `project.yml`
-- SPM Server cache key: `Server/Package.resolved` hash
 - Bump a dependency version or clear the cache in GitHub Actions UI
 
 ## Adding New Test Targets
@@ -191,7 +189,7 @@ pod install
 
 **Path:** `.github/actions/setup-project/action.yml`
 
-Installs `xcodegen`, `swiftlint`, `pod`, `xcpretty`, caches CocoaPods + DerivedData + SPM Server, then runs `xcodegen generate` and `pod install`.
+Installs `xcodegen`, `swiftlint`, `pod`, `xcpretty`, caches CocoaPods + DerivedData, then runs `xcodegen generate` and `pod install`.
 
 **Usage in workflow:**
 

@@ -1,10 +1,8 @@
 # Drel self-hosted push (Go recommended)
 
-> **Swift implementation deprecated (2026-11-08).** New self-hosted deployments
-> use `Server/native/`. `Server/Sources/WebBridgeServer/` and the Swift Compose
-> files remain only so documented existing deployments can be audited and
-> migrated; they are not the official `api.drel.app` implementation, and CI no
-> longer treats them as the production server.
+> **Swift implementation removed (2026-11-28).** Self-hosting uses
+> `Server/native/`, the portable Go relay. The former Hummingbird server and
+> Swift-only Compose, Caddy, and Nginx deployment assets were deleted.
 
 This optional direct APNs relay does not call `api.drel.app`: a paired iPhone
 registers only with its selected server, and that server sends APNs payloads
@@ -72,10 +70,10 @@ push requests rather than claiming that delivery is ready.
 
 ### Native Docker image without Docker Hub
 
-The same portable Go relay can also run in Docker without pulling a Swift or
-Ubuntu base image. This is useful for a host whose Docker daemon cannot reach
-Docker Hub. It is the same relay contract as the native systemd mode, not a
-reduced fallback.
+The same portable Go relay also runs in Docker as a dependency-free scratch
+image. This is useful for a host whose Docker daemon cannot reach Docker Hub.
+It is the same relay contract as the native systemd mode, not a reduced
+fallback.
 
 Build the static Linux binary first, then start the dedicated Compose file:
 
@@ -112,82 +110,13 @@ deletes a non-provider P-256 key itself; it never reads a deployer key, touches
 a real device, or sends APNs. Production delivery still needs the
 physical-device checklist.
 
-### Docker (alternative)
-
-1. Point a public DNS name (for example `push.example.com`) at the Docker host
-   and allow inbound TCP 80 and 443. From the checked-out `Server/` directory,
-   copy `.env.example` to `.env`; set the
-   matching `DREL_SELF_HOSTED_DOMAIN`,
-   `DREL_SELF_HOSTED_PUBLIC_BASE_URL=https://push.example.com`,
-   `DREL_SELF_HOSTED_ACME_EMAIL`, and a new `ADMIN_API_KEY`.
-2. For the stock App, the example already selects the checked-in production
-   community key by mounting `Server/community-apns`: keep
-   `APNS_KEY_ID=4M53447M36`, `APNS_TEAM_ID=B45VZCNYU3`,
-   `APNS_KEY_DIRECTORY=./community-apns`,
-   `APNS_KEY_PATH=/run/secrets/drel/AuthKey_4M53447M36.p8`, and
-   `APNS_TOPIC=com.webbridgekit.superapp`; do not change APNs values. For your
-   own rebranded build, copy your own private production topic-specific `.p8`
-   outside Git, point `APNS_KEY_DIRECTORY` at it, and change the key ID, team,
-   path, and topic together; it belongs only on your server and must never be
-   committed.
-   Apple also permits older team-scoped keys, but a production topic-specific
-   key gives this deployment the narrowest available scope.
-3. For TestFlight/App Store devices use `APNS_ENVIRONMENT=production`.
-4. From that same `Server/` directory, start the production stack with
-   `docker compose -f docker-compose.self-hosted.yml up -d --build`. It starts
-   Caddy in front of the Swift server and automatically obtains HTTPS; mount
-   both `/app/data` and the directory containing the `.p8` file. Use the
-   simpler `docker-compose.yml` only when another reverse proxy already owns
-   TLS.
-5. Confirm `https://push.example.com/ping` returns `pong` and
-   `https://push.example.com/.well-known/drel-push.json` returns the Drel
-   descriptor. `/health` additionally reports `apnsReady: true`. A public
-   HTTPS self-hosted process refuses to start when its APNs signer cannot be
-   initialized, so it cannot accept pairings while silently dropping pushes.
-
-The Compose stack waits for the server healthcheck before exposing Caddy. The
-proxy receives only the domain and ACME email; it does not receive APNs,
-administrator, or gateway secrets.
-
-### Existing Nginx host
-
-If another service already owns ports 80/443, do not run the Caddy stack.
-Use `docker-compose.self-hosted-nginx.yml` instead; it binds the Swift service
-only to `127.0.0.1:8080`. Install a rendered copy of
-`nginx/drel-self-hosted.conf.template` in the host's Nginx configuration after
-the host's normal ACME flow has issued the certificate. Replace both
-`__DREL_SELF_HOSTED_DOMAIN__` placeholders, test with `nginx -t`, then reload
-Nginx. This keeps existing sites on the host isolated while Nginx is the only
-public TLS boundary for Drel.
-
-For the managed Drel deployment at `push.drel.app`, the checked-in
-`nginx/push.drel.app.acme.conf` is an HTTP-only certificate-issuance host.
-Install it and reload Nginx before `certbot certonly --webroot`; after the
-certificate exists, replace it with `nginx/push.drel.app.conf`, test with
-`nginx -t`, and reload. Do not install the TLS file before its certificate
-exists because it intentionally references the live certificate paths.
-On a host without a Certbot systemd timer, install
-`cron/drel-certbot-renew` as `/etc/cron.d/drel-certbot-renew`; it renews only
-the Drel certificate and reloads Nginx only when renewal actually occurs.
-
-Before public deployment, run `bash tools/verify-drel-selfhosted-docker.sh`
-from the repository root on a machine with Docker. It builds an isolated image
-and proves liveness, descriptor discovery, one-time pairing, and registration;
-it intentionally does not send to APNs because that requires a real Drel
-provider credential and a physical TestFlight device.
-
-If the deployment host cannot reach Docker Hub but has an approved private
-mirror, pass it only to this build rather than changing the daemon-wide Docker
-registry configuration, for example:
-
-```bash
-docker compose -f docker-compose.self-hosted-nginx.yml build \
-  --build-arg SWIFT_IMAGE=mirror.example/library/swift:6.0-noble \
-  --build-arg RUNTIME_IMAGE=mirror.example/library/ubuntu:noble
-```
-
-Use an HTTPS mirror controlled or explicitly approved by the deployer, and
-verify its image provenance before treating a mirror build as production.
+When the deployment host uses an existing reverse proxy or tunnel, configure
+that public TLS boundary to forward traffic to the relay's loopback listener.
+The relay never receives or manages certificates. Before public deployment,
+run `bash tools/verify-drel-selfhosted-docker.sh` on a machine with Docker. It
+validates the native image and proves liveness, descriptor discovery, one-time
+pairing, and registration; it intentionally does not send to APNs because that
+requires a real Drel provider credential and a physical TestFlight device.
 
 The exact physical-device acceptance steps and redacted result table live in
 [`docs/verification/drel-self-hosted-physical-device.md`](../docs/verification/drel-self-hosted-physical-device.md).

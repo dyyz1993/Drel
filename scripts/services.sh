@@ -6,7 +6,7 @@ PYTHON_BIN="$(command -v "${PYTHON_BIN:-python3}")"
 PID_DIR="$PROJECT_ROOT/.services"
 mkdir -p "$PID_DIR"
 
-SWIFT_PORT=8080
+BACKEND_PORT=8080
 HTTP_PORT=8081
 PROTO_PORT="${DREL_PROTO_PORT:-8083}"
 
@@ -133,34 +133,32 @@ EOF
 
 start_backend() {
     local pid
-    pid=$(_port_pid "$SWIFT_PORT")
+    local binary="$PROJECT_ROOT/Server/native/dist/drel-selfhosted-local"
+    pid=$(_port_pid "$BACKEND_PORT")
     if [ -n "$pid" ]; then
         local status_code
-        status_code=$(_http_status "http://localhost:$SWIFT_PORT/health")
+        status_code=$(_http_status "http://localhost:$BACKEND_PORT/health")
         if _status_in "$status_code" "200 204"; then
             ok "Backend already running on :$SWIFT_PORT (PID $pid, /health -> $status_code)"
             return 0
         fi
-        fail "Backend port :$SWIFT_PORT is occupied (PID $pid), but /health -> $status_code"
+        fail "Backend port :$BACKEND_PORT is occupied (PID $pid), but /health -> $status_code"
         return 1
     fi
 
-    log "Starting WebBridgeServer (Swift Hummingbird) on :$SWIFT_PORT ..."
-    cd "$PROJECT_ROOT/Server"
-    if [ ! -f ".build/debug/WebBridgeServer" ]; then
-        log "Building WebBridgeServer ..."
-        swift build 2>&1 | tail -3
-    fi
+    log "Building and starting the Go server on :$BACKEND_PORT ..."
+    mkdir -p "$PROJECT_ROOT/Server/native/dist"
+    (cd "$PROJECT_ROOT/Server/native" && go build -trimpath -o "$binary" .)
 
     _launch_service "backend" \
-        "cd '$PROJECT_ROOT/Server' && SERVER_PORT=$SWIFT_PORT ADMIN_API_KEY=test-admin-key DATA_DIR='$PROJECT_ROOT/.data' exec .build/debug/WebBridgeServer" \
+        "DREL_LISTEN_ADDR=127.0.0.1:$BACKEND_PORT DREL_ALLOW_HTTP=1 DREL_SELF_HOSTED_PUBLIC_BASE_URL='http://127.0.0.1:$BACKEND_PORT' DREL_DATA_DIR='$PROJECT_ROOT/.data' ADMIN_API_KEY=test-admin-key exec '$binary'" \
         "$PID_DIR/backend.log" \
         "$PID_DIR/backend.log"
 
     pid=$(_port_pid "$SWIFT_PORT")
     local status_code
-    if status_code=$(_wait_for_http_status "http://localhost:$SWIFT_PORT/health" "200 204" 10); then
-        pid=$(_port_pid "$SWIFT_PORT")
+    if status_code=$(_wait_for_http_status "http://localhost:$BACKEND_PORT/health" "200 204" 10); then
+        pid=$(_port_pid "$BACKEND_PORT")
         echo "$pid" > "$PID_DIR/backend.pid"
         ok "Backend running on :$SWIFT_PORT (PID $pid, /health -> $status_code)"
     else

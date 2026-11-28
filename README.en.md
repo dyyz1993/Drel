@@ -44,9 +44,9 @@ product name all use Drel.
 - **Self-hosted server**: `Server/native/`, a Go binary (recommended). The
   official App can use the intentionally published [community APNs
   key](Server/community-apns/README.md) for production self-hosted push
-  without an Apple developer account.
-  `Server/Sources/WebBridgeServer/` is the deprecated Swift implementation,
-  kept only so existing deployments can be audited and migrated.
+  without an Apple developer account. The former
+  `Server/Sources/WebBridgeServer/` Swift implementation was removed on
+  2026-11-28; self-hosting is unified on Go.
 - **`deploy/` and `infra/`**: the gateway Nginx configuration and the edge proxy.
 - **`tools/` and `scripts/`**: release gates, device smoke tests, container
   policy checks and local service helpers.
@@ -72,9 +72,9 @@ cd Drel
 xcodegen generate
 pod install
 
-# 2. (Optional) Start the legacy Swift test services for local protocol work
-#    (:8080 / :8081 / :8083). For production self-hosting use Server/native/
-#    (see Server/README.md).
+# 2. (Optional) Start the Go test services for local protocol work
+#    (:8080 / :8081 / :8083). Production self-hosting also uses
+#    Server/native/ (see Server/README.md).
 bash scripts/services.sh start
 bash scripts/services.sh verify
 
@@ -87,8 +87,6 @@ bash tools/architecture-lint.sh --ci
 bash tools/design-lint.sh --ci
 bash tools/verify-drel-container-only.sh
 bash tools/verify-drel-release-settings.sh
-bash tools/verify-drel-critical-alert-policy.sh
-bash tools/verify-apns-single-attempt.sh
 bash tools/verify-node-admin-local.sh
 ```
 

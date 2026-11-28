@@ -9,8 +9,8 @@ cd "$ROOT"
 
 contract="$FW/Sources/WBKPushWireContract.swift"
 nse="NotificationServiceExtension/PushCrypto.swift"
-server_schema="Server/Sources/WebBridgeServer/Services/SelfHostedEnvelopeService.swift"
-server_payload="Server/Sources/WebBridgeServer/Models/PushPayload.swift"
+server_schema="Server/native/main.go"
+server_contract_tests="Server/native/main_test.go"
 
 [[ -f "$contract" ]] || { echo "FAIL: shared contract missing: $contract" >&2; exit 1; }
 
@@ -37,8 +37,10 @@ if rg -q 'selfHostedEnvelopeField = "drelEnvelope"|selfHostedSchema = "drel\.pus
     exit 1
 fi
 echo "PASS: NSE does not redefine schema or envelope field literals"
-check "Server keeps schema v1" '"drel\.push-envelope\.v1"' "$server_schema"
-check "Server decodes ciphertext field" 'case ciphertext' "$server_payload"
-check "Server decodes drelEnvelope field" 'drelEnvelope' "$server_payload"
+check "Go server keeps schema v1" 'envelopeSchema = "drel\.push-envelope\.v1"' "$server_schema"
+check "Go server decodes ciphertext field" 'Ciphertext[[:space:]]+string[[:space:]]+`json:"ciphertext"`' "$server_schema"
+check "Go server decodes drelEnvelope field" 'Envelope[[:space:]]+string[[:space:]]+`json:"drelEnvelope"`' "$server_schema"
+check "Go server tests encrypted delivery" 'envelopeSchema.*Ciphertext: "opaque"' "$server_contract_tests"
+check "Go server tests APNs cannot see plaintext" 'strict payload exposed outer content' "$server_contract_tests"
 
-echo "Summary: 10 passed, 0 failed"
+echo "Summary: 11 passed, 0 failed"

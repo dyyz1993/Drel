@@ -1,8 +1,11 @@
 # WebBridgeKit 架构总览
 
-> **当前生产拓扑（2026-11-08）**：官方 `api.drel.app` 由
-> `infra/cloudflare/drel-api-proxy/` 的 Cloudflare Worker 全量承载。本文中的
-> Swift/Hummingbird 架构是历史记录和自托管迁移参考，不是官方 API 实现。
+> **当前生产拓扑（2026-11-28）**：官方 `api.drel.app` 由
+> `infra/cloudflare/drel-api-proxy/` 的 Cloudflare Worker 全量承载；自托管
+> 推送与网关统一使用 `Server/native/`（Go 二进制）。原 Swift/Hummingbird
+> 服务端已于 2026-11-28 从仓库移除（见
+> `docs/legacy/swift-relay-decommission.md`），本文中残留的 Swift 服务端
+> 表述仅为历史记录。
 
 > 生成时间: 2026-05-09 | 基于 Phase 1-11 全部完成状态
 
@@ -72,8 +75,8 @@
 └───────────────────────┬─────────────────────────────────────┘
                         │ HTTP / WebSocket
 ┌───────────────────────▼─────────────────────────────────────┐
-│              WebBridgeServer (服务层)                       │
-│  Swift 6 + Hummingbird 2 · Port 8080                       │
+│  官方：Cloudflare Worker (infra/cloudflare/drel-api-proxy)  │
+│  自托管：Go 二进制 (Server/native) · Port 8080               │
 │  Push API · Manifest CRUD · Command API · APNs · Health    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -110,12 +113,13 @@
                     └──────┬───────┘
                            │ 推送
                            ▼
-              ┌────────────────────────┐
-              │   WebBridgeServer :8080  │
-              │  PushRoutes             │
-              │  ManifestRoutes         │
-              │  CommandRoutes          │
-              └───────────┬────────────┘
+              ┌─────────────────────────┐
+              │ Worker / Go Server      │
+              │ (api.drel.app 或自托管) │
+              │ PushRoutes              │
+              │ ManifestRoutes          │
+              │ CommandRoutes           │
+              └────────────┬────────────┘
                           │ HTTP REST
                   ┌───────▼────────┐
                   │  SuperApp      │
@@ -319,7 +323,7 @@ Token 分类（95 个 token / 9 大类）:
 
 | 服务 | 端口 | URL | 技术栈 | 用途 |
 |------|------|-----|--------|------|
-| **WebBridgeServer** | 8080 | http://localhost:8080 | Swift/Hummingbird 2 | 推送通知 / Manifest 下载 / 口令解析 / 命令处理 |
+| **Drel Go Server** | 8080 | http://localhost:8080 | Go 1.23 (`Server/native/`) | 推送通知 / Manifest / HTML 应用网关 / 健康检查 |
 | **Test HTTP Server** | 8081 | http://localhost:8081 | Python | 静态资源服务（缓存功能测试）|
 | **Prototype Server** | 8083 | http://localhost:8083 | Python | HTML 设计原型浏览 |
 
@@ -337,12 +341,12 @@ bash scripts/services.sh logs      # 最近日志
 ### 6.3 启动顺序
 
 ```
-1. WebBridgeServer (:8080)   ← 核心后端，其他服务依赖其 API
+1. Drel Go Server (:8080)    ← 核心后端，其他服务依赖其 API
 2. Test HTTP (:8081)         ← 静态资源，独立运行
 3. Prototype (:8083)         ← 原型预览，独立运行
 ```
 
-> SuperApp 启动前必须先启动 WebBridgeServer（推送通知和 Manifest 功能依赖后端）
+> SuperApp 启动前必须先启动 Drel Go Server（推送通知和 Manifest 功能依赖后端）
 
 ### 6.4 额内服务（DEBUG 模式）
 

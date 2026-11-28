@@ -119,36 +119,21 @@ Log.error(
 3. If mismatch → Logged as security event, manifest removed
 4. Batch check → Statistics reported to logs
 
-### 4. Local Server CORS Strategy (#80)
+### 4. Server CORS Strategy
 
-**Location:** `Server/Sources/WebBridgeServer/entrypoint.swift`, `Server/Sources/WebBridgeServer/CORSWhitelistMiddleware.swift`
+**Location:** `Server/native/main.go` (`securityHeaders`), `infra/cloudflare/drel-api-proxy/src/gateway.js`
 
-**Purpose:** Configure CORS headers to control cross-origin requests with environment-driven origin whitelisting.
+**Purpose:** Allow browser clients to call the selected server while keeping security headers explicit.
 
 **Configuration:**
-- **Environment variable:** `CORS_ALLOWED_ORIGINS` (comma-separated list of allowed origins)
-- **Dev mode fallback:** If not set, `allowOrigin: .all` is used
-- **Production mode:** If set, only whitelisted origins receive CORS headers
-- **Preflight cache:** `maxAge: 3600` (1 hour)
+- **Go self-hosted service:** echoes a non-empty `Origin` and permits JSON/admin methods through `securityHeaders`.
+- **Official Worker:** enforces the gateway's public-origin contract before returning CORS responses.
+- **Preflight:** handled by the service that owns the public endpoint; no shared in-memory state is required.
 
-**Production Configuration:**
-```bash
-export CORS_ALLOWED_ORIGINS="https://yourdomain.com,https://app.yourdomain.com"
-```
-
-**How it works:**
-- `CORSWhitelistMiddleware` validates the request `Origin` header against the configured whitelist
-- Whitelisted origins receive full CORS headers (`Access-Control-Allow-Origin`, `Vary: Origin`)
-- Non-whitelisted origins receive no CORS headers → browser blocks the request/response
-- Preflight (OPTIONS) requests from non-whitelisted origins return 204 with no CORS headers
-- `Access-Control-Max-Age: 3600` caches preflight results for 1 hour
-
-**Headers Configured:**
-- `Access-Control-Allow-Origin: <matched-origin>` (whitelist) or `*` (dev mode)
-- `Access-Control-Allow-Headers: accept, authorization, content-type, origin`
-- `Access-Control-Allow-Methods: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH`
-- `Access-Control-Max-Age: 3600`
-- `Vary: Origin` (whitelist mode only)
+**Controls:**
+- Requests carrying credentials are not part of the gateway contract.
+- Cross-origin callers receive only public gateway documents, signed manifests, and push contracts.
+- Admin mutations require the server-side `Authorization` / admin key mechanism and remain outside browser-trust decisions.
 
 ### 5. Debug Panel Production Switch (#81)
 

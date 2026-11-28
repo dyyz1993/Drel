@@ -12,8 +12,8 @@ page on any static host and needs no server of its own.
 | The user wants | Option | Deploy |
 | --- | --- | --- |
 | To send notifications to their own phone, and keep using the hosted apps | **A** | Go relay only |
-| A private app market: app identity, strong offline packages, declared native actions | **B** | Swift server only |
-| Both | **C** | Swift server (one host) or Go relay plus Swift server (split hosts) |
+| A private app market: app identity, strong offline packages, declared native actions | **B** | Go server only |
+| Both | **C** | One Go server, or split Go services across hosts |
 
 Ask which one they mean before producing commands. The difference matters:
 option A does not need an Ed25519 gateway key, and option B does not need an
@@ -22,12 +22,10 @@ APNs `.p8`.
 ## Two facts that decide the architecture
 
 1. **The Go binary serves both roles from one 6 MB file.** Since 2026-10-23 it
-   implements `/api/v1/gateway` and `/api/v1/html-apps` with Ed25519 signing
-   that is byte-compatible with the Swift implementation. Set `GATEWAY_KEY_ID`
+   implements `/api/v1/gateway` and `/api/v1/html-apps`. Set `GATEWAY_KEY_ID`
    and `GATEWAY_PRIVATE_KEY` to enable the gateway half.
-2. **The Swift server remains for existing deployments.** Its signatures and
-   storage format are interchangeable, so a deployment can move between the
-   two implementations without re-importing on the phone.
+2. **The Swift server was removed on 2026-11-28.** Existing operators migrate
+   to Go; its historical signatures remain compatible with stored phone trust.
 
 ## Prepare first, always
 
@@ -47,8 +45,6 @@ file layout match what the server expects.
 | --- | --- | --- |
 | Go binary + systemd | Go 1.23, static, 6 MB, push + gateway | Recommended for every new deployment |
 | Go binary + Docker | same, scratch image | Want Compose, still no dependencies |
-| Swift container + Caddy | Swift 6 / Hummingbird | Existing deployments; automatic TLS |
-| Swift container + Nginx | same | Existing deployments behind Nginx |
 | Cloudflare Worker | Workers + Durable Objects | Push only, no server at all |
 
 The gateway cannot run on Cloudflare: it needs an Ed25519 private key for
@@ -145,8 +141,7 @@ needed. Three ways to give it a name:
 | Method | What to do | Best for |
 | --- | --- | --- |
 | Cloudflare Tunnel | Install `cloudflared`, point the public hostname at `push.example.com`, set the origin service to `http://127.0.0.1:8080` | No public IP, no certificate to manage |
-| Existing Nginx | Copy `Server/nginx/drel-self-hosted.conf.template`, replace the two placeholders | The host already runs Nginx |
-| Caddy | `Server/Caddyfile` obtains and renews the certificate on its own | Zero-configuration HTTPS |
+| Existing reverse proxy | Forward public HTTPS traffic to `http://127.0.0.1:8080` | The host already runs Nginx or Caddy |
 
 ### Verify before pairing
 
@@ -215,11 +210,10 @@ GATEWAY_PRIVATE_KEY=<generated>
 
 ```bash
 cd Server
-docker compose -f docker-compose.self-hosted.yml up -d
+docker compose -f docker-compose.self-hosted-native.yml up -d --build
 ```
 
-Use `docker-compose.self-hosted-nginx.yml` plus
-`Server/nginx/drel-self-hosted.conf.template` when the host already owns
+Use an existing Cloudflare Tunnel or reverse proxy when the host already owns
 public TLS.
 
 ### Register an application
@@ -267,7 +261,7 @@ key identity drops the old grants — grants never follow to another identity.
 
 ### C1 · One host (simplest)
 
-One Swift container provides both roles, because it registers the gateway and
+One Go service provides both roles, because it registers the gateway and
 push routes together.
 
 Add the APNs settings to the same `Server/.env`:
@@ -275,14 +269,13 @@ Add the APNs settings to the same `Server/.env`:
 ```dotenv
 APNS_KEY_ID=4M53447M36
 APNS_TEAM_ID=B45VZCNYU3
-APNS_KEY_PATH=/run/secrets/drel/AuthKey_4M53447M36.p8
 APNS_TOPIC=com.webbridgekit.superapp
 APNS_ENVIRONMENT=production
 ```
 
 ```bash
 cd Server
-docker compose -f docker-compose.self-hosted.yml up -d
+docker compose -f docker-compose.self-hosted-native.yml up -d --build
 ```
 
 One hostname then serves everything:
@@ -296,8 +289,8 @@ The optional Node admin console adds a graphical push console at
 
 ### C2 · Split hosts
 
-Run the Swift server for the gateway on one host and the Go relay for push
-on another. The two are independent trust relationships: the phone imports
+Run a Go gateway on one host and a Go relay for push on another. The two are
+independent trust relationships: the phone imports
 each address separately, so an outage in one does not affect the other.
 
 Use this when different teams own the two jobs, or when you want the failure
