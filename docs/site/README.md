@@ -77,10 +77,13 @@ verified inboxes.
   page; regionless links redirected to the storefront homepage during the audit).
 - App and services: https://github.com/dyyz1993/Drel (public, MIT License).
 - SDK: https://github.com/dyyz1993/WebBridgeKit-Framework (public, MIT License).
-- Public skill installation intentionally remains
-  `npx skills add dyyz1993/WebBridgeKit --skill drel-app-development`.
-  This is legacy distribution, not the current product source. Public users can
-  also build from the public repository.
+- Public skill installation uses this repository:
+  `npx skills add dyyz1993/Drel --skill drel-app-development`. If cloning the
+  whole repository is too slow, shallow-clone it and install from the local
+  path: `git clone --depth 1 https://github.com/dyyz1993/Drel.git &&
+  npx skills add ./Drel --skill drel-app-development -y`. The older
+  `dyyz1993/WebBridgeKit` monorepo is archived and no longer distributes the
+  skill.
 - Public support stays at https://drel.app/support/ and support@drel.app;
   GitHub Issues are public.
 

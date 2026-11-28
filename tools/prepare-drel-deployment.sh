@@ -102,16 +102,15 @@ else
       echo "APNS_TOPIC=com.webbridgekit.superapp"
       # The bundled community key works only for production notifications to
       # the official Drel app. Replace all three values for your own build.
-      # The path is the host path the systemd unit reads; the Compose file
-      # mounts the key itself and ignores APNS_KEY_PATH.
+    # The path is the host path the systemd unit reads; Compose maps the host
+    # key itself to a fixed in-container path.
       echo "APNS_KEY_ID=4M53447M36"
       echo "APNS_TEAM_ID=B45VZCNYU3"
       echo "APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8"
       echo ""
     fi
-    echo "## TLS (Caddy reads this)"
-    echo "DREL_SELF_HOSTED_DOMAIN=${DOMAIN:-push.example.com}"
-    echo "DREL_SELF_HOSTED_ACME_EMAIL=TODO-you@example.com"
+    echo "## Public TLS boundary (existing reverse proxy or tunnel reads this)"
+    echo "DREL_LISTEN_ADDR=127.0.0.1:8080"
   } > "$ENVFILE"
   ok "Wrote $ENVFILE"
   warn "Fill in the TODO values before starting the service."
@@ -138,16 +137,12 @@ cat <<EOF
     # the bundled community key is mounted by default; no key variable needed
     docker compose -f docker-compose.self-hosted-native.yml up -d --build
 
-  Option B or C (gateway, or both), Docker with automatic TLS:
+  Option B or C (gateway, or both), Docker:
     cd Server
     cp $ENVFILE .env
-    docker compose -f docker-compose.self-hosted.yml up -d
-
-  Behind an existing Nginx instead of Caddy:
-    cd Server
-    cp $ENVFILE .env
-    docker compose -f docker-compose.self-hosted-nginx.yml up -d
-    # then adapt Server/nginx/drel-self-hosted.conf.template
+    echo 'DREL_CA_CERTIFICATES_HOST_PATH=/etc/ssl/certs/ca-certificates.crt' >> .env
+    docker compose -f docker-compose.self-hosted-native.yml up -d --build
+    # Put an existing Cloudflare Tunnel or reverse proxy in front of 127.0.0.1:8080.
 
 EOF
 

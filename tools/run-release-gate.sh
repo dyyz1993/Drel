@@ -92,8 +92,6 @@ else
 fi
 run_gate "Drel App WebView regression" "bash tools/run-drel-app-webview-regression.sh"
 run_gate "Drel Store minimal settings policy" "DREL_RELEASE_SETTINGS_SCHEME='$RELEASE_SCHEME' bash tools/verify-drel-release-settings.sh"
-run_gate "Drel critical-alert policy" "bash tools/verify-drel-critical-alert-policy.sh"
-run_gate "APNs single-attempt policy" "bash tools/verify-apns-single-attempt.sh"
 if [[ "$ARCHIVE_READY" == "1" ]]; then
     if [[ "$RELEASE_SCHEME" == "Drel15Store" ]]; then
         if [[ "${DREL_RELEASE_GATE_AUTOMATIC_SIGNING:-}" == "1" ]]; then

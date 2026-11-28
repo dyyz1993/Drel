@@ -28,7 +28,7 @@ Drel 是一个开源（MIT）项目：它把「HTML 应用运行容器 + Bark �
 - **官方 API**：`infra/cloudflare/drel-api-proxy/`（Cloudflare Worker，承载 `api.drel.app`）。
 - **自托管服务端**：`Server/native/`（Go 二进制，推荐）；官方 App 可用
   [`Server/community-apns/`](Server/community-apns/README.md) 的社区 APNs 钥匙
-  自建生产推送，无需 Apple 开发者账号。`Server/Sources/WebBridgeServer/` 为已废弃的 Swift 旧实现，仅保留给既有部署迁移。
+  自建生产推送，无需 Apple 开发者账号。`Server/Sources/WebBridgeServer/` 已于 2026-11-28 移除，自托管统一使用 `Server/native/`。
 - **`deploy/` & `infra/`**：网关 Nginx 配置与 Cloudflare Worker 边缘代理（`infra/cloudflare/drel-api-proxy/`）。
 - **`tools/` & `scripts/`**：应用层发布门禁、真机冒烟、容器安全策略校验与本地三服务管理脚本。
 
@@ -48,8 +48,8 @@ cd Drel
 xcodegen generate
 pod install
 
-# 2.（可选）启动本地联调用的旧版 Swift 测试服务（:8080 / :8081 / :8083）
-#    仅用于本地协议联调；生产自托管请使用 Server/native/（见 Server/README.md）
+# 2.（可选）启动本地联调用的 Go 测试服务（:8080 / :8081 / :8083）
+#    仅用于本地协议联调；生产自托管也使用 Server/native/（见 Server/README.md）
 bash scripts/services.sh start
 bash scripts/services.sh verify
 
@@ -62,8 +62,6 @@ bash tools/architecture-lint.sh --ci
 bash tools/design-lint.sh --ci
 bash tools/verify-drel-container-only.sh
 bash tools/verify-drel-release-settings.sh
-bash tools/verify-drel-critical-alert-policy.sh
-bash tools/verify-apns-single-attempt.sh
 bash tools/verify-node-admin-local.sh
 ```
 

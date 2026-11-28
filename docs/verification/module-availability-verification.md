@@ -1,5 +1,9 @@
 # Module Availability Verification Report
 
+> Historical evidence note (2026-11-28): the Swift server and
+> `tools/verify-legacy-supervision.sh` were removed. Rows marked “legacy” retain
+> dated evidence and are not claims that those retired commands remain runnable.
+
 ## Release Closeout Update (2026-08-24)
 
 - **Strong offline product journey:** `PWAAppCenterViewController` now prepares a strong-offline-eligible package on first open, using the existing signed-manifest, SHA-256, same-origin, and atomic-current-pointer contract. If preparation fails, it opens through the resolver's non-strong path; an unverified or partial package is never presented as installed. The app detail sheet reports pending, update, or installed version plus actual package disk size.

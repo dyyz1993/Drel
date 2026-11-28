@@ -103,7 +103,7 @@
               <h3>Only the gateway</h3>
               <p class="option-desc">A private app market: app identity, strong offline packages, and the native actions you declare.</p>
               <ul class="option-list">
-                <li>Deprecated: existing Swift deployments only</li>
+                <li>One Go binary or Docker image</li>
                 <li>Needs an Ed25519 signing key</li>
                 <li>About 30 minutes</li>
               </ul>
@@ -148,18 +148,6 @@
                   <td>Yes, one</td>
                 </tr>
                 <tr>
-                  <td><strong>Swift container</strong> + Caddy</td>
-                  <td>Swift 6 / Hummingbird</td>
-                  <td>Deprecated existing deployments only</td>
-                  <td>Yes, one</td>
-                </tr>
-                <tr>
-                  <td><strong>Swift container</strong> + Nginx</td>
-                  <td>Same deprecated image</td>
-                  <td>Existing deployments only</td>
-                  <td>Yes, one</td>
-                </tr>
-                <tr>
                   <td><strong>Cloudflare Worker</strong></td>
                   <td>Workers + Durable Objects</td>
                   <td>Push only — no server at all</td>
@@ -169,7 +157,7 @@
             </table>
           </div>
           <div class="docs-callout">
-            <strong>One 6 MB Go binary covers every option.</strong> Since 2026-10-23 the Go binary serves the gateway routes too — <code>/api/v1/gateway</code> and <code>/api/v1/html-apps</code> are built in, and its Ed25519 signatures are byte-compatible with the Swift implementation (independently verified with OpenSSL). The Swift container is deprecated; new deployments must pick Go, and existing Swift operators should migrate during their next maintenance window. A Cloudflare Worker can still host the push half — see <code>infra/cloudflare/drel-api-proxy/</code>.
+            <strong>One 6 MB Go binary covers every option.</strong> Since 2026-10-23 the Go binary serves the gateway routes too — <code>/api/v1/gateway</code> and <code>/api/v1/html-apps</code> are built in. The former Swift container was removed on 2026-11-28. A Cloudflare Worker can still host the push half — see <code>infra/cloudflare/drel-api-proxy/</code>.
           </div>
           <pre class="docs-code"># Prepare everything in one step: the signing key, the env file,
 # the exact start command and the verification command
@@ -195,7 +183,7 @@ bash tools/prepare-drel-deployment.sh both --domain push.example.com</pre>
               <tbody>
                 <tr>
                   <td>Go serves both relay and gateway</td>
-                  <td>The Go binary includes <code>/api/v1/html-apps</code> and <code>/api/v1/gateway</code>. Swift is not required.</td>
+                  <td>The Go binary includes <code>/api/v1/html-apps</code> and <code>/api/v1/gateway</code>. A separate server is not required.</td>
                 </tr>
                 <tr>
                   <td>Go serves both roles from one process</td>
@@ -232,7 +220,7 @@ APNS_KEY_PATH=/etc/drel-selfhosted/secrets/AuthKey_4M53447M36.p8
 systemctl daemon-reload && systemctl enable --now drel-selfhosted
 curl https://push.example.com/health   # apnsReady must be true</pre>
           <div class="docs-callout">
-            <strong>Prefer a Cloudflare Tunnel.</strong> The service listens on <code>127.0.0.1</code> only, so you never open port 443 or 8080 to the internet. If the host already runs Nginx, use <code>Server/nginx/drel-self-hosted.conf.template</code> instead.
+            <strong>Prefer a Cloudflare Tunnel.</strong> The service listens on <code>127.0.0.1</code> only, so you never open port 443 or 8080 to the internet. If the host already runs a reverse proxy, forward its public HTTPS traffic to <code>http://127.0.0.1:8080</code>.
           </div>
           <div class="docs-callout">
             <strong>The APNs authority boundary.</strong> Direct APNs delivery needs a signer authorized for the app's topic. The repository ships one on purpose: <code>Server/community-apns/AuthKey_4M53447M36.p8</code> is registered to the stock Drel app only and to the production environment only, so it reaches TestFlight and App Store builds but no other app and no debug build. Whoever runs your relay can send notifications to the devices that paired with it — nothing more. The key can be revoked at any time. Running your own signed Drel build? Its bundle ID is yours, so create your own topic-specific <code>.p8</code>. Without a valid key the relay reports <code>apnsReady: false</code> and refuses pairing, which is the correct behaviour.

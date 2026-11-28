@@ -46,7 +46,7 @@ entry point; the detailed path below covers builds, proxies, and verification.
 ┌───────┴───────────────┐        ┌───────────┴──────────────┐
 │  ② 网关（可选）        │        │  ③ 推送服务（可选）        │
 │  应用清单 + Ed25519 签名 │        │  接收请求 → 封装 APNs       │
-│  只用 Swift server      │        │  Swift server 或 Go 二进制   │
+│  Go 服务                │        │  Go 服务                   │
 └────────────────────────┘        └──────────────────────────┘
 ```
 
@@ -66,13 +66,11 @@ entry point; the detailed path below covers builds, proxies, and verification.
 |---|---|---|---|---|
 | **Go 二进制 + systemd** | Go 1.23，静态链接，**推送+网关一体** | 任何机器 | < 20 MB | **推荐**。6 MB 单文件，零依赖，含 CORS |
 | **Go 二进制 + Docker** | 同上 | 想用 Compose 管理 | < 20 MB | scratch 镜像，零依赖 |
-| **Swift 容器 + Caddy** | Swift 6 / Hummingbird | 兼容旧部署 | ~200 MB | 自动签发 TLS 证书 |
-| **Swift 容器 + Nginx** | 同上 | 兼容旧部署 | ~200 MB | 自己管证书 |
 | **Cloudflare Worker** | Workers + Durable Objects | 不想有服务器 | 边缘 | 只能做推送，**不能做网关** |
 
 > **2026-10-23 起，Go 二进制同时提供推送与网关**（`/api/v1/gateway` 与
 > `/api/v1/html-apps` 已内置，Ed25519 签名与 Swift 端字节级兼容，已经
-> OpenSSL 独立验签确认）。新部署一律选 Go；Swift 容器仅为兼容既有部署保留。
+> OpenSSL 独立验签确认）。Swift 服务端已于 2026-11-28 移除，部署一律选 Go。
 
 ### 一条命令准备好部署
 
@@ -217,8 +215,7 @@ docker compose -f docker-compose.self-hosted-native.yml up -d --build
 | 方式 | 怎么做 | 适合 |
 |---|---|---|
 | **Cloudflare Tunnel**（最省事） | 服务器装 `cloudflared`，public hostname 指向 `push.example.com`，origin service 填 `http://127.0.0.1:8080` | 不想管证书、没有公网 IP |
-| **已有 Nginx** | 用 `Server/nginx/drel-self-hosted.conf.template`，替换两处占位符 | 服务器已经在跑 Nginx |
-| **Caddy** | `Server/Caddyfile` 会自动签发和续期证书 | 想要零配置 HTTPS |
+| **已有反向代理** | 把公共 HTTPS 流量转发到 `http://127.0.0.1:8080` | 服务器已经有 Nginx/Caddy |
 
 ### 2.5 验证
 
@@ -300,41 +297,16 @@ curl https://hub.example.com/api/v1/gateway
 # { "publicKeyId": "gw-2026-10-23", "publicKey": "..." }
 ```
 
-### 3.2 部署（二选一）
-
-#### 形态 1 · Docker + Caddy（自动 TLS，推荐）
+### 3.2 部署
 
 ```bash
 cd Server
 cp ../build/deployment/drel.env .env
-docker compose -f docker-compose.self-hosted.yml up -d
+docker compose -f docker-compose.self-hosted-native.yml up -d --build
 ```
 
-这套 Compose 有两个服务：
-
-| 服务 | 作用 | 端口 |
-|---|---|---|
-| `server` | Swift Hummingbird，网关路由 | 只在容器网络内 8080 |
-| `caddy` | 自动签发和续期 TLS 证书 | 80 / 443 |
-
-`.env` 里要填 `DREL_SELF_HOSTED_DOMAIN`（你的域名）和
-`DREL_SELF_HOSTED_ACME_EMAIL`（证书通知邮箱）。
-
-#### 形态 2 · Docker + 已有 Nginx
-
-```bash
-cd Server
-cp ../build/deployment/drel.env .env
-docker compose -f docker-compose.self-hosted-nginx.yml up -d
-```
-
-然后把 `Server/nginx/drel-self-hosted.conf.template` 复制到
-`/etc/nginx/conf.d/<你的域名>.conf`，替换两处占位符：
-
-```bash
-# 用 certbot 拿证书后
-nginx -t && systemctl reload nginx
-```
+服务只绑定 `127.0.0.1`，用已有 Cloudflare Tunnel 或反向代理作为公共 HTTPS 边界。
+`.env` 中设置最终的 `DREL_SELF_HOSTED_PUBLIC_BASE_URL` 和宿主机 CA 证书路径。
 
 ### 3.3 验证
 
@@ -567,8 +539,7 @@ bash tools/verify-drel-backend-contract.sh \
 
 ### 4.1 变体 C1 · 同机部署（最简单）
 
-**一个 Go 服务同时提供网关和推送**。新部署使用 Go；下面的 Swift 容器仅为
-兼容既有部署保留。
+**一个 Go 服务同时提供网关和推送。**
 
 ```dotenv
 # Server/.env
@@ -586,7 +557,7 @@ APNS_ENVIRONMENT=production
 
 ```bash
 cd Server
-docker compose -f docker-compose.self-hosted.yml up -d
+docker compose -f docker-compose.self-hosted-native.yml up -d --build
 ```
 
 一个域名 `https://hub.example.com` 同时提供：
@@ -608,7 +579,7 @@ bash tools/verify-node-admin-local.sh   # 本地验证
 ```
 ┌─────────────────────┐        ┌─────────────────────┐
 │ 机器 A：网关          │        │ 机器 B：推送          │
-│ Swift server        │        │ Go 二进制            │
+│ Go 服务             │        │ Go 二进制            │
 │ hub.example.com     │        │ push.example.com     │
 │ 只签名清单            │        │ 只转发 APNs          │
 └─────────────────────┘        └─────────────────────┘
@@ -636,7 +607,7 @@ POST   /api/v1/html-apps        录入清单（Bearer 鉴权）
 DELETE /api/v1/html-apps/{id}   删除
 ```
 
-签名与 Go/Swift **字节级兼容**（已用 OpenSSL 独立验签 + 跨实现互验确认），
+签名格式与历史 Swift 实现**字节级兼容**（已用 OpenSSL 独立验签 + 跨实现互验确认），
 所以手机在三种后端之间切换无需重新导入。
 
 配置（Worker Secret，**不进 Git**）：
@@ -656,7 +627,7 @@ npx wrangler secret put ADMIN_API_KEY
 bash tools/verify-drel-backend-contract.sh --base <url> --admin-key <key>
 ```
 
-这套 curl 用例对 Go 二进制、Swift 服务端、CF Worker 跑出的结果逐行一致。
+这套 curl 用例对 Go 二进制和 CF Worker 跑出的结果逐行一致。
 
 #### 旧的 C3 · 推送托管在 Cloudflare Worker
 
@@ -771,11 +742,11 @@ Worker 会拒绝所有配对和投递请求。
 
 **Q: Go 二进制能不能当网关用？**
 能，2026-10-23 起。`/api/v1/gateway`、`/api/v1/html-apps`（GET/POST/DELETE）
-都已内置，Ed25519 签名与 Swift 端产出互通。设置 `GATEWAY_KEY_ID` 与
+都已内置，Ed25519 签名与历史 Swift 实现产出互通。设置 `GATEWAY_KEY_ID` 与
 `GATEWAY_PRIVATE_KEY` 即启用。
 
-**Q: 一个 Swift 容器能同时当网关和推送吗？**
-能。`WebBridgeServer` 同时注册了 `HTMLAppGatewayRoutes` 和 `PushRoutes`。方案 C1 就是这个。
+**Q: 一个 Go 服务能同时当网关和推送吗？**
+能。`Server/native/` 同时注册网关、应用清单和推送路由。方案 C1 就是这个。
 
 **Q: 部署完手机配对一直失败？**
 查 `/health` 的 `apnsReady`。为 `false` 说明没有有效 `.p8`，服务会故意拒绝配对而不是假装能投递。

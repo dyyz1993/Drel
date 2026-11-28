@@ -70,9 +70,9 @@ check "Store push catalog retains core V1 examples only" \
 check "Store catalog excludes deferred chat, approval, critical and call examples" \
     "rg -q 'managed HTML-app chat/approval routes' SuperApp/Sources/Views/PWAHome/PushExampleCatalogView.swift && rg -q '#if DREL_CONTAINER_ONLY' SuperApp/Sources/Views/PWAHome/PushExampleCatalogView.swift && ! rg -U -q 'releaseExampleIDs:[[:space:]]*Set<String>[[:space:]]*=[[:space:]]*\\[[^]]*\"(chat|approval|critical|call)\"' SuperApp/Sources/Views/PWAHome/PushExampleCatalogView.swift"
 check "Push-address rotation revokes the exact server registration first" \
-    "rg -q 'router\.post\(\"/unregister\"' Server/Sources/WebBridgeServer/Routes/PushRoutes.swift && rg -q 'func unregister\(token: String, key: String\)' Server/Sources/WebBridgeServer/Services/TokenStore.swift && rg -U -q 'revokeOfficialPush\([[:space:][:print:]]*case \.success:[[:space:][:print:]]*replaceLocalIdentity\(\)' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift"
+    "rg -q 'mux.HandleFunc\\(\"/unregister\", method\\(http\\.MethodPost, s\\.unregister\\)\\)' Server/native/main.go && rg -U -q 'revokeOfficialPush\\([[:space:][:print:]]*case \\.success:[[:space:][:print:]]*replaceLocalIdentity\\(\\)' SuperApp/Sources/Controllers/Settings/PWAAppCenterViewController.swift"
 check "Server and app agree on the native notification copy category" \
-    "rg -q 'aps\[\"category\"\] = \"DREL_COPY\"' Server/Sources/WebBridgeServer/Services/APNsService.swift && rg -q 'copyNotificationCategoryIdentifier = \"DREL_COPY\"' SuperApp/Sources/AppDelegate.swift"
+    "rg -q 'aps\\[\"category\"\\] = \"DREL_COPY\"' Server/native/main.go && rg -q 'copyNotificationCategoryIdentifier = \"DREL_COPY\"' SuperApp/Sources/AppDelegate.swift"
 check "Simulator fixture detects every forbidden global" \
     "rg -q 'messageHandlers\\.barkBridge' test_resources/drel-container-only-check.html"
 check "Store build excludes seeded demo messages" \
@@ -82,24 +82,22 @@ check "Store Inbox exposes confirmed clear-all" \
 check "Store build excludes Bridge permission UI" \
     "rg -q '#if !DREL_CONTAINER_ONLY' SuperApp/Sources/Controllers/Settings/PWAPermissionCenterViewController.swift && rg -q '#if !DREL_CONTAINER_ONLY' SuperApp/Sources/Views/Settings/WebOriginGrantsView.swift"
 check "Store deep links allow only bounded HTTPS pages outside the trusted-app route" \
-    "rg -q 'Fail closed: only apps already trusted' SuperApp/Sources/Utilities/DrelExternalAppLinkOpener.swift && rg -q 'case .open.' SuperApp/Sources/AppDelegate.swift && rg -q 'targetURL\.scheme.*https' SuperApp/Sources/AppDelegate.swift && rg -q 'rawValue\.utf8\.count <= 4096' SuperApp/Sources/AppDelegate.swift && ! rg -q 'webbridgekit://open\?url' \"\$WBK_FW\"/Sources/Runtime/DrelExternalAppLink.swift"
+    "rg -q 'Fail closed: only apps already trusted' SuperApp/Sources/Utilities/DrelExternalAppLinkOpener.swift && rg -q 'case .open.' SuperApp/Sources/AppDelegate.swift && rg -q 'targetURL\\.scheme.*https' SuperApp/Sources/AppDelegate.swift && rg -q 'rawValue\\.utf8\\.count <= 4096' SuperApp/Sources/AppDelegate.swift && ! rg -q 'webbridgekit://open\\?url' \"\$WBK_FW\"/Sources/Runtime/DrelExternalAppLink.swift"
 check "Component catalog is unavailable in Store builds" \
     "rg -B 2 -A 1 'show-component-catalog' SuperApp/Sources/AppDelegate.swift | rg -q '#if !DREL_CONTAINER_ONLY'"
 check "Store build retains required SDK privacy prompts" \
     "rg -q 'Retain Required SDK Privacy Prompts for Store Build' project.yml && rg -q 'NSContactsUsageDescription' SuperApp/Sources/Info.plist"
 check "Self-hosted launch refresh never falls back to the official push service" \
-    "rg -U -q 'if let selfHosted = SelfHostedPushConfiguration\.load\(\)[[:space:][:print:]]*PushNotificationManager\.shared\.activateSelfHostedPush' SuperApp/Sources/AppDelegate.swift && rg -q 'return' SuperApp/Sources/AppDelegate.swift"
+    "rg -U -q 'if let selfHosted = SelfHostedPushConfiguration\\.load\\(\\)[[:space:][:print:]]*PushNotificationManager\\.shared\\.activateSelfHostedPush' SuperApp/Sources/AppDelegate.swift && rg -q 'return' SuperApp/Sources/AppDelegate.swift"
 check "Self-hosted descriptor endpoints remain relative to their selected HTTPS origin" \
     "rg -q 'static func validatedEndpointPath' SuperApp/Sources/Services/SelfHostedPushConfiguration.swift && rg -q 'components.host == nil' SuperApp/Sources/Services/SelfHostedPushConfiguration.swift && rg -q 'static func endpointURL' SuperApp/Sources/Services/SelfHostedPushConfiguration.swift && rg -q 'endpointURL' SuperApp/Sources/Push/PushNotificationManager.swift"
 check "Removing a self-hosted server discards its local decryption identity" \
-    "rg -q 'func discardIdentity' "$WBK_FW"/Sources/Message/SelfHostedPushCrypto.swift && rg -q 'SelfHostedPushCrypto\.discardIdentity\(\)' SuperApp/Sources/Controllers/Settings/SelfHostedPushConfigurationViewController.swift"
-check "Legacy registration cannot enroll a self-hosted decrypting recipient" \
-    "rg -q 'Self-hosted encrypted registrations must use /self-hosted/register' Server/Sources/WebBridgeServer/Routes/PushRoutes.swift"
-check "Self-hosted pairing tickets are bounded and test pushes never log plaintext" \
-    "rg -q 'maxTickets' Server/Sources/WebBridgeServer/Services/SelfHostedPairingStore.swift && ! rg -q 'TEST ENDPOINT - Received push payload' Server/Sources/WebBridgeServer/Routes/PushRoutes.swift"
+    "rg -q 'func discardIdentity' "$WBK_FW"/Sources/Message/SelfHostedPushCrypto.swift && rg -q 'SelfHostedPushCrypto\\.discardIdentity\\(\\)' SuperApp/Sources/Controllers/Settings/SelfHostedPushConfigurationViewController.swift"
+check "Go self-hosted registration is bounded and preserves one-time pairing semantics" \
+    "rg -q 'too many outstanding pairing tickets' Server/native/main.go && rg -q 'TestPairingsAreBoundedAndSingleUse' Server/native/main_test.go"
 check "Self-hosted sender-side envelopes never expose plaintext to the relay or APNs" \
-    "rg -q 'self-hosted/recipients/:deviceKey' Server/Sources/WebBridgeServer/Routes/SelfHostedPushRoutes.swift && rg -q 'validatePassthroughEnvelope' Server/Sources/WebBridgeServer/Services/APNsService.swift && rg -q 'pre-encrypted sender envelope strips every plaintext wrapper before APNs' Server/Tests/WebBridgeServerTests/SelfHostedPushRoutesTests.swift && test -x Server/examples/drel-encrypt-and-push.mjs"
+    "rg -q '/self-hosted/recipients/' Server/native/main.go && rg -q 'func validEnvelope' Server/native/main.go && rg -q 'strict payload exposed outer content' Server/native/main_test.go && test -x Server/examples/drel-encrypt-and-push.mjs"
 check "Self-hosted pairing proves health and APNs readiness before creating or rotating a device identity" \
-    "rg -q 'validateSelfHostedHealth' SuperApp/Sources/Push/PushNotificationManager.swift && rg -q 'health\.apnsReady != false' SuperApp/Sources/Push/PushNotificationManager.swift && rg -q 'requiresSelfHostedAPNs' Server/Sources/WebBridgeServer/entrypoint.swift && rg -q 'var isReady: Bool' Server/Sources/WebBridgeServer/Services/APNsService.swift"
+    "rg -q 'validateSelfHostedHealth' SuperApp/Sources/Push/PushNotificationManager.swift && rg -q 'health\\.apnsReady != false' SuperApp/Sources/Push/PushNotificationManager.swift && rg -q '\"apnsReady\": s\\.apns != nil' Server/native/main.go"
 
 echo "Summary: $PASS passed, 0 failed"

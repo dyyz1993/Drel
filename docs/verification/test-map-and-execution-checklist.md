@@ -1,7 +1,7 @@
 # Test Map And Execution Checklist
 
 Date: 2026-06-04
-Scope: WebBridgeKit app, framework, server, public legacy deployment, simulator regression, and physical-device release checks.
+Scope: WebBridgeKit app, framework, Go self-hosted server, official Worker, simulator regression, and physical-device release checks. Rows that mention the retired Swift backend are historical evidence, not executable current gates.
 
 This document is the task-assignment checklist for agents or humans. Each row should be checked against source code, automated tests, user operation path, expected result, and current evidence. Do not mark a module production-ready unless its required automated and manual evidence both exist.
 
@@ -10,7 +10,7 @@ This document is the task-assignment checklist for agents or humans. Each row sh
 | Scenario | Endpoint | Required Setup | Evidence Rule |
 | --- | --- | --- | --- |
 | Simulator regression | `http://localhost:8080`, `http://localhost:8081`, `http://localhost:8083` | `bash scripts/services.sh start && bash scripts/services.sh verify` | Local deterministic tests only |
-| Physical iPhone backend / Bark | `https://gateway.example.invalid:8443` | `bash tools/verify-legacy-backend.sh` and `bash tools/verify-legacy-supervision.sh` | Public route and supervision evidence only |
+| Physical iPhone backend / Bark | `https://api.drel.app` | `bash tools/verify-legacy-backend.sh` | Public route evidence only; check `drel-selfhosted.service` with systemd on a self-host host |
 | Physical iPhone WebView/cache/JSBridge fixtures | `https://assets.example.invalid:8443/test_resources/` | `bash tools/verify-legacy-fixtures.sh` | Public fixture reachability only |
 | HTML prototype comparison | `http://localhost:8083` | Local prototype service running | UI comparison only, not backend proof |
 
@@ -57,7 +57,7 @@ This document is the task-assignment checklist for agents or humans. Each row sh
 | P-002 | Push tab -> Token Manager | `TokenManagerView.swift`, `ModuleAvailabilityTests.swift` | `ModuleAvailabilityTests.testTokenPushAndBarkControlsAreUsable` | Token Manager opens | Covered |
 | P-003 | Push tab -> API Key Manager | `APIKeyManagerView.swift`, `ModuleAvailabilityTests.swift` | `ModuleAvailabilityTests.testTokenPushAndBarkControlsAreUsable` | API Key Manager opens | Covered |
 | P-004 | Push tab -> Notification Debug | `NotificationDebugViewController.swift`, `ModuleAvailabilityTests.swift` | `ModuleAvailabilityTests.testTokenPushAndBarkControlsAreUsable` | Notification Debug opens | Covered |
-| P-005 | legacy Bark GET route | `Server/Sources/WebBridgeServer/Routes/PushRoutes.swift`, `Server/Tests/WebBridgeServerTests/PushRoutesTests.swift` | `bash tools/verify-legacy-backend.sh`, `cd Server && swift test` | Bark-compatible GET returns JSON success semantics | Covered route-level |
+| P-005 | Bark-compatible GET route | `Server/native/main.go`, `Server/native/main_test.go` | `bash tools/verify-legacy-backend.sh`, `cd Server/native && go test ./...` | Bark-compatible GET returns JSON success semantics | Covered route-level |
 | P-006 | legacy Bark POST route | `PushRoutes.swift`, `PushRoutesTests.swift` | `bash tools/verify-legacy-backend.sh` | Bark-compatible POST returns JSON success semantics | Covered route-level |
 | P-007 | APNs entitlement and provisioning | `SuperApp/SuperApp.entitlements`, `project.yml`, `tools/verify-real-device-push-readiness.sh` | `DEVICE_ID=<id> bash tools/verify-real-device-push-readiness.sh` | Signed app contains `aps-environment`; provisioning profile supports Push Notifications | Currently unavailable under Personal Team |
 | P-008 | Bark end-to-end delivery | `PushNotificationManager.swift`, server push routes | Manual after P-007 passes | Bark request -> APNs -> iPhone notification -> tap opens expected app path | Not production-proven yet |
@@ -71,7 +71,7 @@ This document is the task-assignment checklist for agents or humans. Each row sh
 | D-002 | Links -> 校验 open URL | `DeepLinkHomeViewModel.validateOpenScheme()` | `ModuleAvailabilityTests.testSettingsDebugCenterAndDeepLinksAreReachable` | Result panel contains `协议链接合法` and `cache-showcase.html` | Covered |
 | D-003 | External `webbridgekit://tab?index=2` | `SuperApp/Sources/AppDelegate.swift` | `xcrun simctl openurl ...` in availability report | App switches to Bridge tab | Covered on simulator with first-open confirmation caveat |
 | D-004 | External `webbridgekit://open?...` | `AppDelegate.swift`, `WebAccessViewController.swift` | `xcrun simctl openurl ...` in availability report | Opens WebBrowser with target page | Covered on simulator |
-| D-005 | Command token generation | `CommandService.swift`, `Server/Tests/WebBridgeServerTests/CommandRoutesTests.swift` | `bash tools/verify-legacy-backend.sh`, `cd Server && swift test` | URL-safe token payload decodes without `+`, `/`, or `=` padding | Covered |
+| D-005 | Historical command token generation | Historical Swift routes and tests (removed 2026-11-28); Worker/Node compatibility remains separate | `bash tools/verify-legacy-backend.sh` | URL-safe token payload decodes without `+`, `/`, or `=` padding | Historical route evidence; do not run `swift test` |
 | D-006 | Command parser security | `Tests/CommandParserTests/CommandDecoderTests.swift`, `HMACSignatureVerifierTests.swift` | `xcodebuild test -scheme CommandParserTests` if available, or full test matrix | Invalid signature / malformed payload rejected | Covered by parser tests when scheme is run |
 
 ## Debug Center
@@ -112,13 +112,13 @@ This document is the task-assignment checklist for agents or humans. Each row sh
 | U-005 | Design token usage | `docs/design-tokens.json`, `Sources/Theme/ThemeTokens.swift`, `tools/sync-tokens.sh` | `bash tools/ci-lint.sh` | No forbidden hardcoded component colors; token JSON valid | Covered with documented warnings |
 | U-006 | Visual regression diff | `tools/run-visual-regression.sh`, `tools/diff-screenshots.sh` | `bash tools/run-visual-regression.sh` | Diffs under threshold | Run after visual redesign work |
 
-## Server, Admin, And legacy backend
+## Server, Admin, And Public Backend
 
 | Case ID | User Path | Code / Test Path | Automation | Expected Result | Current Status |
 | --- | --- | --- | --- | --- | --- |
-| R-001 | Local backend routes | `Server/Sources/WebBridgeServer/Routes/`, `Server/Tests/WebBridgeServerTests/` | `cd Server && swift test` | Manifest, Push, Command route tests pass | Covered |
-| R-002 | Public legacy Swift backend | `tools/verify-legacy-backend.sh` | `bash tools/verify-legacy-backend.sh` | 27 passed, 0 failed | Covered |
-| R-003 | Public legacy process supervision | `tools/verify-legacy-supervision.sh`, remote supervisor config | `bash tools/verify-legacy-supervision.sh` | `process=PASS, supervision=PASS, node_admin=PASS` | Covered |
+| R-001 | Local Go server routes | `Server/native/main.go`, `Server/native/main_test.go` | `cd Server/native && go test ./... && go vet ./...` | Push, encrypted envelope, pairing, and gateway routes pass | Covered |
+| R-002 | Official Worker backend | `tools/verify-legacy-backend.sh`, `infra/cloudflare/drel-api-proxy/` | `bash tools/verify-legacy-backend.sh` | Public route contract passes | Route-level only |
+| R-003 | Self-host process supervision | `Server/native/drel-selfhosted.service`, deployment host systemd | On the host: `systemctl is-active drel-selfhosted` | Active service with restart policy configured | Deployment-host check |
 | R-004 | Public Node admin routes | `Server/node/server.js`, `tools/verify-legacy-backend.sh` | `bash tools/verify-legacy-backend.sh` | `/admin`, `/admin-push`, `/admin/api/*`, `/ws/status`, `/messages`, `/packages` return 200 | Covered |
 | R-005 | Local Node admin source | `Server/node/server.js`, `tools/verify-node-admin-local.sh` | `bash tools/verify-node-admin-local.sh` | 11 passed, 0 failed | Covered locally |
 | R-006 | Public static fixtures | `test_resources/`, `tools/verify-legacy-fixtures.sh` | `bash tools/verify-legacy-fixtures.sh` | 18 passed, 0 failed | Covered route/content-marker level |

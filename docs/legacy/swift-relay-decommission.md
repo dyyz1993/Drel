@@ -30,3 +30,10 @@ remain auditable for migration, but no new Swift deployment should be created.
    maintenance window; wire contracts remain documented in `docs/api/`.
 5. The commented `UPSTREAM_ORIGIN` in the Worker is an emergency rollback switch
    only. Re-enabling it requires an explicit owner decision and rollback plan.
+
+## 2026-11-28: removed
+
+The Swift Hummingbird server, its tests, SwiftPM package files, Swift Docker
+images, and Swift-only Compose/Caddy/Nginx deployment assets have been removed.
+Existing operators must migrate to `Server/native/` (Go) or the official Worker.
+This record retains the migration context and historical decision.

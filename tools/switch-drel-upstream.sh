@@ -40,7 +40,7 @@ status)
   ok "api.drel.app -> $origin"
   echo
   echo "  Known backends:"
-  echo "    legacy backend   the Swift server on the existing box (the current default)"
+  echo "    worker origin    the managed production origin (the current default)"
   echo "    nas       your own server, fronted by a reverse proxy"
   echo
   echo "  The public hostname does not change when you switch; only this value does."
@@ -59,7 +59,7 @@ use)
 
   current="$(current_origin)"
   case "$target" in
-    legacy backend) new_origin="${origin_override:-https://gateway.example.invalid:8443}" ;;
+    'legacy backend') new_origin="${origin_override:-https://gateway.example.invalid:8443}" ;;
     nas)
       [[ -n "$origin_override" ]] \
         || bad "Pass --origin https://<your-hostname> for the nas target."

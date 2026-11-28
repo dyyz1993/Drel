@@ -22,18 +22,18 @@ sequenceDiagram
 
 | Component | Responsibility | Evidence |
 | --- | --- | --- |
-| Managed route | one-time enrollment, public-key discovery, strict opaque delivery, revocation | `Server/Sources/WebBridgeServer/Routes/ManagedEncryptedPushRoutes.swift:20-109` |
-| Managed registry | separate device/pairing persistence from direct self-hosted service | `Server/Sources/WebBridgeServer/Configuration.swift:92-166` |
-| APNs signer | rejects unavailable signer and emits only envelope delivery payload | `Server/Sources/WebBridgeServer/Services/APNsService.swift:163-189` |
-| Device key | only public X25519 key is discoverable; token remains private | `Server/Sources/WebBridgeServer/Services/TokenStore.swift:61-67` |
+| Managed route | feature flag, one-time enrollment, public-key discovery, strict opaque delivery, revocation | `infra/cloudflare/drel-api-proxy/src/managed-push.js:103-180` |
+| Managed registry | separate Durable Object device/pairing persistence from direct push service | `infra/cloudflare/drel-api-proxy/src/managed-push.js:236-259` |
+| APNs signer | rejects unavailable signer and emits only envelope delivery payload | `infra/cloudflare/drel-api-proxy/src/managed-push.js:184-227` |
+| Device key | only public X25519 key is discoverable; token remains private | `infra/cloudflare/drel-api-proxy/src/managed-push.js:294-330` |
 
 ## Assets, boundaries, and invariants
 
-- **Message plaintext and private key:** only the sender before encryption and the paired iPhone after decryption may access them. The route accepts exactly `{drelEnvelope}` and rejects extra wrapper fields (`ManagedEncryptedPushRoutes.swift:112-129`).
-- **APNs token:** required by the signer but never returned by the recipient endpoint (`ManagedEncryptedPushRoutes.swift:36-47`).
+- **Message plaintext and private key:** only the sender before encryption and the paired iPhone after decryption may access them. The route accepts exactly `{drelEnvelope}` and rejects extra wrapper fields (`managed-push.js:331-349`).
+- **APNs token:** required by the signer but never returned by the recipient endpoint (`managed-push.js:320-328`).
 - **Provider credential:** must remain in the controlled signer deployment; it is not an API response, config import, QR payload, or repository artifact. This is an operational prerequisite, not something source code can enforce by itself.
-- **Pairing authority:** a token is one use and bounded by `SelfHostedPairingStore`; the registration route consumes it before storing the target (`ManagedEncryptedPushRoutes.swift:50-81`).
-- **Write capability:** `deviceKey` authorizes delivery but cannot decrypt. Revocation removes the exact token/key registration (`ManagedEncryptedPushRoutes.swift:96-109`; `TokenStore.swift:75-91`).
+- **Pairing authority:** a token is one use and bounded by the Durable Object pairing registry; the registration route consumes it before storing the target (`managed-push.js:263-318`).
+- **Write capability:** `deviceKey` authorizes delivery but cannot decrypt. Revocation removes the exact token/key registration (`managed-push.js:350-374`).
 
 ## Scenarios and controls
 
