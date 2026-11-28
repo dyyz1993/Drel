@@ -105,17 +105,22 @@ class PushRouter {
             return
         }
 
-        DrelPushAppCatalogCoordinator.shared.activateIfTrusted(
+        DrelPushAppCatalogCoordinator.shared.activateIfTrustedWithUntrustedManifests(
             appID: envelope.appID,
             route: envelope.route
-        ) { [weak self, weak rootVC] accepted in
-            guard accepted, let self, let rootVC else {
+        ) { [weak self, weak rootVC] result in
+            if case .failure(let failure) = result {
                 StructuredLogger.shared.warning(
                     "[PushRouter] Rejected HTML app route because no signed manifest accepted it",
                     category: .navigation
                 )
+                DrelAppOpenFallback.presentBrowserFallback(
+                    DrelAppOpenFallback.decide(failure: failure, payload: payload),
+                    from: rootVC
+                )
                 return
             }
+            guard let self, let rootVC, (try? result.get()) == true else { return }
             self.openResolvedTrustedHTMLApp(envelope: envelope, payload: payload, from: rootVC)
         }
     }
@@ -194,6 +199,13 @@ class PushRouter {
                 StructuredLogger.shared.warning(
                     "[PushRouter] Rejected HTML app route: \(error.localizedDescription)",
                     category: .navigation
+                )
+                DrelAppOpenFallback.presentBrowserFallback(
+                    DrelAppOpenFallback.decide(
+                        failure: .resolution(appID: envelope.appID, message: error.localizedDescription),
+                        payload: payload
+                    ),
+                    from: rootVC
                 )
             }
         }

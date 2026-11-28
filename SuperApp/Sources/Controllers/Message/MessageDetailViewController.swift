@@ -1124,12 +1124,15 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
             // 与横幅点按（PushRouter.openTrustedHTMLApp）同路径：先经协调器
             // 按需拉取网关清单并激活，再解析打开。清单未同步时同步 resolve
             // 必然失败并误报「无法打开」，用户被迫二次点按。
-            DrelPushAppCatalogCoordinator.shared.activateIfTrusted(appID: appID, route: route) { [weak self] accepted in
+            DrelPushAppCatalogCoordinator.shared.activateIfTrustedWithUntrustedManifests(
+                appID: appID,
+                route: route
+            ) { [weak self] result in
                 guard let self else { return }
-                guard accepted else {
-                    self.showAlert(
-                        title: L10n.tr("message.detail.open_app_failed"),
-                        message: L10n.tr("message.detail.open_app_untrusted")
+                if case .failure(let failure) = result {
+                    DrelAppOpenFallback.presentBrowserFallback(
+                        DrelAppOpenFallback.decide(failure: failure, message: message.payload, appID: appID, route: route),
+                        from: self
                     )
                     return
                 }
@@ -1161,7 +1164,10 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
                         )
                         WebBrowserManager.shared.openBrowser(url: target.loaderURL, params: params, from: self)
                     } catch {
-                        self.showAlert(title: L10n.tr("message.detail.open_app_failed"), message: error.localizedDescription)
+                        DrelAppOpenFallback.presentCannotOpen(
+                            .resolution(appID: appID, message: error.localizedDescription),
+                            from: self
+                        )
                     }
                 }
             }
@@ -1188,5 +1194,3 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
         present(alert, animated: true)
     }
 }
-
-

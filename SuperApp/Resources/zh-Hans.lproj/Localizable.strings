@@ -8,6 +8,8 @@
 
 // Home - Main
 "home.title" = "首页";
+"home.status.connected" = "已连接";
+"home.status.unregistered" = "未注册";
 "home.token_card.push_token" = "Push Token";
 "home.token_card.not_registered" = "尚未注册推送服务";
 "home.token_card.register" = "注册";
@@ -93,6 +95,18 @@
 "inbox.test.body_format" = "这是一条测试消息，发送于 %@";
 "inbox.test.group" = "测试消息";
 "inbox.swipe.hint" = "轻点查看详情，左滑删除，右滑置顶";
+
+// Message Inbox
+"message.inbox.all" = "全部";
+"message.inbox.unread" = "未读";
+"message.inbox.apps" = "应用";
+"message.inbox.empty" = "暂无消息";
+"message.inbox.title" = "消息收件箱";
+"message.inbox.clear_all" = "全部清除";
+"message.inbox.confirm_clear_title" = "清空所有消息？";
+"message.inbox.confirm_clear_message" = "所有消息记录都会从本机删除，此操作无法撤销。";
+"message.inbox.cannot_open_app" = "无法打开应用";
+"message.inbox.app_not_found_format" = "未找到应用 %@";
 
 // Discover
 "discover.title" = "发现";
@@ -319,6 +333,26 @@
 "debug.panel.network" = "网络请求";
 "debug.panel.done" = "完成";
 "debug.panel.execute_test" = "执行测试";
+"debug.panel.copied" = "已复制";
+"debug.panel.copy_result" = "复制结果";
+"debug.panel.enter_param" = "输入 %@";
+"debug.panel.env_info_copied" = "环境信息已复制到剪贴板";
+"debug.panel.execute" = "执行";
+"debug.panel.executing_format" = "正在执行 %@...";
+"debug.panel.exported" = "已导出";
+"debug.panel.handler_info_copied" = "Handler 信息已复制到剪贴板";
+"debug.panel.log_all" = "全部";
+"debug.panel.log_copy_all" = "复制全部";
+"debug.panel.log_errors" = "错误";
+"debug.panel.log_export_json" = "导出 JSON";
+"debug.panel.logs_copied_format" = "已复制 %@ 条日志";
+"debug.panel.logs_exported_json" = "日志已导出为 JSON 并复制到剪贴板";
+"debug.panel.no_errors" = "没有错误日志";
+"debug.panel.no_logs" = "没有日志";
+"debug.panel.options" = "可选值：%@";
+"debug.panel.parameters" = "参数";
+"debug.panel.select_handler_test" = "选择要测试的 Handler";
+"debug.panel.tap_execute_hint" = "点击执行后查看结果";
 
 // About
 "about.title" = "关于";
@@ -344,6 +378,8 @@
 
 // Common
 "common.copy" = "复制";
+"common.edit" = "编辑";
+"common.notice" = "提示";
 "common.share" = "分享";
 "common.delete" = "删除";
 "common.cancel" = "取消";
@@ -375,6 +411,18 @@
 
 // Token Generate
 "token.generate.select_url_error" = "请先选择要生成口令的URL";
+"token.generate.button" = "生成口令";
+"token.generate.copied_title" = "口令已复制";
+"token.generate.duration" = "有效期";
+"token.generate.duration_1d" = "1 天";
+"token.generate.duration_30d" = "30 天";
+"token.generate.duration_7d" = "7 天";
+"token.generate.duration_permanent" = "永久";
+"token.generate.empty_description" = "先打开要分享的网页，再回到这里生成口令";
+"token.generate.empty_title" = "暂无可选页面";
+"token.generate.result_title" = "生成结果";
+"token.generate.select_url" = "选择 URL";
+"token.generate.title" = "生成口令";
 "token.generate.failure" = "生成口令失败，请重试";
 
 // Web Access
@@ -383,10 +431,52 @@
 "web_access.cannot_cache" = "无法缓存该页面";
 "web_access.cache_failure_format" = "缓存失败: %@";
 "web_access.auto_cache_failure_format" = "自动缓存失败: %@";
+"web_access.cache_count_zero" = "0 个资源";
+"web_access.caching" = "正在缓存...";
+"web_access.invalid_url" = "链接无效";
+"web_access.load_failed" = "页面加载失败";
+"web_access.loading" = "正在加载...";
+"web_access.offline_description" = "当前离线。重新联网后即可打开页面。";
+"web_access.offline_no_connection" = "没有可用网络连接，请检查 Wi-Fi 或蜂窝数据。";
+"web_access.offline_title" = "当前离线";
+"web_access.retry" = "重试";
+"web_access.title" = "网页访问";
 
 // Favorite
 "favorite.title" = "收藏夹";
+"favorite.unknown_page" = "未命名页面";
 "favorite.cache_mode" = "缓存模式";
+
+// My Apps
+"home.apps.gateway_failure_title" = "应用服务不可用";
+"home.apps.unavailable.retry" = "重试";
+"home.apps.unavailable.diagnostics" = "查看诊断";
+"home.apps.failure.network" = "连不上应用服务：网络超时或离线";
+"home.apps.failure.server" = "应用服务暂时不可用（HTTP 5xx）";
+"home.apps.failure.manifest" = "应用服务返回了无法验证的清单";
+"home.apps.failure.generic" = "应用服务连接失败";
+"home.apps.empty.add_from_push" = "从推送添加";
+"home.apps.empty.add_from_push_hint" = "打开一条带应用的通知，点「添加到我的应用」。";
+"home.apps.empty.enter_address" = "输入应用地址";
+"home.apps.management.enter_address" = "输入应用地址";
+"home.apps.offline.network" = "离线包下载中断，已改为联网打开。联网后可在应用详情里重试。";
+"home.apps.offline.validation" = "离线包校验未通过，已拒绝安装。可能是应用刚更新，请稍后重试；若持续出现请联系应用提供方。";
+"home.apps.offline.structure" = "这个离线包需要更新 Drel 才能安装，已改为联网打开。";
+"home.apps.offline.generic" = "离线包暂不可用，已改为联网打开";
+
+// App Registration
+"app.open.fallback.add_app" = "添加到我的应用";
+"app.open.fallback.browser_notice" = "已在浏览器打开「%@」，可在顶部添加到我的应用";
+"app.open.fallback.diagnostics" = "查看诊断";
+"app.open.fallback.failed_title" = "无法打开「%@」";
+"app.open.fallback.invalid_link" = "应用链接无效。";
+"app.open.fallback.resolution" = "打开应用时出现问题：%@";
+"app.open.fallback.untrusted" = "这个链接没有通过签名清单或路由校验。";
+"app.registration.title" = "输入应用地址";
+"app.registration.placeholder" = "输入 https://... 或 app.xxx.yyy";
+"app.registration.add" = "添加";
+"app.registration.invalid_input" = "请输入有效的 https 链接或 app.xxx.yyy 形式的应用 ID。";
+"app.registration.app_not_found" = "没找到这个应用的签名清单，已用网页打开";
 "favorite.empty_title" = "暂无收藏";
 "favorite.empty_description" = "收藏的链接会显示在这里";
 "favorite.confirm_delete" = "确认删除";

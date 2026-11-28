@@ -18,7 +18,7 @@ final class DrelPushAppCatalogCoordinator {
     private let receivedAppStore = HTMLAppPushActivationStore()
     private let lock = NSLock()
     private var isRefreshing = false
-    private var pending: [(appID: String, route: String, completion: (Bool) -> Void)] = []
+    private var pending: [(appID: String, route: String, completion: (Result<Bool, DrelAppOpenFailure>) -> Void)] = []
 
     private lazy var onboardingService = DrelOAuthGatewayAuthorizationIntegration(
         gatewayRegistry: gatewayRegistry,
@@ -31,13 +31,23 @@ final class DrelPushAppCatalogCoordinator {
     /// Makes an app visible only after its signed manifest permits the route
     /// carried in a received push. Completion always returns on the main queue.
     func activateIfTrusted(appID: String, route: String, completion: @escaping (Bool) -> Void = { _ in }) {
+        activateIfTrustedWithUntrustedManifests(appID: appID, route: route) { result in
+            completion((try? result.get()) ?? false)
+        }
+    }
+
+    func activateIfTrustedWithUntrustedManifests(
+        appID: String,
+        route: String,
+        completion: @escaping (Result<Bool, DrelAppOpenFailure>) -> Void
+    ) {
         guard !appID.isEmpty, !route.isEmpty else {
-            finish(completion, accepted: false)
+            finish(completion, .failure(.untrustedRoute(appID: appID)))
             return
         }
         if routeIsTrusted(appID: appID, route: route) {
             receivedAppStore.activate(appID)
-            finish(completion, accepted: true)
+            finish(completion, .success(true))
             return
         }
 
@@ -83,8 +93,14 @@ final class DrelPushAppCatalogCoordinator {
             let accepted = routeIsTrusted(appID: item.appID, route: item.route)
             if accepted {
                 receivedAppStore.activate(item.appID)
+                finish(item.completion, .success(true))
+                continue
             }
-            finish(item.completion, accepted: accepted)
+            let manifests = onboardingService.onboardingService.lastUntrustedManifests
+            finish(
+                item.completion,
+                .failure(.catalogRejected(appID: item.appID, untrustedManifests: manifests))
+            )
         }
     }
 
@@ -148,9 +164,12 @@ final class DrelPushAppCatalogCoordinator {
         )
     }
 
-    private func finish(_ completion: @escaping (Bool) -> Void, accepted: Bool) {
+    private func finish(
+        _ completion: @escaping (Result<Bool, DrelAppOpenFailure>) -> Void,
+        _ result: Result<Bool, DrelAppOpenFailure>
+    ) {
         DispatchQueue.main.async {
-            completion(accepted)
+            completion(result)
         }
     }
 }
