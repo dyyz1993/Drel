@@ -135,7 +135,11 @@ jobs:
           xcodebuild -version
           # Drel is an iPhone app: prefer an iPhone simulator, because other
           # projects' iPad simulators can be listed first on a shared runner.
-          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; phones=[device for device in devices if "iPhone" in device.get("deviceTypeIdentifier","")]; pick=(phones or devices)[0] if (phones or devices) else None; print("id=" + pick["udid"] if pick else "")')"
+          # Skip simulators other CI jobs create and tear down mid-run
+          # ("CI-Unit-*" from the Framework unit tests) and anything another
+          # project has marked as reserved; a half-torn-down device reproduces
+          # as a blank home screen in the smoke test.
+          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; phones=[device for device in devices if "iPhone" in device.get("deviceTypeIdentifier","")]; usable=[device for device in phones if not device.get("name","").startswith("CI-") and "勿占用" not in device.get("name","")]; pick=(usable or phones or devices)[0] if (usable or phones or devices) else None; print("id=" + pick["udid"] if pick else "")')"
           if [ -z "$DESTINATION" ]; then
             echo "::error::No available iOS Simulator device"
             exit 1
@@ -284,7 +288,11 @@ jobs:
           xcodebuild -version
           # Drel is an iPhone app: prefer an iPhone simulator, because other
           # projects' iPad simulators can be listed first on a shared runner.
-          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; phones=[device for device in devices if "iPhone" in device.get("deviceTypeIdentifier","")]; pick=(phones or devices)[0] if (phones or devices) else None; print("id=" + pick["udid"] if pick else "")')"
+          # Skip simulators other CI jobs create and tear down mid-run
+          # ("CI-Unit-*" from the Framework unit tests) and anything another
+          # project has marked as reserved; a half-torn-down device reproduces
+          # as a blank home screen in the smoke test.
+          DESTINATION="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[device for group in data.get("devices",{}).values() for device in group if device.get("isAvailable") and device.get("udid")]; phones=[device for device in devices if "iPhone" in device.get("deviceTypeIdentifier","")]; usable=[device for device in phones if not device.get("name","").startswith("CI-") and "勿占用" not in device.get("name","")]; pick=(usable or phones or devices)[0] if (usable or phones or devices) else None; print("id=" + pick["udid"] if pick else "")')"
           if [ -z "$DESTINATION" ]; then
             echo "::error::No available iOS Simulator device"
             exit 1
