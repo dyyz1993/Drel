@@ -16,6 +16,50 @@ Each release line carries three pieces of evidence:
 - **Evidence** — a link to the verification record under
   `docs/testing/results/` or `docs/release/`.
 
+## [1.5.6] — 2026-11-28
+
+### Changed
+
+- Opening an app from a push no longer dead-ends. When the app is not
+  registered, its manifest cannot be verified, or the launch cannot be
+  resolved, Drel now falls back to opening the app's site in the normal
+  browser (push URL, then the catalog's start URL, then a host derived from
+  the app id) with a dismissible "opened as web" notice; if no address is
+  available it shows a plain-language reason with a diagnostics link. The
+  fallback never grants native capabilities or installs an offline package. —
+  Scope: `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.6/verification-161.md](docs/release/1.5.6/verification-161.md)
+
+### Fixed
+
+- Tapping a notification banner that fails to open its app is no longer
+  silent. — Scope: `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.6/verification-161.md](docs/release/1.5.6/verification-161.md)
+- The "My Apps" unavailable state now shows the actual gateway failure with
+  Retry and View Diagnostics instead of a generic "no apps available"; the
+  empty state offers "add from a push" and "enter an app address". — Scope:
+  `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.6/verification-161.md](docs/release/1.5.6/verification-161.md)
+- 57 user-facing strings that were referenced but missing from both
+  localization catalogs no longer render as raw keys; a repository gate now
+  fails on any missing key. — Scope: `App` — Verified: `simulator` —
+  Evidence: [docs/release/1.5.6/verification-161.md](docs/release/1.5.6/verification-161.md)
+- The "Add to iPhone Home Screen" guide now emits `drel://app` links; the
+  previous `https://drel.app/launch/` links could not open Drel. — Scope:
+  `App` — Verified: `none` —
+  Evidence: [docs/release/1.5.6/verification-161.md](docs/release/1.5.6/verification-161.md)
+
+### Added
+
+- "Enter an app address": paste an https URL or an app id to open it, add a
+  verified app to My Apps, or fall back to the web. — Scope: `App` —
+  Verified: `simulator` —
+  Evidence: [docs/release/1.5.6/verification-161.md](docs/release/1.5.6/verification-161.md)
+- Offline-package failures are reported by cause (network, checksum,
+  needs a newer Drel) instead of one generic line. — Scope: `App` —
+  Verified: `simulator` —
+  Evidence: [docs/release/1.5.6/verification-161.md](docs/release/1.5.6/verification-161.md)
+
 ## [1.5.5] — 2026-11-27
 
 ### Changed
