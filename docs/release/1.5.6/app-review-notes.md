@@ -18,8 +18,21 @@ it cannot verify or that is not registered:
   reached, and offers an "enter an app address" screen that opens a URL or
   verifies an app id before adding it.
 
-No entitlement, native action, permission prompt or data collection was
-added, changed or removed. The capability surface is identical to 1.5.5.
+No entitlement, permission prompt or data collection was added, changed or
+removed. The capability surface is identical to 1.5.5.
+
+## Capability surface
+
+The Store build exposes the same 10 native actions as 1.5.5:
+
+- `haptic`, `vibrate`, `share`, `fullscreen`, `addToHomeScreen` — transient,
+  in-session, no standing grant
+- `clipboard`, `getLocation` — require explicit persistent, user-revocable grant
+- `sensors` — transient accelerometer/gyroscope stream, no standing grant
+- `getCapabilities` — read-only query for actions declared and granted to the
+  current trusted app
+- `audioLevel` — live microphone sound level, requires system microphone
+  permission + explicit grant
 
 ## Web fallback is not a trust bypass
 
