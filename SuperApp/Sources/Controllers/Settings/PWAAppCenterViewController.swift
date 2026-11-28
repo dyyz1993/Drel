@@ -179,7 +179,11 @@ final class PWAAppCenterViewController: UIViewController {
             onShowAppDetails: { [weak self] appID in self?.showAppDetails(appID: appID) },
             onManageApps: { [weak self] in self?.showAppManagement() },
             onOpenAPIExamples: { [weak self] in self?.showAPIExamples() },
-            onOpenGuideAndDebug: { [weak self] in self?.showGuideAndDebug() }
+            onOpenGuideAndDebug: { [weak self] in self?.showGuideAndDebug() },
+            onRetryApps: { [weak self] in self?.reloadApps() },
+            onOpenAppDiagnostics: { [weak self] in self?.showAppDiagnostics() },
+            onAddAppFromPush: { [weak self] in self?.showAddAppFromPushHint() },
+            onEnterAppAddress: { [weak self] in self?.showAppRegistration() }
         )
         let hostingController = UIHostingController(rootView: rootView)
         hostingController.view.backgroundColor = ThemeTokens.Color.background
@@ -390,6 +394,7 @@ final class PWAAppCenterViewController: UIViewController {
         }
         if !manifests.isEmpty {
             homeViewModel.appState = .ready
+            homeViewModel.lastGatewayFailure = nil
         } else if officialGatewayUnavailable {
             homeViewModel.appState = .unavailable
         } else if isBootstrappingOfficialGateway {
@@ -449,12 +454,14 @@ final class PWAAppCenterViewController: UIViewController {
                         self.refreshVisibleApps()
                         self.officialGatewayUnavailable = false
                         self.lastGatewayFailureAt = nil
+                        self.homeViewModel.lastGatewayFailure = nil
                     } catch {
                         WebBridgeLogger.shared.error(
                             "Official gateway activation failed: \(error.localizedDescription)"
                         )
                         self.officialGatewayUnavailable = true
                         self.lastGatewayFailureAt = Date()
+                        self.homeViewModel.lastGatewayFailure = Self.gatewayFailure(for: error)
                     }
                 case .failure(let error):
                     WebBridgeLogger.shared.error(
@@ -462,6 +469,7 @@ final class PWAAppCenterViewController: UIViewController {
                     )
                     self.officialGatewayUnavailable = true
                     self.lastGatewayFailureAt = Date()
+                    self.homeViewModel.lastGatewayFailure = Self.gatewayFailure(for: error)
                 }
                 self.updateHomeApps()
             }
@@ -502,6 +510,12 @@ final class PWAAppCenterViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "浏览全部应用", style: .default) { [weak self] _ in
             self?.showAllApps()
         })
+        alert.addAction(UIAlertAction(
+            title: L10n.tr("home.apps.management.enter_address"),
+            style: .default
+        ) { [weak self] _ in
+            self?.showAppRegistration()
+        })
         for manifest in manifests.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) {
             alert.addAction(UIAlertAction(title: manifest.name, style: .default) { [weak self] _ in
                 self?.showAppDetails(appID: manifest.appID)
@@ -521,6 +535,38 @@ final class PWAAppCenterViewController: UIViewController {
 
     private func showAllApps() {
         navigationController?.pushViewController(PWAAppCatalogViewController(), animated: true)
+    }
+
+    private func showAppDiagnostics() {
+        let diagnostics = UIHostingController(rootView: OfflineAppHealthView())
+        diagnostics.navigationItem.title = L10n.tr("home.apps.unavailable.diagnostics")
+        diagnostics.view.backgroundColor = ThemeTokens.Color.background
+        navigationController?.pushViewController(diagnostics, animated: true)
+    }
+
+    private func showAddAppFromPushHint() {
+        let alert = UIAlertController(
+            title: L10n.tr("home.apps.empty.add_from_push"),
+            message: L10n.tr("home.apps.empty.add_from_push_hint"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: L10n.tr("common.ok"), style: .default))
+        present(alert, animated: true)
+    }
+
+    private func showAppRegistration() {
+        let registration = AppRegistrationViewController { [weak self] appID in
+            self?.showActivatedAppInCatalog(appID: appID)
+        }
+        navigationController?.pushViewController(registration, animated: true)
+    }
+
+    private func showActivatedAppInCatalog(appID: String) {
+        navigationController?.pushViewController(
+            PWAAppCatalogViewController(initiallySelectedAppID: appID),
+            animated: true
+        )
+        WebBridgeLogger.shared.info("Registered app opened in catalog: \(appID)")
     }
 
     private func showAppDetails(appID: String) {
@@ -635,11 +681,13 @@ final class PWAAppCenterViewController: UIViewController {
                 try presentationMetadataStore.set(resolved, for: manifest.appID)
                 updateHomeApps()
                 HUDService.shared.showSuccess(withStatus: "离线包已准备完成")
-            } catch {
+            } catch let error as HTMLAppOfflinePackageError {
                 // The installer only switches the current pointer after every
                 // resource is verified. On failure resolve again so a stale or
                 // partial package can never be presented as strong offline.
-                HUDService.shared.showInfo(withStatus: "离线包暂不可用，已改为联网打开")
+                HUDService.shared.showInfo(withStatus: Self.message(for: error))
+            } catch {
+                HUDService.shared.showInfo(withStatus: L10n.tr("home.apps.offline.generic"))
             }
         }
     }

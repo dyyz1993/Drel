@@ -28,11 +28,7 @@ enum DrelExternalAppLinkOpener {
         // Fail closed: only apps already trusted on this device open from an
         // external link; unregistered IDs get an explanation, not a browser.
         guard let manifest = registry.manifest(for: link.appID) else {
-            presentAlert(
-                title: "应用未注册",
-                message: "“\(link.appID)”不在本机的受信应用列表中。请先在应用中心导入，或通过推送激活该应用。",
-                from: viewController
-            )
+            DrelAppOpenFallback.presentCannotOpen(.untrustedRoute(appID: link.appID), from: viewController)
             return
         }
 
@@ -104,7 +100,10 @@ enum DrelExternalAppLinkOpener {
                     source: "externalLink",
                     error: error
                 )
-                presentAlert(title: "无法打开应用", message: error.localizedDescription, from: viewController)
+                DrelAppOpenFallback.presentCannotOpen(
+                    .resolution(appID: link.appID, message: error.localizedDescription),
+                    from: viewController
+                )
             }
         }
     }

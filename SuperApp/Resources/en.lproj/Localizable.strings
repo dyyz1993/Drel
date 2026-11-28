@@ -8,6 +8,8 @@
 
 // Home - Main
 "home.title" = "Home";
+"home.status.connected" = "Connected";
+"home.status.unregistered" = "Not registered";
 "home.token_card.push_token" = "Push Token";
 "home.token_card.not_registered" = "Push service not registered";
 "home.token_card.register" = "Register";
@@ -93,6 +95,18 @@
 "inbox.test.body_format" = "This is a test message, sent at %@";
 "inbox.test.group" = "Test Messages";
 "inbox.swipe.hint" = "Tap for details. Swipe left to delete, right to pin.";
+
+// Message Inbox
+"message.inbox.all" = "All";
+"message.inbox.unread" = "Unread";
+"message.inbox.apps" = "Apps";
+"message.inbox.empty" = "No messages";
+"message.inbox.title" = "Message Inbox";
+"message.inbox.clear_all" = "Clear All";
+"message.inbox.confirm_clear_title" = "Clear all messages?";
+"message.inbox.confirm_clear_message" = "All message history will be deleted from this device. This cannot be undone.";
+"message.inbox.cannot_open_app" = "Cannot Open App";
+"message.inbox.app_not_found_format" = "App %@ was not found";
 
 // Discover
 "discover.title" = "Discover";
@@ -319,6 +333,26 @@
 "debug.panel.network" = "Network";
 "debug.panel.done" = "Done";
 "debug.panel.execute_test" = "Run Tests";
+"debug.panel.copied" = "Copied";
+"debug.panel.copy_result" = "Copy Result";
+"debug.panel.enter_param" = "Enter %@";
+"debug.panel.env_info_copied" = "Environment details copied to clipboard";
+"debug.panel.execute" = "Run";
+"debug.panel.executing_format" = "Running %@...";
+"debug.panel.exported" = "Exported";
+"debug.panel.handler_info_copied" = "Handler details copied to clipboard";
+"debug.panel.log_all" = "All";
+"debug.panel.log_copy_all" = "Copy All";
+"debug.panel.log_errors" = "Errors";
+"debug.panel.log_export_json" = "Export JSON";
+"debug.panel.logs_copied_format" = "Copied %d logs";
+"debug.panel.logs_exported_json" = "Logs exported as JSON and copied to clipboard";
+"debug.panel.no_errors" = "No error logs";
+"debug.panel.no_logs" = "No logs";
+"debug.panel.options" = "Options: %@";
+"debug.panel.parameters" = "Parameters";
+"debug.panel.select_handler_test" = "Choose a handler to test";
+"debug.panel.tap_execute_hint" = "Run the handler to see its result";
 
 // About
 "about.title" = "About";
@@ -344,6 +378,8 @@
 
 // Common
 "common.copy" = "Copy";
+"common.edit" = "Edit";
+"common.notice" = "Notice";
 "common.share" = "Share";
 "common.delete" = "Delete";
 "common.cancel" = "Cancel";
@@ -375,6 +411,18 @@
 
 // Token Generate
 "token.generate.select_url_error" = "Please select a URL first";
+"token.generate.button" = "Generate Token";
+"token.generate.copied_title" = "Token copied";
+"token.generate.duration" = "Duration";
+"token.generate.duration_1d" = "1 day";
+"token.generate.duration_30d" = "30 days";
+"token.generate.duration_7d" = "7 days";
+"token.generate.duration_permanent" = "Permanent";
+"token.generate.empty_description" = "Open a page first, then return here to generate a token";
+"token.generate.empty_title" = "No pages available";
+"token.generate.result_title" = "Result";
+"token.generate.select_url" = "Select URL";
+"token.generate.title" = "Generate Token";
 "token.generate.failure" = "Token generation failed, please retry";
 
 // Web Access
@@ -383,10 +431,52 @@
 "web_access.cannot_cache" = "Cannot cache this page";
 "web_access.cache_failure_format" = "Cache failed: %@";
 "web_access.auto_cache_failure_format" = "Auto-cache failed: %@";
+"web_access.cache_count_zero" = "0 resources";
+"web_access.caching" = "Caching...";
+"web_access.invalid_url" = "The link is invalid";
+"web_access.load_failed" = "Page failed to load";
+"web_access.loading" = "Loading...";
+"web_access.offline_description" = "You are offline. Reconnect to open the page.";
+"web_access.offline_no_connection" = "No network connection is available. Check Wi-Fi or cellular data.";
+"web_access.offline_title" = "Offline";
+"web_access.retry" = "Retry";
+"web_access.title" = "Web Access";
 
 // Favorite
 "favorite.title" = "Favorites";
+"favorite.unknown_page" = "Untitled Page";
 "favorite.cache_mode" = "Cache Mode";
+
+// My Apps
+"home.apps.gateway_failure_title" = "App service unavailable";
+"home.apps.unavailable.retry" = "Retry";
+"home.apps.unavailable.diagnostics" = "Diagnostics";
+"home.apps.failure.network" = "Cannot reach the app service: network timed out or offline";
+"home.apps.failure.server" = "The app service is temporarily unavailable (HTTP 5xx)";
+"home.apps.failure.manifest" = "The app service returned an unverifiable manifest";
+"home.apps.failure.generic" = "Could not connect to the app service";
+"home.apps.empty.add_from_push" = "Add from Push";
+"home.apps.empty.add_from_push_hint" = "Open a notification containing an app, then tap \"Add to My Apps\".";
+"home.apps.empty.enter_address" = "Enter App Address";
+"home.apps.management.enter_address" = "Enter App Address";
+"home.apps.offline.network" = "The offline package download was interrupted. Opened online instead. Retry from app details after reconnecting.";
+"home.apps.offline.validation" = "The offline package failed verification and was not installed. The app may have just updated; try again later or contact its provider if this continues.";
+"home.apps.offline.structure" = "This offline package requires a newer Drel version. Opened online instead.";
+"home.apps.offline.generic" = "Offline package unavailable; opened online instead";
+
+// App Registration
+"app.open.fallback.add_app" = "Add to My Apps";
+"app.open.fallback.browser_notice" = "Opened \"%@\" in the browser. Add it to My Apps from the top bar.";
+"app.open.fallback.diagnostics" = "Diagnostics";
+"app.open.fallback.failed_title" = "Cannot open \"%@\"";
+"app.open.fallback.invalid_link" = "The app link is invalid.";
+"app.open.fallback.resolution" = "A problem occurred while opening the app: %@";
+"app.open.fallback.untrusted" = "This link did not pass manifest signature or route verification.";
+"app.registration.title" = "Enter App Address";
+"app.registration.placeholder" = "Enter https://... or app.xxx.yyy";
+"app.registration.add" = "Add";
+"app.registration.invalid_input" = "Enter a valid HTTPS URL or an app ID in app.xxx.yyy format.";
+"app.registration.app_not_found" = "No signed manifest was found for this app; opened the web page instead";
 "favorite.empty_title" = "No Favorites";
 "favorite.empty_description" = "Your favorited links will appear here";
 "favorite.confirm_delete" = "Confirm Delete";

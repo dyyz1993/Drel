@@ -42,8 +42,19 @@ struct PWAAppCatalogView: View {
     @ObservedObject var viewModel: PWAAppCatalogViewModel
     let onOpen: (PWAAppCatalogItem) -> Void
     let onAddToHome: (PWAAppCatalogItem) -> Void
+    /// Opens this app's detail sheet as soon as it appears in the list, so a
+    /// registration that just succeeded lands the user on the app it added.
+    var initiallySelectedAppID: String?
 
     @State private var selectedApp: PWAAppCatalogItem?
+    @State private var didApplyInitialSelection = false
+
+    private func applyInitialSelectionIfNeeded() {
+        guard !didApplyInitialSelection, let appID = initiallySelectedAppID,
+              let app = viewModel.apps.first(where: { $0.id == appID }) else { return }
+        didApplyInitialSelection = true
+        selectedApp = app
+    }
 
     var body: some View {
         ScrollView {
@@ -69,6 +80,12 @@ struct PWAAppCatalogView: View {
         .background(Color.appBackground)
         .navigationTitle("全部应用")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            applyInitialSelectionIfNeeded()
+        }
+        .onChange(of: viewModel.apps.map(\.id)) { _ in
+            applyInitialSelectionIfNeeded()
+        }
         .sheet(item: $selectedApp) { app in
             PWAAppCatalogDetailView(
                 app: app,
@@ -354,6 +371,18 @@ private struct PWAAppCatalogDetailView: View {
 }
 
 final class PWAAppCatalogViewController: UIViewController {
+    private let initiallySelectedAppID: String?
+
+    init(initiallySelectedAppID: String? = nil) {
+        self.initiallySelectedAppID = initiallySelectedAppID
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
     private let runtime = HTMLAppRuntimeCenter.shared
     private let gatewayRegistry = HTMLAppGatewayRegistry(
         officialGateway: DrelGatewayConfiguration.official
@@ -430,7 +459,8 @@ final class PWAAppCatalogViewController: UIViewController {
         let rootView = PWAAppCatalogView(
             viewModel: viewModel,
             onOpen: { [weak self] item in self?.open(item) },
-            onAddToHome: { [weak self] item in self?.addToHome(item) }
+            onAddToHome: { [weak self] item in self?.addToHome(item) },
+            initiallySelectedAppID: initiallySelectedAppID
         )
         let hosting = UIHostingController(rootView: rootView)
         hosting.navigationItem.title = "全部应用"

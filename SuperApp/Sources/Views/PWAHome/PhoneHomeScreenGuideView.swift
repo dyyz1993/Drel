@@ -215,19 +215,13 @@ enum PhoneHomeScreenGuidePresenter {
 
     static func present(from presenter: UIViewController, manifest: HTMLAppManifest) {
         var components = URLComponents()
-        components.scheme = "https"
-        components.host = "drel.app"
-        components.path = "/launch/"
+        components.scheme = "drel"
+        components.host = "app"
         let metadata = HTMLAppPresentationMetadataStore().metadata(for: manifest.appID)
         let displayName = metadata?.name ?? manifest.name
         var queryItems = [
-            URLQueryItem(name: "app_id", value: manifest.appID),
-            URLQueryItem(name: "name", value: displayName)
+            URLQueryItem(name: "app_id", value: manifest.appID)
         ]
-        if let iconURL = metadata?.iconURLs.last,
-           iconURL.scheme?.lowercased() == "https" {
-            queryItems.append(URLQueryItem(name: "icon", value: iconURL.absoluteString))
-        }
         if let startURL = URL(string: manifest.startURL),
            let route = URLComponents(url: startURL, resolvingAgainstBaseURL: false)?.path,
            route != "/" {
