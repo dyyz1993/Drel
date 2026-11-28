@@ -1130,10 +1130,7 @@ class MessageDetailViewController: UIViewController, UIGestureRecognizerDelegate
             ) { [weak self] result in
                 guard let self else { return }
                 if case .failure(let failure) = result {
-                    DrelAppOpenFallback.presentBrowserFallback(
-                        DrelAppOpenFallback.decide(failure: failure, message: message.payload, appID: appID, route: route),
-                        from: self
-                    )
+                    self.presentAppOpenFallback(failure: failure, message: message.payload, appID: appID, route: route)
                     return
                 }
                 Task { @MainActor in
